@@ -1,0 +1,122 @@
+[
+  {
+    "id": "act-cat-1",
+    "title": "Baga Beach Parasailing & Water Sports Combo",
+    "category": "Water Sports",
+    "city": "Goa",
+    "price": 1800,
+    "rating": 4.8,
+    "reviewsCount": 320,
+    "duration": "2.5 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+    "description": "High-adrenaline combo including tandem parasailing, jet ski, banana boat, and bumper ride with certified life jackets."
+  },
+  {
+    "id": "act-cat-2",
+    "title": "Grand Island Scuba Diving & Dolphin Sight",
+    "category": "Water Sports",
+    "city": "Goa",
+    "price": 2800,
+    "rating": 4.9,
+    "reviewsCount": 412,
+    "duration": "6 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1682687220063-4742bd7fd538?auto=format&fit=crop&w=800&q=80",
+    "description": "PADI-assisted beginner scuba dive with underwater video and boat transfer to Grande Island."
+  },
+  {
+    "id": "act-cat-3",
+    "title": "Morning Ghats Rowboat & Subah-e-Banaras",
+    "category": "Boat Rides",
+    "city": "Varanasi",
+    "price": 400,
+    "rating": 4.9,
+    "reviewsCount": 850,
+    "duration": "1.5 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80",
+    "description": "Sunrise boat glide from Assi Ghat to Manikarnika Ghat with an experienced local boatman."
+  },
+  {
+    "id": "act-cat-4",
+    "title": "Evening VIP Bajra Boat for Ganga Aarti",
+    "category": "Boat Rides",
+    "city": "Varanasi",
+    "price": 600,
+    "rating": 4.8,
+    "reviewsCount": 620,
+    "duration": "2 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1571536802807-30451e3955d8?auto=format&fit=crop&w=800&q=80",
+    "description": "Front-row river seating facing Dashashwamedh Ghat during the grand Maha Aarti ceremony."
+  },
+  {
+    "id": "act-cat-5",
+    "title": "Amber Fort & Royal Sheesh Mahal Heritage Guide",
+    "category": "Heritage Guides",
+    "city": "Jaipur",
+    "price": 600,
+    "rating": 4.9,
+    "reviewsCount": 740,
+    "duration": "2.5 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80",
+    "description": "Govt-licensed heritage storyteller detailing Mughal-Rajput battle history and mirror palace secrets."
+  },
+  {
+    "id": "act-cat-6",
+    "title": "Pink City Old Haveli Architecture & Food Walk",
+    "category": "Culinary & Markets",
+    "city": "Jaipur",
+    "price": 750,
+    "rating": 4.9,
+    "reviewsCount": 510,
+    "duration": "3 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
+    "description": "Sample pyaz kachori at Rawat Mishtan, MI Road lassi, ghewar sweets, and walk through secret stepwells."
+  },
+  {
+    "id": "act-cat-7",
+    "title": "Taj Mahal Sunrise & Mehtab Bagh Expert Tour",
+    "category": "Heritage Guides",
+    "city": "Agra",
+    "price": 700,
+    "rating": 5.0,
+    "reviewsCount": 980,
+    "duration": "3 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=800&q=80",
+    "description": "Skip crowds at first light; explore pietra dura marble inlay secrets and Mughal garden geometry."
+  },
+  {
+    "id": "act-cat-8",
+    "title": "Alleppey Backwater Kayaking & Village Canal Tour",
+    "category": "Water Sports",
+    "city": "Kerala",
+    "price": 1200,
+    "rating": 4.9,
+    "reviewsCount": 380,
+    "duration": "3.5 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80",
+    "description": "Paddle through serene narrow canals inaccessible to houseboats, accompanied by an expert naturalist."
+  },
+  {
+    "id": "act-cat-9",
+    "title": "Old Delhi Shahjahanabad Rickshaw & Spice Trail",
+    "category": "Culinary & Markets",
+    "city": "Delhi",
+    "price": 850,
+    "rating": 4.8,
+    "reviewsCount": 670,
+    "duration": "3 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=800&q=80",
+    "description": "Cycle rickshaw ride through Khari Baoli Asia's largest spice market, Paranthe Wali Gali, and Jama Masjid."
+  },
+  {
+    "id": "act-cat-10",
+    "title": "Sunset Camel Safari & Thar Desert Folk Night",
+    "category": "Adventure",
+    "city": "Jaipur",
+    "price": 1400,
+    "rating": 4.7,
+    "reviewsCount": 290,
+    "duration": "4 hrs",
+    "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+    "description": "Dune bashing, camel trek to sunset point, live campfire Kalbeliya folk dance with hot bajra rotis."
+  }
+]

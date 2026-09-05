@@ -1,0 +1,347 @@
+[
+  {
+    "id": "comm-trip-1",
+    "title": "Royal Rajasthan & Amber Heritage",
+    "destination": "Jaipur",
+    "durationDays": 3,
+    "budgetTotal": 11500,
+    "travelStyle": "cultural",
+    "category": "Couples",
+    "likes": 940,
+    "author": "Priya & Rohan S.",
+    "coverImage": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80",
+    "highlights": ["Amber Fort Sheesh Mahal", "Hawa Mahal Sunrise", "Nahargarh Sunset", "Chokhi Dhani Feast"],
+    "days": [
+      {
+        "dayNumber": 1,
+        "theme": "Arrival & Pink City Royal Heritage",
+        "activities": [
+          {
+            "time": "09:00 AM - 12:00 PM",
+            "title": "City Palace & Chandra Mahal Courtyards",
+            "location": "Old City, Jaipur",
+            "type": "heritage",
+            "estimatedCost": 300,
+            "description": "Grand palace complex showcasing Rajput & Mughal architecture with royal costume galleries.",
+            "isIndoor": true,
+            "imageUrl": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=City+Palace+Jaipur",
+            "etiquetteTip": "No commercial videography inside museum galleries without permit."
+          },
+          {
+            "time": "01:30 PM - 04:30 PM",
+            "title": "Hawa Mahal & Johari Bazaar Walk",
+            "location": "Johari Bazaar, Jaipur",
+            "type": "culture",
+            "estimatedCost": 200,
+            "description": "Iconic 953-casement palace of winds followed by jewelry and traditional tie-dye textile shopping.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1600100397608-f010f445b988?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Hawa+Mahal+Jaipur",
+            "etiquetteTip": "Negotiate courteously; govt cooperative shops offer certified fixed rates."
+          },
+          {
+            "time": "05:30 PM - 08:00 PM",
+            "title": "Nahargarh Fort Sunset & City Panoramas",
+            "location": "Aravalli Hills, Jaipur",
+            "type": "scenic",
+            "estimatedCost": 150,
+            "description": "Panoramic golden-hour views over the pink city rooftops from the historic ramparts.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Nahargarh+Fort+Jaipur"
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "theme": "Fortresses & Blue Pottery Artisan Studios",
+        "activities": [
+          {
+            "time": "08:30 AM - 12:30 PM",
+            "title": "Amber Fort & Maota Lake",
+            "location": "Amer, Jaipur",
+            "type": "heritage",
+            "estimatedCost": 250,
+            "description": "Hilltop bastion with mirror work Sheesh Mahal and Ganesh Pol gateway.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Amber+Fort+Jaipur"
+          },
+          {
+            "time": "02:00 PM - 04:30 PM",
+            "title": "Anokhi Museum of Hand Printing",
+            "location": "Amer, Jaipur",
+            "type": "artisan",
+            "estimatedCost": 100,
+            "description": "Live block-printing demonstrations by master craftspeople in a restored haveli.",
+            "isIndoor": true,
+            "imageUrl": "https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Anokhi+Museum+Jaipur"
+          },
+          {
+            "time": "06:00 PM - 09:30 PM",
+            "title": "Chokhi Dhani Cultural Village Feast",
+            "location": "Tonk Road, Jaipur",
+            "type": "culinary",
+            "estimatedCost": 1100,
+            "description": "Ethnic village resort experience with Kalbeliya dancers, puppet shows, and Rajasthani thali.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Chokhi+Dhani+Jaipur"
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "theme": "Astronomy, Bazaars & Royal Stepwells",
+        "activities": [
+          {
+            "time": "09:00 AM - 11:30 AM",
+            "title": "Jantar Mantar UNESCO Astronomical Observatory",
+            "location": "City Center, Jaipur",
+            "type": "heritage",
+            "estimatedCost": 200,
+            "description": "Collection of nineteen architectural astronomical instruments built by Sawai Jai Singh II.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Jantar+Mantar+Jaipur"
+          },
+          {
+            "time": "12:00 PM - 03:00 PM",
+            "title": "Bapu Bazaar & Lassiwala Tasting",
+            "location": "Bapu Bazaar, Jaipur",
+            "type": "culinary",
+            "estimatedCost": 250,
+            "description": "Authentic earthen-cup sweet lassi on MI Road followed by mojari footwear shopping.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Bapu+Bazaar+Jaipur"
+          },
+          {
+            "time": "04:00 PM - 06:30 PM",
+            "title": "Panna Meena ka Kund Stepwell",
+            "location": "Amer, Jaipur",
+            "type": "scenic",
+            "estimatedCost": 50,
+            "description": "16th-century symmetrical geometric stepwell and ancient rainwater harvesting marvel.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1600100397608-f010f445b988?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Panna+Meena+ka+Kund+Jaipur"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "comm-trip-2",
+    "title": "Sacred Kashi & Spiritual Ghats Circuit",
+    "destination": "Varanasi",
+    "durationDays": 3,
+    "budgetTotal": 9800,
+    "travelStyle": "cultural",
+    "category": "Solo",
+    "likes": 820,
+    "author": "Ananya K.",
+    "coverImage": "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80",
+    "highlights": ["Sunrise Rowboat on Ganga", "Dashashwamedh Maha Aarti", "Sarnath Deer Park", "Silk Weavers Guild"],
+    "days": [
+      {
+        "dayNumber": 1,
+        "theme": "The Eternal River & Ancient Alleyways",
+        "activities": [
+          {
+            "time": "05:30 AM - 08:00 AM",
+            "title": "Assi Ghat Sunrise Rowboat & Subah-e-Banaras",
+            "location": "Assi Ghat, Varanasi",
+            "type": "spiritual",
+            "estimatedCost": 350,
+            "description": "Morning Vedic chants and tranquil wooden boat glide past historic riverfront ghats.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Assi+Ghat+Varanasi",
+            "etiquetteTip": "Fix boat rate before boarding; official municipal rate is ₹300-₹400/hr for rowboat."
+          },
+          {
+            "time": "10:00 AM - 01:00 PM",
+            "title": "Kashi Vishwanath Corridor & Old Gali Exploration",
+            "location": "Vishwanath Gali, Varanasi",
+            "type": "heritage",
+            "estimatedCost": 100,
+            "description": "Sacred Jyotirlinga shrine and serpentine alleyways rich with history and Blue Lassi shop.",
+            "isIndoor": true,
+            "imageUrl": "https://images.unsplash.com/photo-1571536802807-30451e3955d8?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Kashi+Vishwanath+Temple+Varanasi",
+            "etiquetteTip": "Lockers provided at corridor entrance; mobile phones and leather belts prohibited inside sanctum."
+          },
+          {
+            "time": "06:15 PM - 08:30 PM",
+            "title": "Dashashwamedh Ghat Grand Ganga Aarti",
+            "location": "Dashashwamedh Ghat, Varanasi",
+            "type": "spiritual",
+            "estimatedCost": 0,
+            "description": "Mesmerizing multi-tiered brass lamp ceremony performed by saffron-clad Vedic priests.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Dashashwamedh+Ghat+Varanasi"
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "theme": "Buddha's First Sermon & Master Silk Weavers",
+        "activities": [
+          {
+            "time": "09:00 AM - 01:00 PM",
+            "title": "Sarnath Archaeological Complex & Dhamek Stupa",
+            "location": "Sarnath, Varanasi",
+            "type": "heritage",
+            "estimatedCost": 150,
+            "description": "Sacred deer park where Lord Buddha preached his first sermon; home to the Lion Capital of Ashoka.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1548013146-72479768bada?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Dhamek+Stupa+Sarnath"
+          },
+          {
+            "time": "03:00 PM - 06:00 PM",
+            "title": "Handloom Banarasi Silk Weavers Cooperative",
+            "location": "Madanpura / Sarai Mohana, Varanasi",
+            "type": "artisan",
+            "estimatedCost": 200,
+            "description": "Witness authentic pit-loom brocade weaving with genuine Silk Mark certification.",
+            "isIndoor": true,
+            "imageUrl": "https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Banarasi+Weavers+Varanasi"
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "theme": "Fortresses on the Water & Culinary Legacy",
+        "activities": [
+          {
+            "time": "09:30 AM - 12:30 PM",
+            "title": "Ramnagar Fort & Vintage Car Museum",
+            "location": "Opposite Tulsi Ghat, Varanasi",
+            "type": "heritage",
+            "estimatedCost": 150,
+            "description": "18th-century sandstone fortress home to the Maharaja of Kashi with antique royal weaponry.",
+            "isIndoor": true,
+            "imageUrl": "https://images.unsplash.com/photo-1571536802807-30451e3955d8?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Ramnagar+Fort+Varanasi"
+          },
+          {
+            "time": "01:30 PM - 04:30 PM",
+            "title": "Banarasi Street Food Trail (Kachori Gali & Malaiyo)",
+            "location": "Thatheri Bazaar, Varanasi",
+            "type": "culinary",
+            "estimatedCost": 250,
+            "description": "Crisp hing kachoris with aloo sabzi, winter malaiyo saffron foam, and famous Banarasi Paan.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Kachori+Gali+Varanasi"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "comm-trip-3",
+    "title": "Coastal Goa: Water Sports, Spice & Forts",
+    "destination": "Goa",
+    "durationDays": 3,
+    "budgetTotal": 14000,
+    "travelStyle": "balanced",
+    "category": "Family",
+    "likes": 1120,
+    "author": "Vikram Desai",
+    "coverImage": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80",
+    "highlights": ["Baga Watersports Combo", "Aguada Lighthouse", "Sahakari Spice Farm", "Basilica of Bom Jesus"],
+    "days": [
+      {
+        "dayNumber": 1,
+        "theme": "North Goa Beaches & Coastal Fortresses",
+        "activities": [
+          {
+            "time": "09:00 AM - 12:30 PM",
+            "title": "Aguada Fort & Portuguese Lighthouse",
+            "location": "Sinquerim, Goa",
+            "type": "heritage",
+            "estimatedCost": 100,
+            "description": "17th-century bastion overlooking the Arabian Sea with panoramic coastal battlements.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Fort+Aguada+Goa"
+          },
+          {
+            "time": "02:00 PM - 05:30 PM",
+            "title": "Calangute & Baga Water Sports Safari",
+            "location": "Baga Beach, Goa",
+            "type": "adventure",
+            "estimatedCost": 1800,
+            "description": "Parasailing, jet ski, banana boat ride, and bumper tube ride with certified safety gear.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Baga+Beach+Water+Sports"
+          }
+        ]
+      },
+      {
+        "dayNumber": 2,
+        "theme": "UNESCO Churches of Old Goa & Spice Farm",
+        "activities": [
+          {
+            "time": "09:30 AM - 12:00 PM",
+            "title": "Basilica of Bom Jesus & Se Cathedral",
+            "location": "Old Goa",
+            "type": "heritage",
+            "estimatedCost": 50,
+            "description": "Baroque church housing the sacred relics of St. Francis Xavier.",
+            "isIndoor": true,
+            "imageUrl": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Basilica+of+Bom+Jesus+Old+Goa"
+          },
+          {
+            "time": "01:00 PM - 04:30 PM",
+            "title": "Sahakari Organic Spice Plantation & Goan Buffet",
+            "location": "Ponda, Goa",
+            "type": "culinary",
+            "estimatedCost": 500,
+            "description": "Guided walking tour through cardamom, vanilla, and peri-peri groves followed by authentic traditional lunch.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Sahakari+Spice+Farm+Ponda+Goa"
+          }
+        ]
+      },
+      {
+        "dayNumber": 3,
+        "theme": "Fontainhas Latin Quarter & Mandovi River Sunset Cruise",
+        "activities": [
+          {
+            "time": "10:00 AM - 01:00 PM",
+            "title": "Fontainhas Heritage Quarter Walking Tour",
+            "location": "Panaji, Goa",
+            "type": "culture",
+            "estimatedCost": 150,
+            "description": "Vibrant pastel Portuguese mansions, tiled street signs, and traditional bakeries like Confeitaria 31 De Janeiro.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Fontainhas+Panaji+Goa"
+          },
+          {
+            "time": "05:30 PM - 07:30 PM",
+            "title": "Mandovi River Sunset Catamaran Cruise",
+            "location": "Panaji Jetty, Goa",
+            "type": "scenic",
+            "estimatedCost": 600,
+            "description": "Scenic boat cruise on the Mandovi river with Goan folk performances and live music.",
+            "isIndoor": false,
+            "imageUrl": "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=800&q=80",
+            "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Mandovi+River+Cruise+Panaji"
+          }
+        ]
+      }
+    ]
+  }
+]

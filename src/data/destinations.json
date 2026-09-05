@@ -1,0 +1,112 @@
+[
+  {
+    "id": "dest-1",
+    "name": "Taj Mahal",
+    "city": "Agra",
+    "state": "Uttar Pradesh",
+    "category": "Heritage & Monument",
+    "description": "UNESCO World Heritage white marble mausoleum built by Mughal emperor Shah Jahan.",
+    "lat": 27.1751,
+    "lng": 78.0421,
+    "imageUrl": "https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=800&q=80",
+    "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Taj+Mahal+Agra+India",
+    "timings": "Sunrise to Sunset (Closed Fridays)",
+    "entryFee": {
+      "indian": 50,
+      "foreigner": 1100,
+      "saarc": 540
+    },
+    "bestTimeToVisit": "October to March",
+    "idealDurationHours": 3,
+    "scamWarning": "Unauthorized guides outside western gate; refuse unmetered auto quotes over ₹150 from cantt station.",
+    "culturalEtiquette": "Strict shoe-covers required on marble platform; no tripods, large bags, or food allowed inside."
+  },
+  {
+    "id": "dest-2",
+    "name": "Amber Fort & Palace",
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "category": "Forts & Palaces",
+    "description": "Majestic hilltop fort featuring red sandstone, marble pavilions, and Sheesh Mahal mirror work.",
+    "lat": 26.9855,
+    "lng": 75.8513,
+    "imageUrl": "https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80",
+    "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Amber+Fort+Jaipur+Rajasthan",
+    "timings": "8:00 AM - 5:30 PM",
+    "entryFee": {
+      "indian": 100,
+      "foreigner": 550,
+      "saarc": 100
+    },
+    "bestTimeToVisit": "November to February",
+    "idealDurationHours": 3.5,
+    "scamWarning": "Aggressive gemstone and textile hawkers; stick to RTDC approved shops.",
+    "culturalEtiquette": "Modest clothing recommended; stay on marked paths during steep climb."
+  },
+  {
+    "id": "dest-3",
+    "name": "Hawa Mahal",
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "category": "Historical Landmark",
+    "description": "Five-story honeycomb pink sandstone palace with 953 windows designed for royal women to observe street festivals.",
+    "lat": 26.9239,
+    "lng": 75.8267,
+    "imageUrl": "https://images.unsplash.com/photo-1600100397608-f010f445b988?auto=format&fit=crop&w=800&q=80",
+    "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Hawa+Mahal+Jaipur+Rajasthan",
+    "timings": "9:00 AM - 5:00 PM",
+    "entryFee": {
+      "indian": 50,
+      "foreigner": 200,
+      "saarc": 50
+    },
+    "bestTimeToVisit": "Morning 9 AM - 11 AM",
+    "idealDurationHours": 1.5,
+    "scamWarning": "Rooftop cafes claiming exclusive views charge high mandatory order fees; check menu prices first.",
+    "culturalEtiquette": "Narrow stairways; watch your step and respect local photography rules."
+  },
+  {
+    "id": "dest-4",
+    "name": "Kashi Vishwanath Temple & Ghats",
+    "city": "Varanasi",
+    "state": "Uttar Pradesh",
+    "category": "Spiritual & Heritage",
+    "description": "One of the 12 sacred Jyotirlingas, located along the holy Ganges River with evening Ganga Aarti at Dashashwamedh Ghat.",
+    "lat": 25.3109,
+    "lng": 83.0107,
+    "imageUrl": "https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80",
+    "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Kashi+Vishwanath+Temple+Varanasi",
+    "timings": "3:00 AM - 11:00 PM",
+    "entryFee": {
+      "indian": 0,
+      "foreigner": 0,
+      "saarc": 0
+    },
+    "bestTimeToVisit": "October to March",
+    "idealDurationHours": 4,
+    "scamWarning": "Brahman 'VIP Darshan' touts claiming instant entry; fake cremation wood donation requests at Manikarnika.",
+    "culturalEtiquette": "Leave footwear, phones, and leather items at authorized temple lockers. Dress modestly. Never photograph funeral pyres."
+  },
+  {
+    "id": "dest-5",
+    "name": "Qutub Minar",
+    "city": "Delhi",
+    "state": "Delhi",
+    "category": "Heritage & Monument",
+    "description": "The 73-meter fluted red sandstone minaret built in 1193, surrounded by ancient ruins including the 4th-century rust-resistant Iron Pillar.",
+    "lat": 28.5244,
+    "lng": 77.1855,
+    "imageUrl": "https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=800&q=80",
+    "googleMapsUrl": "https://www.google.com/maps/dir/?api=1&destination=Qutub+Minar+Delhi",
+    "timings": "7:00 AM - 7:00 PM",
+    "entryFee": {
+      "indian": 40,
+      "foreigner": 600,
+      "saarc": 40
+    },
+    "bestTimeToVisit": "October to March",
+    "idealDurationHours": 2,
+    "scamWarning": "Touts offering illegal entry skips or fake parking fees outside.",
+    "culturalEtiquette": "Keep grounds litter-free; do not climb on historical stone carvings."
+  }
+]
