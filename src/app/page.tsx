@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { TRIP_KEYS } from "@/hooks/useTripQueries";
 import {
@@ -207,30 +208,106 @@ export default function HomePage() {
   );
 
   return (
-    <div className="flex flex-col gap-20 pb-24 overflow-hidden relative">
-      {/* Dynamic Background Pattern */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:32px_32px] pointer-events-none" />
+    <div className="flex flex-col gap-24 pb-12 overflow-hidden relative min-h-screen bg-[#fafbfc] dark:bg-[#070a10] text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      {/* 🌄 Scenic Panoramic Travel Landscape & Wanderlust Atmosphere Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none">
+        {/* Cinematic Travel Panorama Image with Slow Ken-Burns Wanderlust Drift */}
+        <div className="absolute inset-0 overflow-hidden">
+          <img
+            src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2400&q=80"
+            alt="Scenic Travel Mountains Horizon"
+            className="w-full h-full object-cover object-center animate-ken-burns opacity-[0.14] dark:opacity-[0.11] filter saturate-[1.25] contrast-[1.05]"
+          />
+          {/* Elegant atmospheric gradient veil keeping all text 100% crisp & readable */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#fafbfc]/80 via-[#fafbfc]/90 to-[#fafbfc] dark:from-[#070a10]/80 dark:via-[#070a10]/92 dark:to-[#070a10]" />
+        </div>
+
+        {/* Wanderlust Golden Hour & Sunset Atmosphere (Clean radial gradients with zero CSS blur filter to ensure 100% crisp font rendering) */}
+        <div
+          className="absolute -top-24 left-1/2 -translate-x-1/2 w-[850px] h-[520px] rounded-full pointer-events-none opacity-40 dark:opacity-25"
+          style={{
+            background: "radial-gradient(ellipse at center, rgba(249,115,22,0.20) 0%, rgba(251,191,36,0.10) 45%, transparent 70%)"
+          }}
+        />
+        <div
+          className="absolute top-1/4 -right-20 w-[650px] h-[520px] rounded-full pointer-events-none opacity-35 dark:opacity-20"
+          style={{
+            background: "radial-gradient(ellipse at center, rgba(244,63,94,0.16) 0%, rgba(249,115,22,0.08) 45%, transparent 70%)"
+          }}
+        />
+        <div
+          className="absolute top-1/3 -left-24 w-[650px] h-[550px] rounded-full pointer-events-none opacity-35 dark:opacity-20"
+          style={{
+            background: "radial-gradient(ellipse at center, rgba(245,158,11,0.16) 0%, rgba(249,115,22,0.08) 45%, transparent 70%)"
+          }}
+        />
+
+        {/* Organic Topographic Map Elevation Contours (Hiking & Expedition Trail Lines) */}
+        <svg
+          className="absolute inset-0 w-full h-full opacity-[0.18] dark:opacity-[0.14] stroke-orange-600/30 dark:stroke-orange-400/20 animate-topo-wave pointer-events-none"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 1440 900"
+          fill="none"
+          preserveAspectRatio="none"
+        >
+          <path d="M-100,160 C300,300 600,-40 1000,180 C1250,300 1400,120 1600,200" strokeWidth="1.2" strokeDasharray="6 8" />
+          <path d="M-100,280 C200,420 500,140 900,310 C1200,430 1350,260 1600,330" strokeWidth="1" />
+          <path d="M-100,420 C350,560 650,290 1050,450 C1300,550 1450,410 1600,480" strokeWidth="1.5" strokeDasharray="4 6" />
+          <path d="M-100,560 C250,710 580,480 980,620 C1250,720 1420,580 1600,640" strokeWidth="1" />
+          <path d="M-100,720 C380,840 720,630 1100,760 C1320,830 1480,720 1600,770" strokeWidth="1.2" strokeDasharray="8 10" />
+        </svg>
+
+        {/* Floating Travel Destination Beacon Tags (Visible on Desktop) */}
+        <div className="absolute top-28 left-[4%] hidden xl:flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-orange-200/80 dark:border-slate-800 shadow-md text-xs font-medium text-slate-800 dark:text-slate-200 animate-float-slow">
+          <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+          <span>📍 Pangong Tso, Ladakh</span>
+          <span className="text-[10px] font-mono text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/60 px-1.5 py-0.5 rounded font-bold">4,250m</span>
+        </div>
+
+        <div className="absolute top-36 right-[5%] hidden xl:flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-orange-200/80 dark:border-slate-800 shadow-md text-xs font-medium text-slate-800 dark:text-slate-200 animate-float-slow-reverse">
+          <span className="text-amber-500">🏰</span>
+          <span>Amber Palace, Jaipur</span>
+          <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded font-bold">Day 1</span>
+        </div>
+
+        <div className="absolute top-[480px] left-[3%] hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/75 dark:bg-slate-900/75 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] text-slate-700 dark:text-slate-300 animate-float-slow">
+          <span>🌴 Palolem Sunset, Goa</span>
+          <span className="text-orange-500 text-[10px] font-bold">★ 4.9</span>
+        </div>
+
+        <div className="absolute top-[520px] right-[4%] hidden 2xl:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/75 dark:bg-slate-900/75 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs text-[11px] text-slate-700 dark:text-slate-300 animate-float-slow-reverse">
+          <span>🛶 Shikara Row, Dal Lake</span>
+          <span className="text-teal-600 dark:text-teal-400 text-[10px] font-bold">Verified</span>
+        </div>
+      </div>
 
       {/* 1. HERO & DIRECT SOCIAL URL EXTRACTOR */}
       <section className="relative pt-12 sm:pt-24 px-4 sm:px-6">
-        {/* Animated Glow Orbs */}
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-teal-500/15 rounded-full blur-[140px] pointer-events-none animate-float-slow" />
-        <div className="absolute top-28 right-10 w-[450px] h-[300px] bg-orange-500/15 rounded-full blur-[120px] pointer-events-none animate-float-slow-reverse" />
-        <div className="absolute top-40 left-10 w-[350px] h-[250px] bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none animate-float-slow" />
-
         <div className="container mx-auto max-w-5xl space-y-9 relative z-10 text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-gradient-to-r from-teal-500/10 via-emerald-500/10 to-teal-500/10 px-4 py-2 text-xs font-semibold text-teal-700 dark:text-teal-300 shadow-sm backdrop-blur-md hover:border-teal-500/50 transition-all duration-300 group cursor-default">
-            <Sparkles size={14} className="text-teal-600 dark:text-teal-400 group-hover:rotate-12 transition-transform duration-300" />
+          {/* Animated Sparkle Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 rounded-full border border-orange-200/80 bg-orange-50/80 px-4 py-1.5 text-xs font-semibold text-orange-800 dark:border-orange-500/30 dark:bg-orange-950/30 dark:text-orange-300 shadow-xs backdrop-blur-md hover:border-orange-300 transition-all duration-300 cursor-default"
+          >
+            <Sparkles size={14} className="text-orange-600 dark:text-orange-400" />
             <span className="tracking-wide">AI-Powered Social Travel Intelligence</span>
-            <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-pulse" />
-          </div>
+            <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-ping" />
+          </motion.div>
 
-          {/* Main Title */}
-          <div className="space-y-4">
-            <h1 className="text-5xl sm:text-7xl lg:text-8xl font-normal tracking-tight text-slate-900 dark:text-white font-heading leading-[1.05]">
-              Stop Saving Reels. <br />
-              <span className="italic bg-gradient-to-r from-teal-600 via-teal-500 to-orange-500 bg-clip-text text-transparent drop-shadow-xs">
+          {/* High-Contrast Headline with Animated Changing Gradient Text */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="space-y-4"
+          >
+            <h1 className="text-5xl sm:text-7xl lg:text-8xl tracking-tight leading-[1.05]">
+              <span className="block font-heading font-bold text-slate-900 dark:text-white drop-shadow-xs">
+                Stop Saving Reels.
+              </span>
+              <span className="block font-heading italic font-bold animate-gradient-text bg-gradient-to-r from-orange-600 via-rose-500 via-amber-500 to-orange-600 bg-clip-text text-transparent drop-shadow-xs mt-1">
                 Start Traveling India & Beyond.
               </span>
             </h1>
@@ -240,17 +317,22 @@ export default function HomePage() {
               Ghoomo extracts verified places, pins them on interactive maps,
               and auto-clusters smart day-wise itineraries in seconds.
             </p>
-          </div>
+          </motion.div>
 
           {/* DIRECT INLINE SOCIAL URL EXTRACTOR CARD */}
-          <div className="max-w-3xl mx-auto rounded-2xl border border-teal-500/20 bg-white/90 p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900/90 backdrop-blur-xl ring-1 ring-slate-950/5 text-left transition-all duration-300 hover:border-teal-500/40 hover:shadow-teal-500/10">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="max-w-3xl mx-auto rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 p-4 sm:p-6 shadow-[0_20px_50px_-12px_rgba(15,23,42,0.08)] dark:shadow-[0_20px_50px_-12px_rgba(0,0,0,0.6)] backdrop-blur-xl text-left transition-all duration-300 hover:border-orange-500/30 hover:shadow-[0_25px_60px_-15px_rgba(249,115,22,0.12)]"
+          >
             {!isLoading && candidateDestinations.length === 0 ? (
               <div className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-2.5">
                   <div className="relative flex-1 group">
                     <LinkIcon
                       size={18}
-                      className="absolute left-4 top-4 text-slate-400 group-focus-within:text-teal-600 transition-colors"
+                      className="absolute left-4 top-3.5 text-slate-400 group-focus-within:text-orange-500 transition-colors"
                     />
                     <input
                       type="url"
@@ -266,82 +348,88 @@ export default function HomePage() {
                         }
                       }}
                       placeholder="Paste Reel, TikTok, YouTube Short, or travel blog URL..."
-                      className="w-full pl-11 pr-4 py-3.5 bg-slate-50/80 border border-slate-200/80 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/50 focus:border-teal-500 dark:bg-slate-950/80 dark:border-slate-800 dark:text-white transition-all shadow-inner"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 dark:bg-slate-950/80 dark:border-slate-800 dark:text-white transition-all shadow-xs"
                     />
                   </div>
 
                   <Button
                     onClick={() => handleStartDirectExtraction()}
                     disabled={!pastedUrl.trim()}
-                    className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm px-7 py-3.5 rounded-xl enabled:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2.5 transition-all duration-200 active:scale-[0.98] shrink-0 group"
+                    className="bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm px-6 py-3 rounded-xl enabled:cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.98] shrink-0 group"
                   >
                     <span>Smart Trip Plan</span>
-                    <ArrowRight size={17} className="group-hover:translate-x-1 transition-transform duration-200" />
+                    <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-200" />
                   </Button>
                 </div>
 
                 {error && (
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/50 dark:border-rose-900 dark:text-rose-300 text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                  <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/50 dark:border-rose-900 dark:text-rose-300 text-xs"
+                  >
                     <AlertCircle size={16} className="shrink-0 text-rose-500" />
                     <span>{error}</span>
-                  </div>
+                  </motion.div>
                 )}
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-400">
                   <div className="flex items-center gap-1.5">
-                    <Sparkles size={13} className="text-teal-600 shrink-0" />
-                    <span>Multimodal AI: Speech, OCR, Visuals & Landmarks</span>
+                    <Sparkles size={13} className="text-orange-500 shrink-0" />
+                    <span className="font-medium text-slate-700 dark:text-slate-300">Multimodal AI: Speech, OCR, Visuals & Landmarks</span>
                   </div>
-                  <div className="flex items-center gap-2 font-medium text-slate-600 dark:text-slate-300">
-                    <span className="flex items-center gap-1">
+                  <div className="flex items-center gap-2 font-medium">
+                    <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
                       <Zap size={12} className="text-orange-500" /> Fast Execution
                     </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <ShieldCheck size={12} className="text-teal-600" /> 100% Verified
+                    <span className="text-slate-300 dark:text-slate-700">•</span>
+                    <span className="flex items-center gap-1 text-slate-600 dark:text-slate-400">
+                      <ShieldCheck size={12} className="text-emerald-500" /> 100% Verified
                     </span>
                   </div>
                 </div>
 
                 {/* SAMPLE REELS QUICK DEMO SELECTOR */}
-                <div className="pt-3 space-y-2 border-t border-slate-100 dark:border-slate-800/60">
+                <div className="pt-2 space-y-2 border-t border-slate-100 dark:border-slate-800/80">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                       <Play size={12} className="text-orange-500 fill-orange-500" />
                       Try with a sample social reel:
                     </span>
-                    <span className="text-[11px] text-slate-400 font-mono">Click to test instantly</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">1-click test</span>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                     {SAMPLE_REELS_CATALOG.slice(0, 5).map((reel) => (
-                      <button
+                      <motion.button
                         key={reel.id}
                         type="button"
+                        whileHover={{ y: -2, scale: 1.01 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => handleStartDirectExtraction(reel.url)}
-                        className="group flex flex-col justify-between p-2 rounded-lg border border-slate-200/80 bg-slate-50/70 hover:bg-teal-50/80 hover:border-teal-500/50 dark:bg-slate-950/50 dark:border-slate-800 dark:hover:bg-slate-800/80 text-left transition-all duration-200 cursor-pointer active:scale-[0.97]"
+                        className="group flex flex-col justify-between p-2 rounded-xl border border-slate-200/80 bg-slate-50/70 hover:bg-orange-50/60 hover:border-orange-300 dark:bg-slate-950/60 dark:border-slate-800 dark:hover:bg-slate-800/80 text-left transition-all duration-150 cursor-pointer shadow-2xs"
                       >
-                        <div className="relative h-14 w-full rounded-md overflow-hidden mb-1.5 bg-slate-200 dark:bg-slate-800">
+                        <div className="relative h-14 w-full rounded-lg overflow-hidden mb-1.5 bg-slate-200 dark:bg-slate-800">
                           <img
                             src={reel.thumbnailUrl}
                             alt={reel.title}
                             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                           <div className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                            <div className="h-6 w-6 rounded-full bg-white/90 text-teal-700 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                              <Play size={11} className="fill-teal-700 ml-0.5" />
+                            <div className="h-6 w-6 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                              <Play size={11} className="fill-white ml-0.5" />
                             </div>
                           </div>
                         </div>
                         <div>
-                          <span className="text-[11px] font-semibold text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-teal-600 dark:group-hover:text-teal-400">
+                          <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 line-clamp-1 group-hover:text-orange-600 dark:group-hover:text-orange-400">
                             {reel.title.split(" ")[0]} {reel.title.split(" ")[1]}
                           </span>
-                          <span className="text-[9px] font-mono text-slate-400 block truncate">
+                          <span className="text-[9px] font-mono text-slate-500 dark:text-slate-400 block truncate">
                             {reel.category}
                           </span>
                         </div>
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>
@@ -354,37 +442,39 @@ export default function HomePage() {
                     <Sparkles size={13} />
                     Multi-Destination Listicle Detected
                   </span>
-                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-heading">
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-white font-heading">
                     Which destination would you like to build an itinerary for?
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     This video recommends multiple locations. Select your target region to generate a day-wise itinerary:
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {candidateDestinations.map((cand) => (
-                    <button
+                    <motion.button
                       key={cand.name}
                       type="button"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
                       onClick={() => handleConfirmDestination(cand.name)}
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-teal-500 bg-slate-50/80 hover:bg-teal-50/60 dark:bg-slate-950 dark:border-slate-800 dark:hover:border-teal-500/50 transition-all group cursor-pointer active:scale-[0.98]"
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 hover:border-orange-500/50 bg-slate-50/70 hover:bg-orange-50/60 dark:bg-slate-950 dark:border-slate-800 dark:hover:border-orange-500/50 transition-all group cursor-pointer"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-9 w-9 rounded-lg bg-teal-500/10 text-teal-600 flex items-center justify-center shrink-0 group-hover:bg-teal-500/20 transition-colors">
+                        <div className="h-9 w-9 rounded-lg bg-orange-500/10 text-orange-600 flex items-center justify-center shrink-0 group-hover:bg-orange-500 group-hover:text-white transition-colors">
                           <MapPin size={18} />
                         </div>
                         <div className="text-left">
-                          <span className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                          <span className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                             {cand.name}
                           </span>
                           {cand.country && (
-                            <p className="text-[11px] text-slate-500">{cand.country}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400">{cand.country}</p>
                           )}
                         </div>
                       </div>
-                      <ArrowRight size={16} className="text-slate-400 group-hover:text-teal-600 group-hover:translate-x-1 transition-all" />
-                    </button>
+                      <ArrowRight size={16} className="text-orange-400 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
+                    </motion.button>
                   ))}
                 </div>
 
@@ -392,7 +482,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-medium px-3.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300 font-medium px-3.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -403,13 +493,13 @@ export default function HomePage() {
               <div className="p-4 space-y-5 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500/20 to-teal-500/20 text-orange-600 border border-orange-500/30 flex items-center justify-center shrink-0 animate-pulse shadow-xs">
+                    <div className="h-10 w-10 rounded-xl bg-orange-500/10 text-orange-600 border border-orange-500/30 flex items-center justify-center shrink-0 animate-pulse shadow-xs">
                       <Video size={20} />
                     </div>
                     <div>
-                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                         <span>Analyzing Travel Video with Multimodal AI</span>
-                        <Loader2 size={14} className="animate-spin text-orange-500" />
+                        <Loader2 size={14} className="animate-spin text-orange-600" />
                       </h3>
                       <p className="text-xs font-mono text-slate-500 dark:text-slate-400 truncate max-w-sm sm:max-w-md">
                         {pastedUrl}
@@ -430,18 +520,18 @@ export default function HomePage() {
                 {/* Progress Bar */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-teal-600 dark:text-teal-400 flex items-center gap-1.5">
-                      <Sparkles size={13} className="animate-spin text-orange-500" />
+                    <span className="font-semibold text-orange-600 dark:text-orange-400 flex items-center gap-1.5">
+                      <Sparkles size={13} className="animate-spin text-orange-600" />
                       {currentStageMessage || "Extracting landmarks & scheduling..."}
                     </span>
-                    <span className="font-mono text-xs font-bold text-teal-600 dark:text-teal-400">
+                    <span className="font-mono text-xs font-bold text-orange-600 dark:text-orange-400">
                       {currentProgressPercent}%
                     </span>
                   </div>
 
-                  <div className="h-2.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden p-0.5 border border-slate-200/50 dark:border-slate-800">
+                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-orange-500 via-teal-500 to-emerald-500 transition-all duration-500 rounded-full"
+                      className="h-full bg-gradient-to-r from-orange-500 via-amber-500 to-orange-600 transition-all duration-500 rounded-full shadow-xs"
                       style={{ width: `${currentProgressPercent}%` }}
                     />
                   </div>
@@ -457,16 +547,16 @@ export default function HomePage() {
                         key={st.key}
                         className={`flex items-center gap-2 p-2.5 rounded-xl text-[11px] font-medium border transition-all ${
                           isDone
-                            ? "bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-900 dark:text-teal-300"
+                            ? "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300"
                             : isCurrent
-                            ? "bg-orange-50 border-orange-300 text-orange-700 dark:bg-orange-950/40 dark:border-orange-900 dark:text-orange-300 animate-pulse shadow-sm"
-                            : "bg-slate-50 border-slate-100 text-slate-400 dark:bg-slate-950/40 dark:border-slate-800"
+                            ? "bg-orange-50 border-orange-300 text-orange-900 dark:bg-orange-950/50 dark:border-orange-700 dark:text-orange-200 animate-pulse shadow-2xs"
+                            : "bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-950/40 dark:border-slate-800"
                         }`}
                       >
                         {isDone ? (
-                          <CheckCircle2 size={13} className="text-teal-600 shrink-0" />
+                          <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
                         ) : isCurrent ? (
-                          <Loader2 size={13} className="animate-spin text-orange-500 shrink-0" />
+                          <Loader2 size={13} className="animate-spin text-orange-600 shrink-0" />
                         ) : (
                           <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0" />
                         )}
@@ -477,7 +567,7 @@ export default function HomePage() {
                 </div>
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
       </section>
 
@@ -493,25 +583,30 @@ export default function HomePage() {
             ].map((stat, i) => {
               const Icon = stat.icon;
               return (
-                <div
+                <motion.div
                   key={i}
-                  className="rounded-2xl border border-slate-200/80 bg-white/70 p-5 sm:p-6 backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/60 shadow-sm hover:shadow-md hover:border-teal-500/30 transition-all duration-300 group"
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1, duration: 0.4 }}
+                  whileHover={{ y: -4 }}
+                  className="rounded-2xl border border-slate-200/80 bg-white/90 p-5 sm:p-6 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/70 shadow-xs hover:shadow-lg hover:border-orange-500/30 transition-all duration-300 group"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-2xl sm:text-3xl font-extrabold font-mono text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                    <span className="text-2xl sm:text-3xl font-extrabold font-mono text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                       {stat.value}
                     </span>
-                    <div className="h-9 w-9 rounded-xl bg-teal-50 dark:bg-slate-800 text-teal-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <div className="h-9 w-9 rounded-xl bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                       <Icon size={18} />
                     </div>
                   </div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 mb-1">
                     {stat.label}
                   </h4>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
                     {stat.desc}
                   </p>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -519,16 +614,16 @@ export default function HomePage() {
       </section>
 
       {/* 3. HOW GHOOMO WORKS (4 STEPS) */}
-      <section className="px-4 sm:px-6">
+      <section className="px-4 sm:px-6 relative z-10">
         <div className="container mx-auto max-w-6xl space-y-12">
           <div className="text-center space-y-3 max-w-2xl mx-auto">
-            <span className="inline-block text-xs font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-3 py-1 rounded-full border border-teal-200 dark:border-teal-800">
+            <span className="inline-block text-xs font-semibold uppercase tracking-widest text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/60 px-3.5 py-1.5 rounded-full border border-orange-200/80 dark:border-orange-800/80">
               The Core Problem & Solution
             </span>
             <h2 className="text-3xl sm:text-5xl font-normal text-slate-900 dark:text-white font-heading">
               From Scattered Saved Links to a Master Day-Wise Plan
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
               Transform unstructured travel videos into clean, actionable day-by-day itineraries.
             </p>
           </div>
@@ -540,53 +635,54 @@ export default function HomePage() {
                 title: "Add from Reel, Short, or Blog",
                 desc: "Drop in any Instagram Reel, TikTok, YouTube Short, or travel blog URL. Zero manual entry.",
                 icon: LinkIcon,
-                color: "text-orange-500 bg-orange-50 dark:bg-slate-800 border-orange-200 dark:border-slate-700",
               },
               {
                 step: "02",
                 title: "Extract Verified Places",
                 desc: "Multimodal AI extracts coordinates, audio transcript mentions, and landmark visual evidence.",
                 icon: MapPin,
-                color: "text-teal-600 bg-teal-50 dark:bg-slate-800 border-teal-200 dark:border-slate-700",
               },
               {
                 step: "03",
                 title: "Geo-Clustered Schedule",
                 desc: "Nearest-neighbor engine clusters stops into optimized daily routes to save travel time.",
                 icon: Compass,
-                color: "text-emerald-600 bg-emerald-50 dark:bg-slate-800 border-emerald-200 dark:border-slate-700",
               },
               {
                 step: "04",
                 title: "Plan & Split with Friends",
                 desc: "Invite trip members via shareable link to vote on places, track expenses, and check packing lists.",
                 icon: Users,
-                color: "text-cyan-600 bg-cyan-50 dark:bg-slate-800 border-cyan-200 dark:border-slate-700",
               },
-            ].map((card) => {
+            ].map((card, idx) => {
               const Icon = card.icon;
               return (
-                <div
+                <motion.div
                   key={card.step}
-                  className="rounded-2xl border border-slate-200/80 bg-white/80 p-6 space-y-4 relative hover:border-teal-500/50 hover:-translate-y-1.5 hover:shadow-xl hover:shadow-teal-500/10 transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/60 backdrop-blur-md shadow-xs flex flex-col justify-between group"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.1, duration: 0.4 }}
+                  whileHover={{ y: -5 }}
+                  className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 space-y-4 relative hover:shadow-xl hover:border-orange-500/40 transition-all duration-300 dark:border-slate-800 dark:bg-slate-900/70 backdrop-blur-md shadow-xs flex flex-col justify-between group"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-extrabold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md">
+                      <span className="text-xs font-mono font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/60 px-2.5 py-1 rounded-md border border-orange-200/70 dark:border-orange-900">
                         STEP {card.step}
                       </span>
-                      <div className={`h-11 w-11 rounded-xl flex items-center justify-center border ${card.color} group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon size={20} />
+                      <div className="h-10 w-10 rounded-xl flex items-center justify-center border border-slate-200/80 dark:border-slate-800 bg-slate-50 text-orange-600 dark:bg-slate-950 dark:text-orange-400 group-hover:bg-orange-500 group-hover:text-white transition-colors duration-200">
+                        <Icon size={18} />
                       </div>
                     </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                       {card.title}
                     </h3>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       {card.desc}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -594,11 +690,11 @@ export default function HomePage() {
       </section>
 
       {/* 4. REAL VOICE AI & MULTIMODAL ARCHITECTURE */}
-      <section className="px-4 sm:px-6">
+      <section className="px-4 sm:px-6 relative z-10">
         <div className="container mx-auto max-w-6xl space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
             <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+              <span className="inline-block text-xs font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">
                 100% Real Speech & Visual AI Extraction
               </span>
               <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 dark:text-white font-heading">
@@ -609,7 +705,7 @@ export default function HomePage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs text-slate-700 hover:text-slate-900 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer active:scale-95 transition-all"
+                className="text-xs text-slate-700 hover:text-slate-900 dark:text-slate-300 border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer active:scale-95 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 <span>View All Workspaces</span>
                 <ArrowRight size={14} className="ml-1.5" />
@@ -646,27 +742,32 @@ export default function HomePage() {
             ].map((feature, idx) => {
               const Icon = feature.icon;
               return (
-                <div
+                <motion.div
                   key={idx}
-                  className="group rounded-2xl border border-slate-200/80 bg-white/80 p-5 space-y-4 hover:border-teal-500/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 shadow-xs flex flex-col justify-between dark:border-slate-800 dark:bg-slate-900/60 backdrop-blur-md"
+                  initial={{ opacity: 0, y: 15 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.08, duration: 0.4 }}
+                  whileHover={{ y: -4 }}
+                  className="group rounded-2xl border border-slate-200/80 bg-white/90 p-5 space-y-4 hover:shadow-lg hover:border-orange-500/30 transition-all duration-300 shadow-xs flex flex-col justify-between dark:border-slate-800 dark:bg-slate-900/70 backdrop-blur-md"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="h-10 w-10 rounded-xl bg-teal-50 dark:bg-slate-800 text-teal-600 flex items-center justify-center group-hover:bg-teal-500 group-hover:text-white transition-colors duration-300">
+                      <div className="h-10 w-10 rounded-xl bg-orange-50 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-colors duration-200">
                         <Icon size={19} />
                       </div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800">
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
                         {feature.badge}
                       </span>
                     </div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
                       {feature.title}
                     </h4>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                       {feature.desc}
                     </p>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>
@@ -674,41 +775,59 @@ export default function HomePage() {
       </section>
 
       {/* 5. CALL TO ACTION */}
-      <section className="px-4 sm:px-6">
-        <div className="container mx-auto max-w-5xl rounded-3xl border border-teal-500/30 bg-gradient-to-br from-teal-950 via-slate-950 to-slate-900 p-8 sm:p-16 text-center space-y-7 relative overflow-hidden shadow-2xl text-white">
-          {/* Ambient Glow Circles */}
-          <div className="absolute -top-20 -left-20 w-80 h-80 bg-teal-500/20 rounded-full blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-20 -right-20 w-80 h-80 bg-orange-500/20 rounded-full blur-[100px] pointer-events-none" />
+      <section className="px-4 sm:px-6 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          className="w-full max-w-5xl mx-auto rounded-3xl border border-orange-200/90 dark:border-slate-800/90 bg-gradient-to-br from-orange-50/90 via-amber-50/40 to-white dark:from-slate-950 dark:via-slate-900 dark:to-[#0c121e] px-6 py-14 sm:px-12 sm:py-20 text-center space-y-8 relative overflow-hidden shadow-[0_20px_50px_-10px_rgba(249,115,22,0.10)] dark:shadow-2xl transition-colors duration-300"
+        >
+          {/* Subtle Ambient Glow Circles with clean radial gradients */}
+          <div
+            className="absolute -top-24 -left-24 w-80 h-80 rounded-full pointer-events-none opacity-40 dark:opacity-20"
+            style={{ background: "radial-gradient(circle, rgba(249,115,22,0.25) 0%, transparent 70%)" }}
+          />
+          <div
+            className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full pointer-events-none opacity-40 dark:opacity-20"
+            style={{ background: "radial-gradient(circle, rgba(245,158,11,0.20) 0%, transparent 70%)" }}
+          />
 
-          <div className="space-y-3 max-w-2xl mx-auto relative z-10">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-teal-300 text-xs font-semibold backdrop-blur-md">
-              <Sparkles size={13} /> Ready in 30 Seconds
+          {/* Badge cleanly inside card */}
+          <div className="relative z-10 flex justify-center">
+            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-orange-100/90 text-orange-800 border border-orange-200 text-xs font-semibold backdrop-blur-md dark:bg-orange-500/20 dark:text-orange-300 dark:border-orange-500/30 shadow-2xs">
+              <Sparkles size={13} className="text-orange-600 dark:text-orange-400" /> Ready in 30 Seconds
             </span>
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-normal text-white font-heading leading-tight">
+          </div>
+
+          {/* Headline & Description */}
+          <div className="space-y-3 max-w-2xl mx-auto relative z-10">
+            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-normal text-slate-900 dark:text-white font-heading leading-tight">
               Ready to Turn Social Links into Real Trips?
             </h2>
-            <p className="text-xs sm:text-base text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-xl mx-auto">
               Create your first trip workspace in seconds. Plan with friends, track shared budget expenses, and explore interactive maps.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 relative z-10 max-w-md mx-auto">
-            <Link href="/trips/new" className="cursor-pointer w-full sm:w-auto">
-              <Button className="w-full sm:w-auto bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold text-sm px-7 py-3.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/25 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
+          {/* Action Buttons cleanly inside card with generous padding */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5 relative z-10 mx-auto w-full pt-3">
+            <Link href="/trips/new" className="cursor-pointer w-full sm:w-auto shrink-0">
+              <Button className="w-full sm:w-auto bg-gradient-to-r from-orange-500 via-orange-600 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold text-sm px-7 py-3.5 rounded-xl cursor-pointer shadow-lg shadow-orange-500/25 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2">
                 <span>Create Free Trip</span>
                 <ArrowRight size={16} />
               </Button>
             </Link>
-            <Link href="/auth" className="cursor-pointer w-full sm:w-auto">
+            <Link href="/auth" className="cursor-pointer w-full sm:w-auto shrink-0">
               <Button
                 variant="outline"
-                className="w-full sm:w-auto border-white/20 bg-white/10 text-white hover:bg-white/20 text-sm px-6 py-3.5 rounded-xl cursor-pointer active:scale-[0.98] transition-all duration-200 backdrop-blur-md"
+                className="w-full sm:w-auto border-slate-300 bg-white hover:bg-slate-50 text-slate-800 shadow-xs hover:border-slate-400 dark:border-slate-700 dark:bg-slate-800/80 dark:text-white dark:hover:bg-slate-800 text-sm px-6 py-3.5 rounded-xl cursor-pointer active:scale-[0.98] transition-all duration-200 backdrop-blur-md"
               >
                 Switch Demo Persona
               </Button>
             </Link>
           </div>
-        </div>
+        </motion.div>
       </section>
     </div>
   );
