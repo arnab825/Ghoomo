@@ -98,7 +98,7 @@ export function TripWorkspaceSkeleton() {
                   Loading Interactive Map & Route Clusters...
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  Connecting coordinates with CartoDB Matter tiles
+                  Connecting coordinates with OpenStreetMap tiles
                 </div>
               </div>
             </div>

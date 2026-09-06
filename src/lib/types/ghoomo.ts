@@ -17,6 +17,7 @@ export interface TripSource {
   title: string;
   author: string;
   thumbnailUrl: string;
+  rawTranscript?: string;
   createdAt: string;
 }
 
@@ -214,3 +215,39 @@ export interface CreditTransaction {
   createdAt: string;
 }
 
+export type AITier = 'tier1_gemini' | 'tier2_groq' | 'tier2_huggingface' | 'tier3_rule_based';
+
+export interface ValidationSummary {
+  warnings: string[];
+  maxPlacesPerDay: number;
+  flaggedForReview: boolean;
+  consecutiveTravelAlerts: string[];
+  totalDistanceKm: number;
+  isGeographicallyGrouped: boolean;
+}
+
+export interface AIResponse<T> {
+  success: boolean;
+  data: T;
+  tierUsed: AITier;
+  durationMs: number;
+  validation: ValidationSummary;
+  error?: string;
+  message: string;
+}
+
+export interface GenerateItineraryInput {
+  tripId: string;
+  userId?: string;
+  destination: string;
+  durationDays: number;
+  places: Place[];
+  travelStyle?: string;
+  budgetTotal?: number;
+}
+
+export interface ExtractLocationsInput {
+  url: string;
+  userId?: string;
+  tripId?: string;
+}

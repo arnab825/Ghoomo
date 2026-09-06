@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { TripPoll, PollVote, PollType } from '@/lib/types/ghoomo';
 import { pollService } from '@/lib/services/pollService';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -327,9 +328,16 @@ export default function LivePollWidget({
       )}
 
       {/* Create Poll Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-2xl space-y-4 dark:border-slate-800 dark:bg-slate-950">
+      {isModalOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          style={{ zIndex: 99999 }}
+          onClick={() => setIsModalOpen(false)}
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 shadow-2xl space-y-4 dark:border-slate-800 dark:bg-slate-950"
+          >
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Vote size={18} className="text-teal-600" />
@@ -387,7 +395,8 @@ export default function LivePollWidget({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useGhoomoStore } from '@/stores/useGhoomoStore';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useAddPlaceMutation } from '@/hooks/useTripQueries';
 import { Button } from '@/components/ui/button';
 import { X, MapPin, Plus, Sparkles } from 'lucide-react';
 
@@ -22,7 +23,7 @@ const POPULAR_PRESETS: Record<string, { city: string; state: string; lat: number
 };
 
 export default function AddPlaceModal({ tripId, isOpen, onClose, defaultCity = 'Jaipur' }: AddPlaceModalProps) {
-  const { addPlace } = useGhoomoStore();
+  const addPlaceMutation = useAddPlaceMutation(tripId);
   const [name, setName] = useState('');
   const [city, setCity] = useState(defaultCity.split(',')[0].trim());
   const [stateName, setStateName] = useState('India');
@@ -30,8 +31,14 @@ export default function AddPlaceModal({ tripId, isOpen, onClose, defaultCity = '
   const [lng, setLng] = useState('75.7873');
   const [category, setCategory] = useState('attraction');
   const [notes, setNotes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const handleApplyPreset = (presetName: string) => {
     const p = POPULAR_PRESETS[presetName];
@@ -44,29 +51,42 @@ export default function AddPlaceModal({ tripId, isOpen, onClose, defaultCity = '
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !city) return;
 
-    addPlace(tripId, {
-      name,
-      city,
-      state: stateName,
-      lat: parseFloat(lat) || 26.9124,
-      lng: parseFloat(lng) || 75.7873,
-      category,
-      confidence: 1.0, // Manual additions have 100% confidence
-      isManual: true,
-      imageUrl: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80',
-      notes: notes || 'Manually added to itinerary radar',
-    });
-
-    onClose();
+    setIsSubmitting(true);
+    try {
+      await addPlaceMutation.mutateAsync({
+        name,
+        city,
+        state: stateName,
+        lat: parseFloat(lat) || 26.9124,
+        lng: parseFloat(lng) || 75.7873,
+        category,
+        confidence: 1.0, // Manual additions have 100% confidence
+        isManual: true,
+        imageUrl: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80',
+        notes: notes || 'Manually added to itinerary radar',
+      });
+      onClose();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 space-y-5 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+  return createPortal(
+    <div
+      style={{ zIndex: 99999 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 space-y-5 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -101,7 +121,7 @@ export default function AddPlaceModal({ tripId, isOpen, onClose, defaultCity = '
                 key={pName}
                 type="button"
                 onClick={() => handleApplyPreset(pName)}
-                className="px-2.5 py-1 text-[11px] rounded-md border border-slate-200 bg-slate-50 text-slate-700 hover:border-teal-600 hover:text-teal-700 transition-all duration-100 cursor-pointer active:scale-[0.98] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-teal-500 dark:hover:text-white"
+                className="text-[10px] bg-slate-100 hover:bg-teal-50 hover:text-teal-700 text-slate-600 px-2 py-1 rounded-sm border border-slate-200 transition-colors cursor-pointer dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-teal-950/40 dark:hover:text-teal-300"
               >
                 {pName}
               </button>
@@ -109,81 +129,84 @@ export default function AddPlaceModal({ tripId, isOpen, onClose, defaultCity = '
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Place Name</label>
+        {/* Form Inputs */}
+        <form onSubmit={handleSubmit} className="space-y-3 pt-2">
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Place Name *</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Hidden Rooftop Cafe or Secret Waterfall"
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
+              placeholder="e.g. Nahargarh Fort Sunset Point"
+              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">City</label>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">City *</label>
               <input
                 type="text"
                 required
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">State</label>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">State / Region</label>
               <input
                 type="text"
                 value={stateName}
                 onChange={(e) => setStateName(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Latitude</label>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Latitude *</label>
               <input
-                type="text"
+                type="number"
+                step="any"
+                required
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Longitude</label>
+            <div>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Longitude *</label>
               <input
-                type="text"
+                type="number"
+                step="any"
+                required
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div>
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Category</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 enabled:cursor-pointer disabled:cursor-not-allowed dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:focus:ring-teal-500"
+              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-md text-xs text-slate-700 focus:outline-none enabled:cursor-pointer disabled:cursor-not-allowed dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200"
             >
-              <option value="heritage">Heritage & Monument</option>
-              <option value="viewpoint">Viewpoint / Sunset</option>
-              <option value="cafe & food">Cafe & Culinary</option>
-              <option value="nature">Nature & Lake/Beach</option>
-              <option value="spiritual">Spiritual / Temple / Ghat</option>
-              <option value="adventure">Trek & Adventure</option>
+              <option value="attraction">Attraction / Monument</option>
+              <option value="food">Restaurant / Food / Cafe</option>
+              <option value="hotel">Hotel / Stay</option>
+              <option value="activity">Adventure / Activity</option>
+              <option value="nightlife">Nightlife / Evening</option>
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Personal Notes (Optional)</label>
+          <div>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Tips / Notes (Optional)</label>
             <textarea
               rows={2}
               value={notes}
@@ -201,6 +224,7 @@ export default function AddPlaceModal({ tripId, isOpen, onClose, defaultCity = '
           </Button>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

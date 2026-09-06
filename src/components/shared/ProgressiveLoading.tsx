@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { Loader2, Sparkles, MapPin, Compass, CheckCircle2 } from 'lucide-react';
+import { AITier } from '@/lib/types/ghoomo';
 
 interface ProgressiveLoadingProps {
   isLoading: boolean;
   onComplete?: () => void;
-  tierHint?: 'tier1_gemini' | 'tier2_groq' | 'tier3_rule_based';
+  tierHint?: AITier;
 }
 
 const STAGES = [

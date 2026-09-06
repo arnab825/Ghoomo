@@ -157,33 +157,44 @@ export function enrichPlace(extracted: {
   name: string;
   city?: string;
   state?: string;
+  lat?: number;
+  lng?: number;
+  category?: string;
   notes?: string;
 }): Omit<Place, 'id' | 'tripId' | 'createdAt'> {
   const match = matchPlaceToReference(extracted.name, extracted.city);
+
+  const hasValidExtractedCoords =
+    typeof extracted.lat === 'number' &&
+    typeof extracted.lng === 'number' &&
+    !isNaN(extracted.lat) &&
+    !isNaN(extracted.lng) &&
+    (extracted.lat !== 0 || extracted.lng !== 0) &&
+    // Not default Jaipur unless specifically in Jaipur
+    !(extracted.lat === 26.9124 && extracted.lng === 75.7873 && extracted.city && !extracted.city.toLowerCase().includes('jaipur'));
 
   if (match) {
     return {
       name: match.place.name,
       city: match.place.city,
       state: match.place.state,
-      lat: match.place.lat,
-      lng: match.place.lng,
-      category: match.place.category,
+      lat: hasValidExtractedCoords ? extracted.lat! : match.place.lat,
+      lng: hasValidExtractedCoords ? extracted.lng! : match.place.lng,
+      category: extracted.category || match.place.category,
       confidence: match.confidence,
       imageUrl: match.place.image_url,
       notes: extracted.notes || match.place.description,
     };
   }
 
-  // Fallback default coordinates if no reference match
   return {
     name: extracted.name,
     city: extracted.city || 'India',
     state: extracted.state || 'India',
-    lat: 26.9124,
-    lng: 75.7873,
-    category: 'attraction',
-    confidence: 0.65,
+    lat: hasValidExtractedCoords ? extracted.lat! : 26.9124,
+    lng: hasValidExtractedCoords ? extracted.lng! : 75.7873,
+    category: extracted.category || 'attraction',
+    confidence: 0.85,
     imageUrl: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80',
     notes: extracted.notes || 'Discovered from social content',
   };

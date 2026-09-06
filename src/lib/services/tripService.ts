@@ -15,9 +15,9 @@ import {
   CollabRole,
   TimeSlot,
 } from '@/lib/types/ghoomo';
-import { SAMPLE_VIRAL_REELS } from '@/features/social-import/sampleReels';
 import { extractLocationsFromSocialUrl } from '@/features/social-import/extractors';
 import { extractLocationsFromUrlAction } from '@/app/actions/aiActions';
+import { generateProximityItinerary } from '@/features/itinerary/clustering';
 
 const STORAGE_KEY = 'ghoomo_trips_data_v2';
 
@@ -37,20 +37,92 @@ function loadLocalTrips(): GhoomoTrip[] {
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return [];
+    let trips: GhoomoTrip[] = [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        trips = parsed;
+      }
     }
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+
+    // Check and import from legacy Zustand persist store 'ghoomo-trips-storage'
+    try {
+      const legacyRaw = localStorage.getItem('ghoomo-trips-storage');
+      if (legacyRaw) {
+        const legacyParsed = JSON.parse(legacyRaw);
+        const legacyTrips = legacyParsed?.state?.trips;
+        if (Array.isArray(legacyTrips)) {
+          for (const lt of legacyTrips) {
+            if (!trips.some((t) => t.id === lt.id)) {
+              trips.push(lt);
+            }
+          }
+        }
+      }
+    } catch {
+      // Ignore legacy parse errors
+    }
+
+    // Ensure all trips with places have populated day items via proximity clustering
+    let modified = false;
+    for (const trip of trips) {
+      if (
+        trip.places &&
+        trip.places.length > 0 &&
+        (!trip.days || trip.days.length === 0 || trip.days.every((d) => !d.items || d.items.length === 0))
+      ) {
+        const { days, updatedPlaces } = generateProximityItinerary(
+          trip.places,
+          trip.durationDays || 3,
+          trip.id
+        );
+        trip.days = days;
+        if (updatedPlaces.length > 0) {
+          trip.places = updatedPlaces;
+        }
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      saveLocalTrips(trips);
+    }
+
+    return trips;
   } catch {
     return [];
   }
+}
+
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+function syncToServerDebounced(trips: GhoomoTrip[]): void {
+  if (typeof window === 'undefined' || !trips.length) return;
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(async () => {
+    try {
+      await fetch('/api/trips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trips }),
+      });
+    } catch {
+      // Offline fallback
+    }
+  }, 200);
 }
 
 function saveLocalTrips(trips: GhoomoTrip[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trips));
+    try {
+      localStorage.setItem(
+        'ghoomo-trips-storage',
+        JSON.stringify({ state: { trips, activeTripId: trips[0]?.id || null }, version: 0 })
+      );
+    } catch {}
+    // Automatically sync to server store so shared links and invited collaborators can access it from any browser
+    syncToServerDebounced(trips);
   } catch (err) {
     console.error('[TripService] Failed to save trips to local store:', err);
   }
@@ -61,15 +133,78 @@ function saveLocalTrips(trips: GhoomoTrip[]): void {
 // ----------------------------------------------------------------------------
 export const tripService = {
   async getAllTrips(): Promise<GhoomoTrip[]> {
-    // Simulate slight network latency for realistic caching benefits
-    await new Promise((r) => setTimeout(r, 50));
-    return loadLocalTrips();
+    const localTrips = loadLocalTrips();
+
+    if (typeof window !== 'undefined') {
+      try {
+        if (localTrips.length > 0) {
+          syncToServerDebounced(localTrips);
+        }
+
+        const res = await fetch('/api/trips', { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data)) {
+            const serverTrips: GhoomoTrip[] = json.data;
+            const merged = [...localTrips];
+            for (const st of serverTrips) {
+              const existingIdx = merged.findIndex((t) => t.id === st.id);
+              if (existingIdx >= 0) {
+                if (new Date(st.updatedAt || 0) > new Date(merged[existingIdx].updatedAt || 0)) {
+                  merged[existingIdx] = st;
+                }
+              } else {
+                merged.push(st);
+              }
+            }
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            } catch {}
+            return merged;
+          }
+        }
+      } catch {
+        // Fallback to localTrips if server unreachable
+      }
+    }
+
+    return localTrips;
   },
 
   async getTripById(id: string): Promise<GhoomoTrip | null> {
-    await new Promise((r) => setTimeout(r, 50));
-    const trips = loadLocalTrips();
-    return trips.find((t) => t.id === id) || null;
+    const localTrips = loadLocalTrips();
+    const localTrip = localTrips.find((t) => t.id === id);
+    if (localTrip) {
+      // Sync local trip to server so other users opening the share link will find it
+      syncToServerDebounced(localTrips);
+      return localTrip;
+    }
+
+    // If not found in local storage (e.g. shared link opened in another browser, incognito, or by a friend)
+    if (typeof window !== 'undefined') {
+      try {
+        const res = await fetch(`/api/trips/${encodeURIComponent(id)}`, { cache: 'no-store' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            const serverTrip: GhoomoTrip = json.data;
+            // Cache in local storage for this session
+            const current = loadLocalTrips();
+            if (!current.some((t) => t.id === serverTrip.id)) {
+              current.unshift(serverTrip);
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+              } catch {}
+            }
+            return serverTrip;
+          }
+        }
+      } catch (err) {
+        console.warn('[TripService] Could not reach server for shared trip:', err);
+      }
+    }
+
+    return null;
   },
 
   async createTrip(data: {
@@ -122,33 +257,75 @@ export const tripService = {
     };
 
     // If initial social URL provided, extract and append
-    if (data.initialSocialUrl) {
-      try {
-        const extracted = await extractLocationsFromSocialUrl(data.initialSocialUrl);
-        const sourceId = `src-${Date.now()}`;
-        const source: TripSource = {
-          id: sourceId,
-          tripId,
-          ...extracted.source,
-          createdAt: new Date().toISOString(),
-        };
-        const places: Place[] = extracted.places.map((p, idx) => ({
-          ...p,
-          id: `p-${Date.now()}-${idx}`,
-          tripId,
-          sourceId,
-          assignedDay: (idx % data.durationDays) + 1,
-          timeSlot: (idx % 3 === 0 ? 'morning' : idx % 3 === 1 ? 'afternoon' : 'evening') as TimeSlot,
-          createdAt: new Date().toISOString(),
-        }));
+    if (data.initialSocialUrl && data.initialSocialUrl.trim() !== '') {
+      const res = await extractLocationsFromUrlAction({ url: data.initialSocialUrl.trim(), tripId });
+      if (!res.success || !res.data || !res.data.places || res.data.places.length === 0) {
+        throw new Error(res.error || 'Location cannot be detected from this video transcript.');
+      }
 
-        newTrip.sources = [source];
-        newTrip.places = places;
-        if (places[0]?.imageUrl) {
-          newTrip.coverImage = places[0].imageUrl;
+      const extracted = res.data;
+      const sourceId = `src-${Date.now()}`;
+      const source: TripSource = {
+        id: sourceId,
+        tripId,
+        ...extracted.source,
+        createdAt: new Date().toISOString(),
+      };
+
+      const duration = extracted.durationDays && extracted.durationDays > 0 ? extracted.durationDays : data.durationDays;
+      const budget = extracted.budgetTotal && extracted.budgetTotal > 0 ? extracted.budgetTotal : data.budgetTotal;
+
+      newTrip.durationDays = duration;
+      newTrip.budgetTotal = budget;
+
+      if (extracted.destination) {
+        newTrip.destinationRegion = extracted.destination;
+      }
+
+      if (extracted.checklist && extracted.checklist.length > 0) {
+        newTrip.checklistItems = extracted.checklist.map((item, idx) => ({
+          id: `c-ai-${Date.now()}-${idx}`,
+          tripId,
+          title: item,
+          category: 'packing',
+          isCompleted: false,
+        }));
+      }
+
+      const places: Place[] = extracted.places.map((p, idx) => ({
+        ...p,
+        id: `p-${Date.now()}-${idx}`,
+        tripId,
+        sourceId,
+        assignedDay: (idx % duration) + 1,
+        timeSlot: (idx % 3 === 0 ? 'morning' : idx % 3 === 1 ? 'afternoon' : 'evening') as TimeSlot,
+        createdAt: new Date().toISOString(),
+      }));
+
+      newTrip.sources = [source];
+      newTrip.places = places;
+      if (places[0]?.imageUrl) {
+        newTrip.coverImage = places[0].imageUrl;
+      }
+
+      if (places[0]?.city && (!newTrip.destinationRegion || newTrip.destinationRegion === 'India Expedition')) {
+        newTrip.destinationRegion = places[0].state ? `${places[0].city}, ${places[0].state}` : places[0].city;
+      }
+
+      if (extracted.source?.title) {
+        newTrip.title = extracted.source.title.slice(0, 50);
+      }
+      if (extracted.source?.thumbnailUrl) {
+        newTrip.coverImage = extracted.source.thumbnailUrl;
+      }
+
+      // Auto-cluster places into days so day items are populated immediately
+      if (places.length > 0) {
+        const { days, updatedPlaces } = generateProximityItinerary(places, duration, tripId);
+        newTrip.days = days;
+        if (updatedPlaces.length > 0) {
+          newTrip.places = updatedPlaces;
         }
-      } catch (err) {
-        console.warn('[TripService] Initial social URL extraction failed:', err);
       }
     }
 
@@ -160,6 +337,9 @@ export const tripService = {
   async deleteTrip(tripId: string): Promise<void> {
     const trips = loadLocalTrips().filter((t) => t.id !== tripId);
     saveLocalTrips(trips);
+    if (typeof window !== 'undefined') {
+      fetch(`/api/trips/${encodeURIComponent(tripId)}`, { method: 'DELETE' }).catch(() => {});
+    }
   },
 
   async updateItinerary(
@@ -214,8 +394,84 @@ export const tripService = {
       createdAt: new Date().toISOString(),
     }));
 
-    trip.sources = [newSource, ...trip.sources];
-    trip.places = [...newPlaces, ...trip.places];
+    // If trip currently only has default mock/demo places, replace them with the real imported reel places
+    const hasOnlyPlaceholderPlaces =
+      trip.places.length <= 2 &&
+      trip.places.every(
+        (p) =>
+          p.city.toLowerCase().includes('jaipur') ||
+          p.name.includes('Old City') ||
+          p.name.includes('Stepwell') ||
+          p.name.includes('Historic')
+      );
+
+    if (hasOnlyPlaceholderPlaces) {
+      trip.places = newPlaces;
+      trip.sources = [newSource];
+    } else {
+      trip.sources = [newSource, ...trip.sources];
+      trip.places = [...newPlaces, ...trip.places];
+    }
+
+    if (newPlaces.length > 0) {
+      const topPlace = newPlaces[0];
+      const detectedRegion = topPlace.state ? `${topPlace.city}, ${topPlace.state}` : topPlace.city;
+
+      if (
+        !trip.destinationRegion ||
+        trip.destinationRegion === 'India Expedition' ||
+        trip.destinationRegion.toLowerCase().includes('jaipur') ||
+        hasOnlyPlaceholderPlaces
+      ) {
+        trip.destinationRegion = detectedRegion;
+      }
+
+      if (
+        !trip.title ||
+        trip.title === 'Trending Travel Experience in India' ||
+        trip.title === 'Discovered Social Reel Itinerary' ||
+        trip.title === 'Royal Rajasthan Golden Hour Roadtrip' ||
+        hasOnlyPlaceholderPlaces
+      ) {
+        trip.title = newSource.title ? newSource.title.slice(0, 50) : `${detectedRegion} Highlights`;
+      }
+
+      if (newSource.thumbnailUrl) {
+        trip.coverImage = newSource.thumbnailUrl;
+      }
+    }
+
+    if (response.data.durationDays && response.data.durationDays > 0) {
+      trip.durationDays = response.data.durationDays;
+    }
+    if (response.data.budgetTotal && response.data.budgetTotal > 0) {
+      trip.budgetTotal = response.data.budgetTotal;
+    }
+    if (response.data.checklist && response.data.checklist.length > 0) {
+      const existingTitles = new Set((trip.checklistItems || []).map((c) => c.title.toLowerCase()));
+      const newChecklist = response.data.checklist
+        .filter((item) => !existingTitles.has(item.toLowerCase()))
+        .map((item, idx) => ({
+          id: `c-ai-${Date.now()}-${idx}`,
+          tripId,
+          title: item,
+          category: 'packing' as const,
+          isCompleted: false,
+        }));
+      trip.checklistItems = [...(trip.checklistItems || []), ...newChecklist];
+    }
+
+    if (trip.places.length > 0) {
+      const { days, updatedPlaces } = generateProximityItinerary(
+        trip.places,
+        trip.durationDays || 3,
+        tripId
+      );
+      trip.days = days;
+      if (updatedPlaces.length > 0) {
+        trip.places = updatedPlaces;
+      }
+    }
     trip.updatedAt = new Date().toISOString();
 
     trips[tripIndex] = trip;
@@ -365,6 +621,22 @@ export const tripService = {
     };
 
     trip.collaborators.push(newCollab);
+    trips[tripIndex] = trip;
+    saveLocalTrips(trips);
+    return trip;
+  },
+
+  async removeCollaborator(
+    tripId: string,
+    collaboratorId: string
+  ): Promise<GhoomoTrip> {
+    const trips = loadLocalTrips();
+    const tripIndex = trips.findIndex((t) => t.id === tripId);
+    if (tripIndex === -1) throw new Error('Trip not found');
+
+    const trip = trips[tripIndex];
+    trip.collaborators = trip.collaborators.filter((c) => c.id !== collaboratorId);
+    trip.updatedAt = new Date().toISOString();
     trips[tripIndex] = trip;
     saveLocalTrips(trips);
     return trip;

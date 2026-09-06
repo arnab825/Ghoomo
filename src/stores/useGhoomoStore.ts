@@ -13,7 +13,7 @@ import {
 } from '@/lib/types/ghoomo';
 import { extractLocationsFromSocialUrl } from '@/features/social-import/extractors';
 import { generateProximityItinerary } from '@/features/itinerary/clustering';
-import { SAMPLE_VIRAL_REELS } from '@/features/social-import/sampleReels';
+import { tripService } from '@/lib/services/tripService';
 
 interface GhoomoState {
   trips: GhoomoTrip[];
@@ -69,71 +69,12 @@ export const useGhoomoStore = create<GhoomoState>()(
       },
 
       createTrip: async (data) => {
-        const tripId = `trip-${Date.now()}`;
-        const newDays: ItineraryDay[] = Array.from({ length: data.durationDays }, (_, i) => ({
-          id: `day-${i + 1}-${tripId}`,
-          tripId,
-          dayNumber: i + 1,
-          theme: `Day ${i + 1}: ${data.destinationRegion} Exploration`,
-          items: [],
-        }));
-
-        const newTrip: GhoomoTrip = {
-          id: tripId,
-          userId: 'user-demo-aarav',
-          title: data.title,
-          destinationRegion: data.destinationRegion,
-          startDate: data.startDate || new Date().toISOString().split('T')[0],
-          durationDays: data.durationDays,
-          budgetTotal: data.budgetTotal,
-          travelStyle: data.travelStyle,
-          coverImage:
-            'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80',
-          status: 'planned',
-          sources: [],
-          places: [],
-          days: newDays,
-          collaborators: [
-            {
-              id: 'collab-owner',
-              name: 'Aarav Patel (You)',
-              email: 'aarav@ghoomo.travel',
-              role: 'editor',
-              status: 'accepted',
-            },
-          ],
-          budgetItems: [],
-          checklistItems: [
-            {
-              id: `c-init-1-${tripId}`,
-              tripId,
-              category: 'documents',
-              title: 'Govt Photo ID proof (Aadhaar / Passport)',
-              isCompleted: false,
-            },
-            {
-              id: `c-init-2-${tripId}`,
-              tripId,
-              category: 'packing',
-              title: 'Portable power bank and universal charger',
-              isCompleted: false,
-            },
-          ],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
+        const newTrip = await tripService.createTrip(data);
         set((state) => ({
-          trips: [newTrip, ...state.trips],
-          activeTripId: tripId,
+          trips: [newTrip, ...state.trips.filter((t) => t.id !== newTrip.id)],
+          activeTripId: newTrip.id,
         }));
-
-        // If an initial social URL was provided during creation, import it automatically
-        if (data.initialSocialUrl && data.initialSocialUrl.trim() !== '') {
-          await get().importSocialUrl(tripId, data.initialSocialUrl.trim());
-        }
-
-        return tripId;
+        return newTrip.id;
       },
 
       deleteTrip: (tripId) => {

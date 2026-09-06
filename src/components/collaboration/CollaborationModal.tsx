@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useGhoomoStore } from '@/stores/useGhoomoStore';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { useInviteCollaboratorMutation, useRemoveCollaboratorMutation } from '@/hooks/useTripQueries';
 import { Collaborator, CollabRole } from '@/lib/types/ghoomo';
 import { Button } from '@/components/ui/button';
 import { X, Users, Copy, Check, Shield, Trash2, Mail, Link as LinkIcon, UserPlus } from 'lucide-react';
@@ -19,12 +20,18 @@ export default function CollaborationModal({
   onClose,
   collaborators,
 }: CollaborationModalProps) {
-  const { inviteCollaborator, removeCollaborator } = useGhoomoStore();
+  const inviteMutation = useInviteCollaboratorMutation(tripId);
+  const removeMutation = useRemoveCollaboratorMutation(tripId);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<CollabRole>('editor');
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/trips/${tripId}` : '';
 
@@ -34,16 +41,23 @@ export default function CollaborationModal({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleInvite = (e: React.FormEvent) => {
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !email.includes('@')) return;
-    inviteCollaborator(tripId, email, role);
+    await inviteMutation.mutateAsync({ email, role });
     setEmail('');
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-lg border border-slate-200 bg-white p-6 space-y-5 shadow-2xl dark:border-slate-800 dark:bg-slate-950">
+  return createPortal(
+    <div
+      style={{ zIndex: 99999 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 space-y-5 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -164,7 +178,7 @@ export default function CollaborationModal({
                   </span>
                   {c.id !== 'collab-owner' && (
                     <button
-                      onClick={() => removeCollaborator(tripId, c.id)}
+                      onClick={() => removeMutation.mutateAsync(c.id)}
                       className="p-1 text-slate-400 hover:text-red-600 transition-colors cursor-pointer active:scale-[0.98]"
                     >
                       <Trash2 size={13} />
@@ -176,6 +190,7 @@ export default function CollaborationModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

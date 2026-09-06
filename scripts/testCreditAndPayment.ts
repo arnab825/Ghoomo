@@ -38,8 +38,8 @@ for (const plan of PRICING_PLANS) {
 }
 console.log(`✓ Pricing Plans Configuration: ${plansPassed}/4 tests passed`);
 
-// 3. Razorpay Signature Verification Simulation
-const testSecret = 'ghoomo_secret_test_key_2026';
+// 3. Razorpay Signature Verification Simulation (Mock Unit Test Fixture)
+const testSecret = process.env.RAZORPAY_KEY_SECRET || 'mock_unit_test_signature_secret_only';
 const testOrderId = 'order_test_987654';
 const testPaymentId = 'pay_test_123456';
 

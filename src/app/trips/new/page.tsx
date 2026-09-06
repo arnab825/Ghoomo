@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createTripSchema, CreateTripFormValues } from '@/lib/schemas/trip';
-import { useGhoomoStore } from '@/stores/useGhoomoStore';
-import { SAMPLE_VIRAL_REELS } from '@/features/social-import/sampleReels';
 import { Button } from '@/components/ui/button';
 import {
   Compass,
@@ -53,7 +51,7 @@ export default function NewTripPage() {
     resolver: zodResolver(createTripSchema),
     defaultValues: {
       title: '',
-      destinationRegion: 'Jaipur, Rajasthan',
+      destinationRegion: '',
       durationDays: 3,
       budgetTotal: 15000,
       travelStyle: 'friends',
@@ -78,16 +76,11 @@ export default function NewTripPage() {
     try {
       const newTrip = await createTripMutation.mutateAsync(data);
       router.push(`/trips/${newTrip.id}`);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
+      setUrlError(err instanceof Error ? err.message : 'Location cannot be detected from this video transcript.');
       setIsSubmitting(false);
     }
-  };
-
-  const handleApplySampleReel = (reelUrl: string, destination: string, defaultTitle: string) => {
-    setValue('initialSocialUrl', reelUrl);
-    setValue('destinationRegion', destination);
-    setValue('title', defaultTitle);
   };
 
   return (
@@ -100,44 +93,22 @@ export default function NewTripPage() {
             <span>Trip Creation Studio</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-normal tracking-tight text-slate-900 dark:text-white font-heading">
-            Create Your Next <span className="italic text-teal-600">India Itinerary</span>
+            Create Your Next <span className="italic text-teal-600">Travel Itinerary</span>
           </h1>
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Start fresh or paste an Instagram Reel, TikTok, or YouTube link to extract places automatically.
+            Start fresh or paste an Instagram Reel, TikTok, or YouTube link with voice audio to extract places automatically.
           </p>
         </div>
 
-        {/* Quick Demo Starters (Viral Reels) */}
-        <div className="rounded-lg border border-slate-200 bg-white p-5 space-y-3 shadow-xs dark:border-slate-800 dark:bg-slate-900/60">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-wider text-teal-700 dark:text-teal-300">
-              Quick Demo Starters (Click to prefill)
-            </span>
-            <span className="text-[10px] text-slate-500">Viral Indian Reels</span>
+        {/* Voice-to-Itinerary Guidance */}
+        <div className="rounded-lg border border-teal-600/20 bg-teal-50/50 p-4 space-y-2 dark:border-teal-500/20 dark:bg-teal-950/20">
+          <div className="flex items-center gap-2 text-xs font-semibold text-teal-800 dark:text-teal-300">
+            <Sparkles size={14} className="text-teal-600 shrink-0" />
+            <span>Voice-Powered Travel Extraction</span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-            {SAMPLE_VIRAL_REELS.slice(0, 4).map((sample) => (
-              <button
-                key={sample.id}
-                type="button"
-                onClick={() => handleApplySampleReel(sample.url, sample.destination, sample.title.slice(0, 36))}
-                className="card-micro flex items-center gap-3 p-2.5 rounded-md border border-slate-200 bg-slate-50 hover:border-teal-600/60 hover:bg-teal-50/40 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group dark:border-slate-800 dark:bg-slate-950/70"
-              >
-                <img
-                  src={sample.thumbnailUrl}
-                  alt={sample.title}
-                  className="h-12 w-12 rounded-md object-cover shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-900 group-hover:text-teal-700 dark:text-white truncate">
-                    {sample.destination}
-                  </div>
-                  <div className="text-[11px] text-slate-500 truncate">{sample.title}</div>
-                  <div className="text-[10px] text-orange-600 font-medium mt-0.5">{sample.platform.toUpperCase()} Reel</div>
-                </div>
-              </button>
-            ))}
-          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Provide any travel video with voice narration. Ghoomo analyzes the spoken transcript to verify real locations. If places are mentioned, AI creates your day-by-day plan, sets ideal duration, estimates budget, and prepares your packing checklist.
+          </p>
         </div>
 
         {/* Main Form */}
@@ -173,7 +144,7 @@ export default function NewTripPage() {
               <input
                 type="text"
                 {...register('title')}
-                placeholder="e.g. Royal Rajasthan Golden Hour Roadtrip"
+                placeholder="e.g. Switzerland Alpine Trail or leave blank to auto-detect"
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
               />
               {errors.title && <p className="text-xs text-red-600">{errors.title.message}</p>}
@@ -189,7 +160,7 @@ export default function NewTripPage() {
                 <input
                   type="text"
                   {...register('destinationRegion')}
-                  placeholder="e.g. Jaipur, Manali, South Goa"
+                  placeholder="e.g. Switzerland, Manali, South Goa (or auto-detected from link)"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
                 />
                 {errors.destinationRegion && (

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useGhoomoStore } from '@/stores/useGhoomoStore';
+import { useBudgetItemMutations, useChecklistItemMutations } from '@/hooks/useTripQueries';
 import { BudgetItem, ChecklistItem, BudgetCategory, ChecklistCategory } from '@/lib/types/ghoomo';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,14 +42,8 @@ export default function BudgetAndChecklist({
   budgetItems,
   checklistItems,
 }: BudgetAndChecklistProps) {
-  const {
-    addBudgetItem,
-    toggleBudgetItemPaid,
-    deleteBudgetItem,
-    addChecklistItem,
-    toggleChecklistItem,
-    deleteChecklistItem,
-  } = useGhoomoStore();
+  const budgetMutations = useBudgetItemMutations(tripId);
+  const checklistMutations = useChecklistItemMutations(tripId);
 
   const [activeTab, setActiveTab] = useState<'budget' | 'checklist'>('budget');
 
@@ -70,10 +64,10 @@ export default function BudgetAndChecklist({
   const checklistPercentage =
     checklistItems.length > 0 ? Math.round((completedTasks / checklistItems.length) * 100) : 0;
 
-  const handleAddBudget = (e: React.FormEvent) => {
+  const handleAddBudget = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!bDesc || !bAmount) return;
-    addBudgetItem(tripId, {
+    await budgetMutations.add.mutateAsync({
       description: bDesc,
       amount: parseFloat(bAmount) || 0,
       category: bCat,
@@ -83,10 +77,10 @@ export default function BudgetAndChecklist({
     setBAmount('');
   };
 
-  const handleAddChecklist = (e: React.FormEvent) => {
+  const handleAddChecklist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cTitle) return;
-    addChecklistItem(tripId, {
+    await checklistMutations.add.mutateAsync({
       title: cTitle,
       category: cCat,
     });
@@ -225,7 +219,7 @@ export default function BudgetAndChecklist({
                     <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                       <button
                         type="button"
-                        onClick={() => toggleBudgetItemPaid(tripId, item.id)}
+                        onClick={() => budgetMutations.toggle.mutateAsync(item.id)}
                         className={`text-[10px] font-semibold px-2 py-0.5 rounded cursor-pointer ${
                           item.isPaid
                             ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400'
@@ -241,7 +235,7 @@ export default function BudgetAndChecklist({
                         type="button"
                         onClick={() => {
                           if (confirm(`Remove expense "${item.description}"?`)) {
-                            deleteBudgetItem(tripId, item.id);
+                            budgetMutations.remove.mutateAsync(item.id);
                           }
                         }}
                         className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer p-1"
@@ -313,7 +307,7 @@ export default function BudgetAndChecklist({
               checklistItems.map((item) => (
                 <div
                   key={item.id}
-                  onClick={() => toggleChecklistItem(tripId, item.id)}
+                  onClick={() => checklistMutations.toggle.mutateAsync(item.id)}
                   className={`flex items-center justify-between p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
                     item.isCompleted
                       ? 'border-slate-200 bg-slate-100/70 text-slate-400 line-through dark:border-slate-800/50 dark:bg-slate-950/40 dark:text-slate-500'
@@ -337,7 +331,7 @@ export default function BudgetAndChecklist({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteChecklistItem(tripId, item.id);
+                        checklistMutations.remove.mutateAsync(item.id);
                       }}
                       className="text-slate-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
                     >

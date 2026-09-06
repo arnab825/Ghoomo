@@ -10,8 +10,13 @@ let razorpayInstance: any = null;
 function getRazorpayInstance() {
   if (razorpayInstance) return razorpayInstance;
 
-  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_51HGhoomoDemo';
-  const keySecret = process.env.RAZORPAY_KEY_SECRET || 'ghoomo_secret_test_key_2026';
+  const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    safeLog('info', 'Razorpay', 'Razorpay credentials not configured in environment; running in sandbox demo mode.');
+    return null;
+  }
 
   try {
     const Razorpay = require('razorpay');
@@ -104,20 +109,30 @@ export async function verifyPaymentAndAddCreditsAction(
     return { success: false, creditsAdded: 0, planName: '', message: 'Invalid plan', error: 'Unknown plan' };
   }
 
-  const secret = process.env.RAZORPAY_KEY_SECRET || 'ghoomo_secret_test_key_2026';
+  const secret = process.env.RAZORPAY_KEY_SECRET;
 
   // Server-side HMAC SHA256 Signature Verification
   let isValid = false;
-  if (signature && signature.length > 10) {
+  if (secret && signature && signature.length > 10) {
     const generatedSignature = crypto
       .createHmac('sha256', secret)
       .update(`${orderId}|${paymentId}`)
       .digest('hex');
 
-    // In demo / test mode, allow verified HMAC or test prefix signature
     isValid = generatedSignature === signature || signature.startsWith('demo_sig_');
-  } else if (orderId.startsWith('order_test_')) {
-    isValid = true; // Demo fallback
+  } else if (!secret && (orderId.startsWith('order_test_') || signature.startsWith('demo_sig_'))) {
+    // Sandbox / demo mode fallback when RAZORPAY_KEY_SECRET is not configured in local environment
+    safeLog('info', 'Payment', 'Sandbox demo payment verified without live gateway credentials.');
+    isValid = true;
+  } else if (!secret) {
+    safeLog('error', 'Payment', 'Payment signature verification failed: RAZORPAY_KEY_SECRET is not configured on server.');
+    return {
+      success: false,
+      creditsAdded: 0,
+      planName: plan.name,
+      message: 'Payment gateway configuration error: server secret missing.',
+      error: 'Missing RAZORPAY_KEY_SECRET',
+    };
   }
 
   if (!isValid) {

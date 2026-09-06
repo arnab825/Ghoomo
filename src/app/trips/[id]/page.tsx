@@ -34,6 +34,10 @@ import {
   CheckCircle2,
   Zap,
   RefreshCw,
+  FileText,
+  Copy,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   Place,
@@ -43,9 +47,10 @@ import {
   ItineraryItem,
   TripSource,
   Collaborator,
+  AITier,
+  ValidationSummary,
 } from "@/lib/types/ghoomo";
 import ProgressiveLoading from "@/components/shared/ProgressiveLoading";
-import { AITier, ValidationSummary } from "@/app/actions/aiActions";
 import {
   useTrip,
   useAutoGenerateItineraryMutation,
@@ -69,26 +74,42 @@ const DAY_COLOR_CLASSES: Record<
     border: "border-teal-200 dark:border-teal-800",
   },
   2: {
-    text: "text-emerald-700 dark:text-emerald-300",
-    bg: "bg-emerald-50 dark:bg-emerald-950/40",
-    border: "border-emerald-200 dark:border-emerald-800",
+    text: "text-sky-700 dark:text-sky-300",
+    bg: "bg-sky-50 dark:bg-sky-950/40",
+    border: "border-sky-200 dark:border-sky-800",
   },
   3: {
-    text: "text-cyan-700 dark:text-cyan-300",
-    bg: "bg-cyan-50 dark:bg-cyan-950/40",
-    border: "border-cyan-200 dark:border-cyan-800",
+    text: "text-violet-700 dark:text-violet-300",
+    bg: "bg-violet-50 dark:bg-violet-950/40",
+    border: "border-violet-200 dark:border-violet-800",
   },
   4: {
-    text: "text-purple-700 dark:text-purple-300",
-    bg: "bg-purple-50 dark:bg-purple-950/40",
-    border: "border-purple-200 dark:border-purple-800",
-  },
-  5: {
     text: "text-orange-700 dark:text-orange-300",
     bg: "bg-orange-50 dark:bg-orange-950/40",
     border: "border-orange-200 dark:border-orange-800",
   },
+  5: {
+    text: "text-emerald-700 dark:text-emerald-300",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40",
+    border: "border-emerald-200 dark:border-emerald-800",
+  },
+  6: {
+    text: "text-rose-700 dark:text-rose-300",
+    bg: "bg-rose-50 dark:bg-rose-950/40",
+    border: "border-rose-200 dark:border-rose-800",
+  },
+  7: {
+    text: "text-amber-700 dark:text-amber-300",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    border: "border-amber-200 dark:border-amber-800",
+  },
 };
+
+function getDayColorClasses(dayNumber: number) {
+  const keys = Object.keys(DAY_COLOR_CLASSES).map(Number);
+  const key = ((dayNumber - 1) % keys.length) + 1;
+  return DAY_COLOR_CLASSES[key] || DAY_COLOR_CLASSES[1];
+}
 
 export default function TripWorkspacePage({
   params,
@@ -128,6 +149,10 @@ export default function TripWorkspacePage({
   const [aiTierUsed, setAiTierUsed] = useState<AITier | null>(null);
   const [validationSummary, setValidationSummary] =
     useState<ValidationSummary | null>(null);
+  const { currentUser, deductCredits } = useAuthStore();
+  const [creditAlert, setCreditAlert] = useState<string | null>(null);
+  const [expandedTranscripts, setExpandedTranscripts] = useState<Record<string, boolean>>({});
+  const [copiedSourceId, setCopiedSourceId] = useState<string | null>(null);
 
   // Loading Skeleton State
   if (isLoading) {
@@ -171,8 +196,11 @@ export default function TripWorkspacePage({
     );
   }
 
-  const { currentUser, deductCredits } = useAuthStore();
-  const [creditAlert, setCreditAlert] = useState<string | null>(null);
+  const handleCopyTranscript = (sourceId: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSourceId(sourceId);
+    setTimeout(() => setCopiedSourceId(null), 2000);
+  };
 
   const handleSelectPlace = (placeId: string) => {
     setSelectedPlaceId(placeId);
@@ -486,7 +514,7 @@ export default function TripWorkspacePage({
                           <span>Transit Time Exceeds Ideal 2 Hours:</span>
                         </div>
                         {validationSummary.consecutiveTravelAlerts.map(
-                          (alert, i) => (
+                          (alert: string, i: number) => (
                             <div
                               key={i}
                               className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 pl-3 border-l-2 border-amber-400"
@@ -503,7 +531,7 @@ export default function TripWorkspacePage({
                     validationSummary.warnings &&
                     validationSummary.warnings.length > 0 && (
                       <div className="space-y-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60">
-                        {validationSummary.warnings.map((warn, i) => (
+                        {validationSummary.warnings.map((warn: string, i: number) => (
                           <div
                             key={i}
                             className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-300"
@@ -566,19 +594,25 @@ export default function TripWorkspacePage({
                       day.dayNumber === selectedDayFilter,
                   )
                   .map((day: ItineraryDay) => {
-                    const style = DAY_COLOR_CLASSES[day.dayNumber] || {
-                      text: "text-teal-700",
-                      bg: "bg-teal-50",
-                      border: "border-teal-200",
-                    };
+                    const style = getDayColorClasses(day.dayNumber);
+                    const isDayFocused = selectedDayFilter === day.dayNumber;
 
                     return (
                       <div
                         key={day.id}
-                        className="card-micro rounded-lg border border-slate-200 bg-white p-4 space-y-3 shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/60"
+                        className={`card-micro rounded-lg border p-4 space-y-3 shadow-xs transition-all duration-200 dark:bg-slate-900/60 ${
+                          isDayFocused
+                            ? "border-teal-600/80 bg-teal-50/20 ring-1 ring-teal-500/20 dark:border-teal-800"
+                            : "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800"
+                        }`}
                       >
-                        {/* Day Header */}
-                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                        {/* Day Header with Direct Map Focus */}
+                        <div
+                          onClick={() =>
+                            setSelectedDayFilter(isDayFocused ? null : day.dayNumber)
+                          }
+                          className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800 cursor-pointer group"
+                        >
                           <div className="flex items-center gap-2">
                             <span
                               className={`h-7 w-7 rounded-md flex items-center justify-center text-xs font-bold ${style.bg} ${style.text} border ${style.border}`}
@@ -586,7 +620,7 @@ export default function TripWorkspacePage({
                               D{day.dayNumber}
                             </span>
                             <div>
-                              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-600 transition-colors">
                                 {day.theme}
                               </h3>
                               <p className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -597,14 +631,35 @@ export default function TripWorkspacePage({
                             </div>
                           </div>
 
-                          <Button
-                            onClick={() => setAddPlaceModalOpen(true)}
-                            size="sm"
-                            variant="ghost"
-                            className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded-md active:scale-[0.98]"
-                          >
-                            <Plus size={13} className="mr-0.5" /> Place
-                          </Button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedDayFilter(isDayFocused ? null : day.dayNumber);
+                              }}
+                              className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 font-medium transition-colors cursor-pointer ${
+                                isDayFocused
+                                  ? "bg-teal-600 text-white border-teal-600"
+                                  : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                              }`}
+                              title="Focus this day on the map"
+                            >
+                              <Compass size={11} />
+                              <span>{isDayFocused ? "Focused" : "Focus Map"}</span>
+                            </button>
+
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setAddPlaceModalOpen(true);
+                              }}
+                              size="sm"
+                              variant="ghost"
+                              className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded-md active:scale-[0.98]"
+                            >
+                              <Plus size={13} className="mr-0.5" /> Place
+                            </Button>
+                          </div>
                         </div>
 
                         {/* Items in this Day */}
@@ -739,38 +794,133 @@ export default function TripWorkspacePage({
                     </span>
                   </div>
                   <div className="space-y-2">
-                    {trip.sources.map((src: TripSource) => (
-                      <div
-                        key={src.id}
-                        className="card-micro flex items-center gap-3 p-2.5 rounded-md border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/80 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
-                      >
-                        <img
-                          src={src.thumbnailUrl}
-                          alt={src.title}
-                          className="h-12 w-12 rounded-md object-cover shrink-0"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                            {src.title}
-                          </div>
-                          <div className="text-[11px] text-slate-500">
-                            By {src.author} on{" "}
-                            <span className="uppercase text-orange-600 font-medium">
-                              {src.platform}
-                            </span>
-                          </div>
-                          <a
-                            href={src.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center text-[10px] text-teal-600 hover:text-teal-700 font-medium mt-0.5 cursor-pointer"
+                    {trip.sources.map((src: TripSource) => {
+                      const placesFromSource = trip.places.filter(
+                        (p: Place) => p.sourceId === src.id,
+                      );
+                      const isSourceActive =
+                        placesFromSource.length > 0 &&
+                        placesFromSource.some((p) => p.id === selectedPlaceId);
+
+                      const isExpanded = !!expandedTranscripts[src.id];
+                      const transcript = src.rawTranscript || "";
+
+                      return (
+                        <div
+                          key={src.id}
+                          className={`card-micro p-3 rounded-lg border transition-all duration-200 space-y-2.5 ${
+                            isSourceActive
+                              ? "border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30 dark:bg-teal-950/40"
+                              : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/80"
+                          }`}
+                        >
+                          <div
+                            onClick={() => {
+                              if (placesFromSource.length > 0) {
+                                setSelectedDayFilter(null);
+                                handleSelectPlace(placesFromSource[0].id);
+                              }
+                            }}
+                            className="flex items-center gap-3 cursor-pointer"
                           >
-                            <span>Open original link</span>
-                            <ExternalLink size={10} className="ml-1" />
-                          </a>
+                            <img
+                              src={src.thumbnailUrl}
+                              alt={src.title}
+                              className="h-13 w-13 rounded-md object-cover shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                                {src.title}
+                              </div>
+                              <div className="text-[11px] text-slate-500 mt-0.5">
+                                By {src.author} on{" "}
+                                <span className="uppercase text-orange-600 font-medium">
+                                  {src.platform}
+                                </span>
+                                {placesFromSource.length > 0 && (
+                                  <span className="ml-2 text-teal-700 dark:text-teal-400 font-medium">
+                                    • {placesFromSource.length} places (Click to zoom)
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                                <a
+                                  href={src.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-flex items-center text-[10px] text-teal-600 hover:text-teal-700 font-medium cursor-pointer"
+                                >
+                                  <span>Open original link</span>
+                                  <ExternalLink size={10} className="ml-1" />
+                                </a>
+
+                                {transcript && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedTranscripts((prev) => ({
+                                        ...prev,
+                                        [src.id]: !prev[src.id],
+                                      }));
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300 hover:text-teal-600 font-medium cursor-pointer"
+                                  >
+                                    <FileText size={11} className="text-teal-600" />
+                                    <span>
+                                      {isExpanded
+                                        ? "Hide Voice Transcript"
+                                        : "View Full Extracted Voice Transcript"}
+                                    </span>
+                                    {isExpanded ? (
+                                      <ChevronUp size={11} />
+                                    ) : (
+                                      <ChevronDown size={11} />
+                                    )}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Full Transcript Expandable Context Box */}
+                          {isExpanded && transcript && (
+                            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 text-[11px] space-y-2 animate-in fade-in duration-200">
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold text-slate-700 dark:text-slate-300 text-[10px] uppercase tracking-wider flex items-center gap-1">
+                                  <Sparkles size={11} className="text-teal-600" />
+                                  Extracted Spoken Voice Audio Transcript & Captions
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[10px] text-slate-400">
+                                    {transcript.length} chars • {transcript.split(/\s+/).filter(Boolean).length} words
+                                  </span>
+                                  <button
+                                    onClick={() => handleCopyTranscript(src.id, transcript)}
+                                    className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-teal-950 text-slate-700 dark:text-slate-300 text-[10px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                                  >
+                                    {copiedSourceId === src.id ? (
+                                      <>
+                                        <CheckCircle2 size={11} className="text-emerald-600" />
+                                        <span className="text-emerald-600 font-semibold">Copied!</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Copy size={11} />
+                                        <span>Copy</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="bg-slate-50 dark:bg-slate-950/80 p-3 rounded border border-slate-200/80 dark:border-slate-800/80 max-h-48 overflow-y-auto font-mono text-[11px] leading-relaxed text-slate-800 dark:text-slate-200 whitespace-pre-line select-text">
+                                {transcript}
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -868,8 +1018,8 @@ export default function TripWorkspacePage({
         </div>
 
         {/* RIGHT COLUMN: FLAGSHIP INTERACTIVE MAP (7 COLUMNS) */}
-        <div className="lg:col-span-7 h-125 lg:h-full relative p-4 flex flex-col">
-          <div className="flex-1 rounded-lg overflow-hidden shadow-xs border border-slate-200 bg-white relative dark:border-slate-800 dark:bg-slate-950">
+        <div className="lg:col-span-7 h-125 lg:h-full relative p-4 flex flex-col isolate z-0">
+          <div className="flex-1 rounded-lg overflow-hidden shadow-xs border border-slate-200 bg-white relative isolate z-0 dark:border-slate-800 dark:bg-slate-950">
             <ErrorBoundary
               fallbackTitle="Map Rendering Glitch"
               fallbackMessage="We couldn't initialize the map view. Your places and itinerary schedule remain fully accessible."
@@ -879,37 +1029,10 @@ export default function TripWorkspacePage({
                 selectedPlaceId={selectedPlaceId}
                 onSelectPlace={handleSelectPlace}
                 highlightDay={selectedDayFilter}
+                onSelectDay={setSelectedDayFilter}
+                durationDays={trip.durationDays}
               />
             </ErrorBoundary>
-
-            {/* Floating Map Legend Overlay */}
-            <div className="absolute top-4 left-4 z-400 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg p-3 text-[11px] space-y-1.5 shadow-sm pointer-events-auto dark:bg-slate-950/85 dark:border-slate-800">
-              <div className="font-bold text-slate-900 dark:text-white text-[10px] uppercase tracking-wider mb-1">
-                Day Routes Legend
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-teal-600" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  Day 1
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#0f766e]" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  Day 2
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#14b8a6]" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">
-                  Day 3
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
-                <span className="text-slate-500 font-medium">Unassigned</span>
-              </div>
-            </div>
           </div>
         </div>
       </div>

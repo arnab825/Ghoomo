@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useGhoomoStore } from '@/stores/useGhoomoStore';
-import { SAMPLE_VIRAL_REELS } from '@/features/social-import/sampleReels';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { tripService } from '@/lib/services/tripService';
 import { Button } from '@/components/ui/button';
 import { X, Sparkles, Link as LinkIcon, CheckCircle2, ArrowRight, ShieldCheck, AlertTriangle } from 'lucide-react';
 import ProgressiveLoading from '@/components/shared/ProgressiveLoading';
-import { extractLocationsFromUrlAction, AITier } from '@/app/actions/aiActions';
-import { TripSource, Place } from '@/lib/types/ghoomo';
+import { extractLocationsFromUrlAction } from '@/app/actions/aiActions';
+import { TripSource, Place, AITier } from '@/lib/types/ghoomo';
 import { validateTravelUrl } from '@/lib/validation/urlValidator';
 import { useQueryClient } from '@tanstack/react-query';
 import { TRIP_KEYS } from '@/hooks/useTripQueries';
@@ -21,15 +21,19 @@ interface UrlImportModalProps {
 
 export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportModalProps) {
   const queryClient = useQueryClient();
-  const { trips, setTripItinerary } = useGhoomoStore();
   const { currentUser, deductCredits } = useAuthStore();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastTierUsed, setLastTierUsed] = useState<AITier | null>(null);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!isOpen || !mounted) return null;
 
   const handleImport = async (targetUrl?: string) => {
     const importUrl = targetUrl || url;
@@ -75,49 +79,13 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
         setValidationWarnings(response.validation.warnings);
       }
 
-      // Add source & places into data store and invalidate queries
-      const currentTrip = trips.find((t) => t.id === tripId);
-      if (currentTrip) {
-        const sourceId = `src-${Date.now()}`;
-        const newSource: TripSource = {
-          ...response.data.source,
-          id: sourceId,
-          tripId,
-          createdAt: new Date().toISOString(),
-        };
+      // Save to tripService
+      const updatedTrip = await tripService.importSocialUrl(tripId, importUrl.trim());
 
-        const newPlaces: Place[] = response.data.places.map((p, idx) => ({
-          ...p,
-          id: `place-${Date.now()}-${idx}`,
-          tripId,
-          sourceId,
-          createdAt: new Date().toISOString(),
-        }));
-
-        const combinedPlaces = [...currentTrip.places, ...newPlaces];
-        const { autoGenerateItinerary } = useGhoomoStore.getState();
-
-        useGhoomoStore.setState((state) => ({
-          trips: state.trips.map((t) =>
-            t.id === tripId
-              ? {
-                  ...t,
-                  sources: [...t.sources, newSource],
-                  places: combinedPlaces,
-                  coverImage: t.sources.length === 0 ? newSource.thumbnailUrl : t.coverImage,
-                  updatedAt: new Date().toISOString(),
-                }
-              : t
-          ),
-        }));
-
-        // Trigger route clustering
-        autoGenerateItinerary(tripId);
-
-        // Invalidate TanStack Query cache
-        queryClient.invalidateQueries({ queryKey: TRIP_KEYS.detail(tripId) });
-        queryClient.invalidateQueries({ queryKey: TRIP_KEYS.all });
-      }
+      // Invalidate and update TanStack Query cache
+      queryClient.setQueryData(TRIP_KEYS.detail(tripId), updatedTrip);
+      queryClient.invalidateQueries({ queryKey: TRIP_KEYS.detail(tripId) });
+      queryClient.invalidateQueries({ queryKey: TRIP_KEYS.all });
 
       setIsLoading(false);
       setUrl('');
@@ -128,9 +96,16 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-xl rounded-lg border border-slate-200 bg-white p-6 space-y-5 shadow-xl dark:border-slate-800 dark:bg-slate-950">
+  return createPortal(
+    <div
+      style={{ zIndex: 99999 }}
+      onClick={onClose}
+      className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-lg border border-slate-200 bg-white p-6 space-y-5 shadow-xl dark:border-slate-800 dark:bg-slate-950"
+      >
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -198,41 +173,18 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
           </div>
         </div>
 
-        {/* Instant Demo Presets */}
-        <div className="space-y-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <Sparkles size={13} className="text-teal-600" />
-              <span>Or click a viral demo reel:</span>
-            </span>
-            <span className="text-[10px] text-teal-700 font-semibold">Instant 1-Click Extraction</span>
+        {/* Voice-to-Itinerary Guidance */}
+        <div className="rounded-md border border-teal-600/20 bg-teal-50/50 p-3.5 space-y-2 dark:border-teal-500/20 dark:bg-teal-950/20">
+          <div className="flex items-center gap-2 text-xs font-semibold text-teal-800 dark:text-teal-300">
+            <Sparkles size={14} className="text-teal-600 shrink-0" />
+            <span>Voice Speech & Location Detection</span>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {SAMPLE_VIRAL_REELS.map((sample) => (
-              <button
-                key={sample.id}
-                type="button"
-                onClick={() => handleImport(sample.url)}
-                disabled={isLoading}
-                className="card-micro flex items-center gap-3 p-2.5 rounded-md border border-slate-200 bg-slate-50 hover:border-teal-600/60 hover:bg-teal-50/40 text-left transition-all duration-200 cursor-pointer active:scale-[0.98] group dark:border-slate-800 dark:bg-slate-900/60"
-              >
-                <img
-                  src={sample.thumbnailUrl}
-                  alt={sample.title}
-                  className="h-10 w-10 rounded-md object-cover shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="text-xs font-semibold text-slate-900 group-hover:text-teal-700 dark:text-white truncate">
-                    {sample.destination}
-                  </div>
-                  <div className="text-[10px] text-slate-500 truncate">{sample.title}</div>
-                </div>
-              </button>
-            ))}
-          </div>
+          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+            Paste any travel video with spoken voice narration (Instagram Reels, YouTube Shorts, or TikTok). Ghoomo automatically analyzes the spoken audio transcript to detect real travel locations and builds your day plan, budget, and checklist.
+          </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

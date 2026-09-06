@@ -191,6 +191,18 @@ export function useInviteCollaboratorMutation(tripId: string) {
   });
 }
 
+export function useRemoveCollaboratorMutation(tripId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (collaboratorId: string) =>
+      tripService.removeCollaborator(tripId, collaboratorId),
+    onSuccess: (updatedTrip) => {
+      queryClient.setQueryData(TRIP_KEYS.detail(tripId), updatedTrip);
+    },
+  });
+}
+
 export function useBudgetItemMutations(tripId: string) {
   const queryClient = useQueryClient();
 

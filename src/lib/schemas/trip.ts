@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const createTripSchema = z.object({
-  title: z.string().min(3, 'Trip title must be at least 3 characters').max(60, 'Trip title is too long'),
-  destinationRegion: z.string().min(2, 'Please select or enter an Indian destination'),
+  title: z.string().max(80, 'Trip title is too long'),
+  destinationRegion: z.string(),
   startDate: z.string().optional(),
   durationDays: z.coerce.number().min(1, 'Minimum 1 day').max(14, 'Maximum 14 days for hackathon MVP'),
   budgetTotal: z.coerce.number().min(1000, 'Minimum budget is ₹1,000'),

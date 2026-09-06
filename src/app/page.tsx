@@ -18,46 +18,44 @@ import {
   CheckSquare,
   Play,
 } from "lucide-react";
-import { SAMPLE_VIRAL_REELS } from "@/features/social-import/sampleReels";
-import { useGhoomoStore } from "@/stores/useGhoomoStore";
+import { tripService } from "@/lib/services/tripService";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const router = useRouter();
-  const { createTrip } = useGhoomoStore();
   const [pastedUrl, setPastedUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
 
   const handleQuickExtract = async (urlToUse?: string) => {
-    const url = urlToUse || pastedUrl;
-    if (!url || url.trim() === "") {
+    let url = (urlToUse || pastedUrl).trim();
+    if (!url) {
       router.push("/trips/new");
       return;
     }
 
-    setIsProcessing(true);
-    try {
-      // Find matching sample or default destination
-      const matched = SAMPLE_VIRAL_REELS.find(
-        (s) => url.includes(s.id) || url === s.url,
-      );
-      const destination = matched ? matched.destination : "India Expedition";
-      const title = matched
-        ? matched.title.slice(0, 40)
-        : "Discovered Social Reel Itinerary";
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = "https://" + url;
+    }
 
-      const newTripId = await createTrip({
-        title,
-        destinationRegion: destination,
+    setIsProcessing(true);
+    setExtractError(null);
+    try {
+      const newTrip = await tripService.createTrip({
+        title: "",
+        destinationRegion: "",
         durationDays: 3,
         budgetTotal: 15000,
         travelStyle: "friends",
         initialSocialUrl: url,
       });
 
-      router.push(`/trips/${newTripId}`);
+      router.push(`/trips/${newTrip.id}`);
     } catch (err) {
       console.error(err);
+      setExtractError(
+        err instanceof Error ? err.message : "Location cannot be detected from this video transcript."
+      );
       setIsProcessing(false);
     }
   };
@@ -124,22 +122,16 @@ export default function HomePage() {
               </Button>
             </div>
 
-            {/* Quick Reel Chips */}
-            <div className="pt-3 px-1 flex items-center justify-between flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <Play size={11} className="text-orange-500" /> Try viral reels:
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {SAMPLE_VIRAL_REELS.map((sample) => (
-                  <button
-                    key={sample.id}
-                    onClick={() => handleQuickExtract(sample.url)}
-                    className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 hover:border-teal-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all duration-100 cursor-pointer active:scale-[0.98]"
-                  >
-                    {sample.destination.split(",")[0]}
-                  </button>
-                ))}
+            {extractError && (
+              <div className="mt-2 text-left text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-md p-2">
+                {extractError}
               </div>
+            )}
+
+            {/* Real-time Voice Detection Guarantee */}
+            <div className="pt-2 px-1 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Sparkles size={12} className="text-teal-600 shrink-0" />
+              <span>Paste any travel video with voice speech — AI verifies real locations, sets budget, and builds your checklist.</span>
             </div>
           </div>
         </div>
@@ -215,16 +207,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 3. FEATURED VIRAL EXPERIENCES READY TO CLONE */}
+      {/* 3. ZERO-MOCK REAL VOICE AI ARCHITECTURE */}
       <section className="px-4 sm:px-6">
         <div className="container mx-auto max-w-6xl space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
             <div>
               <span className="text-xs font-bold uppercase tracking-wider text-teal-600">
-                Trending Indian Experiences
+                100% Real Speech Extraction
               </span>
               <h2 className="text-3xl font-normal text-slate-900 dark:text-white font-heading">
-                Explore Pre-Mapped Itineraries
+                Voice-Driven Travel Intelligence
               </h2>
             </div>
             <Link href="/trips" className="cursor-pointer">
@@ -239,44 +231,57 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {SAMPLE_VIRAL_REELS.map((sample) => (
-              <div
-                key={sample.id}
-                onClick={() => handleQuickExtract(sample.url)}
-                className="card-micro group rounded-lg border border-slate-200 bg-white overflow-hidden hover:border-teal-600/50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer shadow-xs flex flex-col dark:border-slate-800 dark:bg-slate-900/70 active:scale-[0.99]"
-              >
-                <div className="relative h-44 w-full overflow-hidden">
-                  <img
-                    src={sample.thumbnailUrl}
-                    alt={sample.title}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
-                  <div className="absolute top-2.5 left-2.5">
-                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-white/90 text-slate-900 backdrop-blur-xs shadow-xs">
-                      {sample.platform}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
-                  <div>
-                    <span className="text-[11px] text-teal-600 font-semibold block">
-                      {sample.destination}
-                    </span>
-                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-700 dark:text-white transition-colors line-clamp-2">
-                      {sample.title}
+            {[
+              {
+                title: "Voice Audio Transcripts",
+                desc: "Captures spoken speech from YouTube timed-text and Instagram audio streams to extract real travel spots.",
+                badge: "AI Speech-to-Text",
+                icon: Sparkles,
+              },
+              {
+                title: "Location Verification",
+                desc: "If no geographic destination is spoken, Ghoomo alerts you directly instead of generating fake mock places.",
+                badge: "Zero Mock Data",
+                icon: MapPin,
+              },
+              {
+                title: "Days & Budget Synthesis",
+                desc: "Spoken durations and budgets are prioritized; otherwise AI computes ideal INR budgets and trip days.",
+                badge: "Smart Calculation",
+                icon: DollarSign,
+              },
+              {
+                title: "100% Free OpenStreetMap",
+                desc: "Global open-source Leaflet map with zero tile watermarks, instant routing, and interactive markers.",
+                badge: "Free & Open Source",
+                icon: Compass,
+              },
+            ].map((feature, idx) => {
+              const Icon = feature.icon;
+              return (
+                <div
+                  key={idx}
+                  className="card-micro group rounded-lg border border-slate-200 bg-white p-5 space-y-3 hover:border-teal-600/50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 shadow-xs flex flex-col justify-between dark:border-slate-800 dark:bg-slate-900/70"
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="h-9 w-9 rounded-md bg-teal-50 dark:bg-slate-800 text-teal-600 flex items-center justify-center">
+                        <Icon size={18} />
+                      </div>
+                      <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300">
+                        {feature.badge}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                      {feature.title}
                     </h4>
-                  </div>
-                  <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span>{sample.places.length} places</span>
-                    <span className="text-emerald-600 font-semibold">
-                      Ready to map
-                    </span>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                      {feature.desc}
+                    </p>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

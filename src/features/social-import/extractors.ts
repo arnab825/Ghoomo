@@ -1,6 +1,6 @@
 import { PlatformType, Place, TripSource } from '@/lib/types/ghoomo';
-import { SAMPLE_VIRAL_REELS } from './sampleReels';
-import { matchPlaceToReference, searchPlacesReference, enrichPlace } from './referenceMatcher';
+import { searchPlacesReference } from './referenceMatcher';
+import { extractVideoVoiceTranscript } from './transcriptService';
 
 export function detectPlatform(url: string): PlatformType {
   const lowercase = url.toLowerCase();
@@ -19,67 +19,221 @@ export function detectPlatform(url: string): PlatformType {
   return 'other';
 }
 
+export interface ScrapedSocialMeta {
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  author: string;
+  platform: PlatformType;
+}
+
 export interface ExtractionResult {
   source: Omit<TripSource, 'id' | 'tripId' | 'createdAt'>;
   places: Omit<Place, 'id' | 'tripId' | 'sourceId' | 'createdAt'>[];
+  destination?: string;
+  durationDays?: number;
+  budgetTotal?: number;
+  checklist?: string[];
 }
 
-export async function extractLocationsFromSocialUrl(url: string): Promise<ExtractionResult> {
-  // Simulate network latency for demo realism (300ms)
-  await new Promise((resolve) => setTimeout(resolve, 350));
-
-  const platform = detectPlatform(url);
-  const normalizedUrl = url.trim().toLowerCase();
-
-  // 1. Check if it matches or resembles one of our curated sample reels
-  const matchedSample = SAMPLE_VIRAL_REELS.find((sample) =>
-    normalizedUrl.includes(sample.id) ||
-    normalizedUrl.includes(sample.destination.toLowerCase().split(',')[0]) ||
-    sample.url.toLowerCase() === normalizedUrl
-  );
-
-  if (matchedSample) {
-    // Enrich places through reference matcher to ensure high quality attributes
-    const enrichedPlaces = matchedSample.places.map((p) => {
-      const refMatch = matchPlaceToReference(p.name, p.city);
-      if (refMatch) {
-        return {
-          ...p,
-          lat: refMatch.place.lat,
-          lng: refMatch.place.lng,
-          confidence: Math.max(p.confidence, refMatch.confidence),
-          notes: p.notes || refMatch.place.description,
-        };
+function decodeHtmlEntities(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&#x27;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x1f1e8;&#x1f1ed;/g, '🇨🇭')
+    .replace(/&#([0-9]{1,7});/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
+    .replace(/&#x([0-9a-fA-F]{1,6});/g, (_, hex) => {
+      try {
+        return String.fromCodePoint(parseInt(hex, 16));
+      } catch {
+        return '';
       }
-      return p;
     });
+}
 
-    return {
-      source: {
-        url,
-        platform: matchedSample.platform,
-        title: matchedSample.title,
-        author: matchedSample.author,
-        thumbnailUrl: matchedSample.thumbnailUrl,
-      },
-      places: enrichedPlaces,
-    };
+/**
+ * Real-time Social Link Metadata Scraper
+ */
+const SCRAPER_CACHE = new Map<string, ScrapedSocialMeta>();
+
+export async function fetchSocialPageMetadata(url: string): Promise<ScrapedSocialMeta> {
+  const normalizedUrl = url.trim().toLowerCase();
+  if (SCRAPER_CACHE.has(normalizedUrl)) {
+    return SCRAPER_CACHE.get(normalizedUrl)!;
   }
 
-  // 2. City-based heuristic fallback if user typed a URL containing city keywords
-  const demoCities = ['manali', 'goa', 'rishikesh', 'kasol'];
-  for (const demoCity of demoCities) {
-    if (normalizedUrl.includes(demoCity) || (demoCity === 'kasol' && normalizedUrl.includes('parvati'))) {
-      const canonicalCityName = demoCity.charAt(0).toUpperCase() + demoCity.slice(1);
-      const refPlaces = searchPlacesReference('', canonicalCityName, 4);
+  const platform = detectPlatform(url);
+  let title = '';
+  let description = '';
+  let thumbnailUrl = '';
+  let author = '';
+
+  // 1. YouTube oEmbed
+  if (platform === 'youtube') {
+    try {
+      const oembedRes = await fetch(
+        `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`,
+        { signal: AbortSignal.timeout(3500) }
+      );
+      if (oembedRes.ok) {
+        const oembedData = await oembedRes.json();
+        if (oembedData.title) title = decodeHtmlEntities(oembedData.title);
+        if (oembedData.author_name) author = `@${oembedData.author_name.replace(/\s+/g, '_')}`;
+        if (oembedData.thumbnail_url) thumbnailUrl = oembedData.thumbnail_url;
+      }
+    } catch {}
+  }
+
+  // 2. TikTok oEmbed
+  if (platform === 'tiktok') {
+    try {
+      const oembedRes = await fetch(
+        `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+        { signal: AbortSignal.timeout(3500) }
+      );
+      if (oembedRes.ok) {
+        const oembedData = await oembedRes.json();
+        if (oembedData.title) title = decodeHtmlEntities(oembedData.title);
+        if (oembedData.author_name) author = `@${oembedData.author_name.replace(/\s+/g, '_')}`;
+        if (oembedData.thumbnail_url) thumbnailUrl = oembedData.thumbnail_url;
+      }
+    } catch {}
+  }
+
+  // 3. Instagram Embed & Open-Graph Scrape
+  if (platform === 'instagram') {
+    try {
+      const codeMatch = url.match(/\/(?:p|reel|reels)\/([a-zA-Z0-9_-]+)/);
+      if (codeMatch) {
+        const shortcode = codeMatch[1];
+        const embedRes = await fetch(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)',
+            Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          },
+          signal: AbortSignal.timeout(4000),
+        });
+        if (embedRes.ok) {
+          const embedHtml = await embedRes.text();
+          const captionMatch =
+            embedHtml.match(/<div class="Caption"[^>]*>([\s\S]*?)<\/div>/i) ||
+            embedHtml.match(/class="Caption"[^>]*>([\s\S]*?)<\/a>/i);
+          if (captionMatch) {
+            description = decodeHtmlEntities(captionMatch[1].replace(/<[^>]*>/g, ' ').trim());
+          }
+          const authorMatch = embedHtml.match(/class="UsernameText"[^>]*>([^<]+)<\/a>/i);
+          if (authorMatch) {
+            author = `@${authorMatch[1].trim()}`;
+          }
+          const embedImgMatch = embedHtml.match(/class="EmbeddedMediaImage"\s+src="([^"]*)"/i);
+          if (embedImgMatch) {
+            thumbnailUrl = decodeHtmlEntities(embedImgMatch[1]);
+          }
+        }
+      }
+    } catch {}
+  }
+
+  // 4. Open-graph fallback
+  if (!description || !title) {
+    try {
+      const pageRes = await fetch(url, {
+        headers: {
+          'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+        },
+        signal: AbortSignal.timeout(4500),
+      });
+
+      if (pageRes.ok) {
+        const html = await pageRes.text();
+        const ogTitle =
+          html.match(/property="og:title"\s+content="([^"]*)"/i) ||
+          html.match(/content="([^"]*)"\s+property="og:title"/i);
+        const ogDesc =
+          html.match(/property="og:description"\s+content="([^"]*)"/i) ||
+          html.match(/content="([^"]*)"\s+property="og:description"/i) ||
+          html.match(/name="description"\s+content="([^"]*)"/i);
+        const ogImage =
+          html.match(/property="og:image"\s+content="([^"]*)"/i) ||
+          html.match(/content="([^"]*)"\s+property="og:image"/i);
+
+        if (ogTitle && !title) title = decodeHtmlEntities(ogTitle[1]);
+        if (ogDesc && !description) description = decodeHtmlEntities(ogDesc[1]);
+        if (ogImage && !thumbnailUrl) thumbnailUrl = decodeHtmlEntities(ogImage[1]);
+      }
+    } catch {}
+  }
+
+  // Clean Instagram post title if it has "User on Instagram: ..."
+  if (title.includes('on Instagram:')) {
+    const splitParts = title.split('on Instagram:');
+    const quote = splitParts[1]?.trim().replace(/^["“]+|["”]+$/g, '');
+    if (quote && quote.length > 10) {
+      title = quote.slice(0, 60);
+    }
+  }
+
+  const result: ScrapedSocialMeta = {
+    title: title || 'Travel Video Reel',
+    description,
+    thumbnailUrl:
+      thumbnailUrl ||
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+    author: author || '@traveler',
+    platform,
+  };
+
+  SCRAPER_CACHE.set(normalizedUrl, result);
+  return result;
+}
+
+/**
+ * Fallback Location Extractor Engine
+ * Uses live voice transcript to detect real spoken locations.
+ * Throws an error if no location can be detected from speech.
+ * NO MOCK DATA. NO FAKE PLACES.
+ */
+export async function extractLocationsFromSocialUrl(
+  url: string,
+  preloadedMeta?: ScrapedSocialMeta
+): Promise<ExtractionResult> {
+  const meta = preloadedMeta || (await fetchSocialPageMetadata(url));
+  const transcriptResult = await extractVideoVoiceTranscript(url);
+
+  const fullText = `${transcriptResult.transcript} ${meta.title} ${meta.description}`.toLowerCase();
+
+  if (!fullText || fullText.trim().length < 15) {
+    throw new Error('No voice or speech could be detected in this video. Please provide a video with spoken audio.');
+  }
+
+  // Check known Indian reference cities in dataset if mentioned in spoken transcript
+  const knownCities = [
+    'manali', 'goa', 'rishikesh', 'kasol', 'udaipur', 'jaipur',
+    'varanasi', 'munnar', 'alleppey', 'leh', 'ladakh', 'ooty',
+    'darjeeling', 'coorg', 'hampi', 'agra', 'amritsar', 'shimla'
+  ];
+
+  for (const city of knownCities) {
+    if (fullText.includes(city)) {
+      const canonicalName = city.charAt(0).toUpperCase() + city.slice(1);
+      const refPlaces = searchPlacesReference('', canonicalName, 5);
       if (refPlaces.length > 0) {
         return {
+          destination: `${canonicalName}, India`,
           source: {
             url,
-            platform,
-            title: `Viral ${canonicalCityName} Travel Reel Highlights`,
-            author: `@${demoCity}_travels_official`,
-            thumbnailUrl: refPlaces[0].image_url,
+            platform: meta.platform,
+            title: meta.title || `${canonicalName} Highlights`,
+            author: meta.author,
+            thumbnailUrl: meta.thumbnailUrl || refPlaces[0].image_url,
+            rawTranscript: transcriptResult.transcript || meta.description,
           },
           places: refPlaces.map((rp) => ({
             name: rp.name,
@@ -97,156 +251,6 @@ export async function extractLocationsFromSocialUrl(url: string): Promise<Extrac
     }
   }
 
-  const cityHeuristics: Record<string, {
-    city: string;
-    state: string;
-    places: Omit<Place, 'id' | 'tripId' | 'sourceId' | 'createdAt'>[];
-  }> = {
-    udaipur: {
-      city: 'Udaipur',
-      state: 'Rajasthan',
-      places: [
-        {
-          name: 'Ambrai Ghat at Lake Pichola',
-          city: 'Udaipur',
-          state: 'Rajasthan',
-          lat: 24.5772,
-          lng: 73.6806,
-          category: 'heritage',
-          confidence: 0.94,
-          imageUrl: 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=600&q=80',
-          notes: 'Unobstructed reflection view of the illuminated City Palace over water.',
-        },
-        {
-          name: 'Sajjangarh Monsoon Palace',
-          city: 'Udaipur',
-          state: 'Rajasthan',
-          lat: 24.5937,
-          lng: 73.6375,
-          category: 'viewpoint',
-          confidence: 0.91,
-          imageUrl: 'https://images.unsplash.com/photo-1599661046827-dacff0c0f09a?auto=format&fit=crop&w=600&q=80',
-          notes: 'Hilltop castle overlooking all five lakes and the Aravalli horizon.',
-        },
-        {
-          name: 'Jheel’s Ginger Coffee Bar',
-          city: 'Udaipur',
-          state: 'Rajasthan',
-          lat: 24.5802,
-          lng: 73.6821,
-          category: 'cafe',
-          confidence: 0.87,
-          imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=600&q=80',
-          notes: 'Rooftop lakeside seat right beside the water steps.',
-        },
-      ],
-    },
-    ladakh: {
-      city: 'Leh',
-      state: 'Ladakh',
-      places: [
-        {
-          name: 'Thiksey Monastery Sunrise',
-          city: 'Leh',
-          state: 'Ladakh',
-          lat: 34.0567,
-          lng: 77.6667,
-          category: 'spiritual',
-          confidence: 0.96,
-          imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=600&q=80',
-          notes: 'Mini Potala architecture with monk horn ceremonies at daybreak.',
-        },
-        {
-          name: 'Shanti Stupa White Dome',
-          city: 'Leh',
-          state: 'Ladakh',
-          lat: 34.1643,
-          lng: 77.5849,
-          category: 'viewpoint',
-          confidence: 0.92,
-          imageUrl: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80',
-          notes: 'Sunset panoramic view across the Indus Valley and snow-capped peaks.',
-        },
-      ],
-    },
-    kerala: {
-      city: 'Munnar',
-      state: 'Kerala',
-      places: [
-        {
-          name: 'Kolukkumalai Sunrise Tea Estate',
-          city: 'Munnar',
-          state: 'Kerala',
-          lat: 10.0889,
-          lng: 77.1667,
-          category: 'nature',
-          confidence: 0.95,
-          imageUrl: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=600&q=80',
-          notes: 'World’s highest organic tea plantation perched above morning clouds.',
-        },
-        {
-          name: 'Marayoor Sandalwood Forest & Dolmens',
-          city: 'Munnar',
-          state: 'Kerala',
-          lat: 10.2789,
-          lng: 77.1594,
-          category: 'heritage',
-          confidence: 0.89,
-          imageUrl: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=600&q=80',
-          notes: 'Neolithic stone burial chambers and natural sugarcane jaggery stills.',
-        },
-      ],
-    },
-  };
-
-  for (const [key, data] of Object.entries(cityHeuristics)) {
-    if (normalizedUrl.includes(key)) {
-      return {
-        source: {
-          url,
-          platform,
-          title: `Discovered Spots in ${data.city} from Social Post`,
-          author: `@travel_creator_${key}`,
-          thumbnailUrl: data.places[0]?.imageUrl || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-        },
-        places: data.places,
-      };
-    }
-  }
-
-  // 3. General fallback: Extract intelligent default locations based on first sample
-  const defaultSample = SAMPLE_VIRAL_REELS[0];
-  return {
-    source: {
-      url,
-      platform,
-      title: 'Trending Travel Experience in India',
-      author: '@indiatravel_creator',
-      thumbnailUrl: defaultSample.thumbnailUrl,
-    },
-    places: [
-      {
-        name: 'Historic Old City Heritage Bazaar',
-        city: 'Jaipur',
-        state: 'Rajasthan',
-        lat: 26.9239,
-        lng: 75.8267,
-        category: 'shopping & culture',
-        confidence: 0.82,
-        imageUrl: 'https://images.unsplash.com/photo-1603258849062-850f1f1d1f70?auto=format&fit=crop&w=600&q=80',
-        notes: 'Extracted from social post hashtags & visual landmark analysis.',
-      },
-      {
-        name: 'Stepwell Sunset Overlook',
-        city: 'Jaipur',
-        state: 'Rajasthan',
-        lat: 26.9856,
-        lng: 75.8507,
-        category: 'heritage',
-        confidence: 0.79,
-        imageUrl: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=600&q=80',
-        notes: 'Aesthetic architectural viewpoint identified in video reel frames.',
-      },
-    ],
-  };
+  // If no location is detected from voice transcript: STRICTLY FAIL.
+  throw new Error('Location cannot be detected from this video transcript.');
 }
