@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { GhoomoTrip } from '@/lib/types/ghoomo';
+import { TripRepository } from '@/lib/server/tripRepository';
 
 const TRIPS_FILE_PATH = path.join(process.cwd(), 'src', 'data', 'trips.json');
 
@@ -16,6 +17,17 @@ async function ensureFileExists(): Promise<void> {
 
 export async function getServerTrips(): Promise<GhoomoTrip[]> {
   try {
+    // 1. Try Drizzle ORM / Supabase
+    const dbTrips = await TripRepository.getAllTrips();
+    if (dbTrips && dbTrips.length > 0) {
+      return dbTrips;
+    }
+  } catch (err) {
+    console.warn('[TripStore] Error fetching from DB repository:', err);
+  }
+
+  // 2. Fallback to local file cache
+  try {
     await ensureFileExists();
     const raw = await fs.readFile(TRIPS_FILE_PATH, 'utf-8');
     const parsed = JSON.parse(raw);
@@ -27,11 +39,28 @@ export async function getServerTrips(): Promise<GhoomoTrip[]> {
 }
 
 export async function getServerTripById(id: string): Promise<GhoomoTrip | null> {
+  try {
+    // 1. Try Drizzle ORM / Supabase
+    const dbTrip = await TripRepository.getTripById(id);
+    if (dbTrip) return dbTrip;
+  } catch (err) {
+    console.warn('[TripStore] Error fetching trip by id from DB repository:', err);
+  }
+
+  // 2. Fallback to local file cache
   const trips = await getServerTrips();
   return trips.find((t) => t.id === id) || null;
 }
 
 export async function saveServerTrip(trip: GhoomoTrip): Promise<GhoomoTrip> {
+  // 1. Persist to active Supabase Database via Drizzle ORM
+  try {
+    await TripRepository.saveTrip(trip);
+  } catch (dbErr) {
+    console.warn('[TripStore] Error saving trip to DB repository:', dbErr);
+  }
+
+  // 2. Sync to local file cache
   await ensureFileExists();
   const trips = await getServerTrips();
   const existingIdx = trips.findIndex((t) => t.id === trip.id);
@@ -48,6 +77,17 @@ export async function saveServerTrip(trip: GhoomoTrip): Promise<GhoomoTrip> {
 
 export async function saveMultipleServerTrips(newTrips: GhoomoTrip[]): Promise<GhoomoTrip[]> {
   if (!newTrips || newTrips.length === 0) return getServerTrips();
+
+  // 1. Persist to active Supabase Database via Drizzle ORM
+  for (const t of newTrips) {
+    try {
+      await TripRepository.saveTrip(t);
+    } catch (err) {
+      console.warn(`[TripStore] Error saving trip ${t.id} to DB repository:`, err);
+    }
+  }
+
+  // 2. Sync to local file cache
   await ensureFileExists();
   const trips = await getServerTrips();
 

@@ -20,6 +20,7 @@ import { BudgetEngine } from './budgetEngine';
 import { TodoEngine } from './todoEngine';
 import { GhoomoTrip, Place, ItineraryDay, ItineraryItem, BudgetItem, ChecklistItem, TripSource } from '../types/ghoomo';
 import { fetchSocialPageMetadata } from '@/features/social-import/extractors';
+import { saveServerTrip } from '@/lib/server/tripStore';
 
 export class VideoPipelineOrchestrator {
   /**
@@ -405,6 +406,14 @@ export class VideoPipelineOrchestrator {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
+
+      // Persist directly to Supabase via Drizzle ORM
+      try {
+        await saveServerTrip(finalTrip);
+        console.log(`[Orchestrator] Successfully saved trip ${tripId} to database`);
+      } catch (saveErr) {
+        console.warn(`[Orchestrator] Error persisting trip ${tripId} to database:`, saveErr);
+      }
 
       const processingTime = Date.now() - startTime;
 

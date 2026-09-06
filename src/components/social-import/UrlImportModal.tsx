@@ -31,6 +31,7 @@ interface UrlImportModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: (tripId: string) => void;
+  initialUrl?: string;
 }
 
 const PIPELINE_STAGES = [
@@ -43,10 +44,16 @@ const PIPELINE_STAGES = [
   { key: 'VALIDATING', label: 'Deterministic validation, budget & checklist' },
 ];
 
-export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: UrlImportModalProps) {
+export default function UrlImportModal({
+  tripId,
+  isOpen,
+  onClose,
+  onSuccess,
+  initialUrl = '',
+}: UrlImportModalProps) {
   const queryClient = useQueryClient();
   const { currentUser, deductCredits } = useAuthStore();
-  const [url, setUrl] = useState('');
+  const [url, setUrl] = useState(initialUrl);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
@@ -64,7 +71,24 @@ export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: U
     };
   }, []);
 
-  if (!isOpen || !mounted) return null;
+  // Sync initialUrl whenever it changes or modal opens
+  useEffect(() => {
+    if (isOpen && initialUrl && initialUrl.trim()) {
+      setUrl(initialUrl.trim());
+      setError(null);
+    }
+  }, [isOpen, initialUrl]);
+
+  const handleClose = () => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    setIsLoading(false);
+    setError(null);
+    setActiveJobId(null);
+    setJobStatus('IDLE');
+    setCompletedStages([]);
+    setCandidateDestinations([]);
+    onClose();
+  };
 
   const startJobPolling = (jobId: string) => {
     setActiveJobId(jobId);
@@ -196,10 +220,12 @@ export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: U
     }
   };
 
+  if (!isOpen || !mounted) return null;
+
   return createPortal(
     <div
       style={{ zIndex: 99999 }}
-      onClick={onClose}
+      onClick={handleClose}
       className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/65 backdrop-blur-sm p-4 animate-in fade-in duration-200"
     >
       <div
@@ -222,7 +248,7 @@ export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: U
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-white dark:hover:bg-slate-800 cursor-pointer transition-all"
           >
             <X size={18} />
@@ -250,6 +276,12 @@ export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: U
                     onChange={(e) => {
                       setUrl(e.target.value);
                       setError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleStartExtraction();
+                      }
                     }}
                     placeholder="Paste Instagram Reel, YouTube Short, or TikTok link..."
                     className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-saffron-500 dark:bg-slate-900 dark:border-slate-800 dark:text-white"
@@ -279,7 +311,7 @@ export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: U
                   <Sparkles size={13} className="text-saffron-500" />
                   Try Tested Video Archetypes (Instant Demo):
                 </span>
-                <span className="text-[10px] text-slate-400">Click any card to run</span>
+                <span className="text-[10px] text-slate-400">Click any card to select</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -289,7 +321,7 @@ export default function UrlImportModal({ tripId, isOpen, onClose, onSuccess }: U
                     type="button"
                     onClick={() => {
                       setUrl(sample.url);
-                      handleStartExtraction(sample.url);
+                      setError(null);
                     }}
                     className="flex items-center gap-3 p-2 rounded-lg border border-slate-200 hover:border-saffron-500/50 bg-slate-50/70 hover:bg-saffron-50/40 dark:bg-slate-900/60 dark:border-slate-800 dark:hover:border-saffron-500/50 text-left transition-all group enabled:cursor-pointer disabled:cursor-not-allowed"
                   >

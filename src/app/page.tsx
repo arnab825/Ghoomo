@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { TRIP_KEYS } from "@/hooks/useTripQueries";
 import {
   Compass,
   Sparkles,
@@ -17,28 +20,188 @@ import {
   DollarSign,
   CheckSquare,
   Play,
+  Loader2,
+  AlertCircle,
+  X,
+  Music,
+  Type,
+  Video,
 } from "lucide-react";
 import { tripService } from "@/lib/services/tripService";
 import { Button } from "@/components/ui/button";
-import UrlImportModal from "@/components/social-import/UrlImportModal";
 import { SAMPLE_REELS_CATALOG } from "@/lib/video-pipeline/sampleReelsCatalog";
+
+const PIPELINE_STAGES = [
+  { key: "DOWNLOADING", label: "Video stream received & cached" },
+  { key: "PROCESSING_VIDEO", label: "Multimodal AI analyzing audio & visuals" },
+  { key: "EXTRACTING_EVIDENCE", label: "Extracting landmarks, signs & OCR text" },
+  { key: "RESOLVING_DESTINATION", label: "Resolving destination & entity coordinates" },
+  { key: "OPTIMIZING_TRIP", label: "Geo-clustering & nearest-neighbor scheduling" },
+  { key: "GENERATING_ITINERARY", label: "Generating structured itinerary with provenance" },
+  { key: "VALIDATING", label: "Deterministic validation, budget & checklist" },
+];
 
 export default function HomePage() {
   const router = useRouter();
-  const [pastedUrl, setPastedUrl] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { currentUser, deductCredits } = useAuthStore();
 
-  const handleQuickExtract = (urlToUse?: string) => {
-    const url = (urlToUse || pastedUrl).trim();
-    if (url) {
-      setPastedUrl(url);
-    }
-    setIsModalOpen(true);
+  const [pastedUrl, setPastedUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<string>("IDLE");
+  const [currentStageMessage, setCurrentStageMessage] = useState<string>("");
+  const [completedStages, setCompletedStages] = useState<string[]>([]);
+  const [candidateDestinations, setCandidateDestinations] = useState<
+    Array<{ name: string; confidence: number; country?: string }>
+  >([]);
+
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  const startJobPolling = (jobId: string) => {
+    setActiveJobId(jobId);
+    setIsLoading(true);
+    setError(null);
+
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+
+    pollTimerRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/jobs/${jobId}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        setJobStatus(data.status);
+        setCurrentStageMessage(data.message || "");
+
+        const stageOrder = PIPELINE_STAGES.map((s) => s.key);
+        const currentIdx = stageOrder.indexOf(data.status);
+        if (currentIdx >= 0) {
+          setCompletedStages(stageOrder.slice(0, currentIdx));
+        }
+
+        if (data.status === "NEEDS_CONFIRMATION") {
+          setCandidateDestinations(data.destination_candidates || []);
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          return;
+        }
+
+        if (data.status === "READY") {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          setCompletedStages(stageOrder);
+          deductCredits(1);
+
+          if (data.trip) {
+            tripService.saveLocalTrip(data.trip);
+            queryClient.setQueryData(TRIP_KEYS.detail(data.trip.id), data.trip);
+            queryClient.invalidateQueries({ queryKey: TRIP_KEYS.all });
+            router.push(`/trips/${data.trip.id}`);
+          }
+        }
+
+        if (data.status === "FAILED") {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+          setIsLoading(false);
+          setJobStatus("FAILED");
+          setError(data.error || "Video could not be processed. Try a public video URL.");
+        }
+      } catch (pollErr) {
+        console.warn("[HomePage] Polling error:", pollErr);
+      }
+    }, 1200);
   };
+
+  const handleStartDirectExtraction = async (urlToUse?: string) => {
+    const importUrl = (urlToUse || pastedUrl).trim();
+    if (!importUrl) {
+      setError("Please paste a link to an Instagram Reel, YouTube Short, or travel video.");
+      return;
+    }
+
+    if ((currentUser.credits ?? 9) < 1) {
+      setError("You need 1 credit to extract places from a travel link. Please top up your credits.");
+      return;
+    }
+
+    setPastedUrl(importUrl);
+    setIsLoading(true);
+    setError(null);
+    setCompletedStages([]);
+    setCandidateDestinations([]);
+    setJobStatus("DOWNLOADING");
+    setCurrentStageMessage("Initiating video ingestion & cache...");
+
+    try {
+      const res = await fetch("/api/trips/from-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: importUrl,
+          preferences: {
+            pace: "balanced",
+            travellers: 2,
+          },
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.job_id) {
+        throw new Error(data.error || "Failed to initialize video processing.");
+      }
+
+      startJobPolling(data.job_id);
+    } catch (err: any) {
+      setIsLoading(false);
+      setJobStatus("IDLE");
+      setError(err.message || "Unable to start video processing.");
+    }
+  };
+
+  const handleConfirmDestination = async (chosenDestination: string) => {
+    if (!activeJobId) return;
+    setIsLoading(true);
+    setCandidateDestinations([]);
+
+    try {
+      const res = await fetch(`/api/jobs/${activeJobId}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ destination: chosenDestination }),
+      });
+
+      if (!res.ok) throw new Error("Failed to confirm destination.");
+      startJobPolling(activeJobId);
+    } catch (err: any) {
+      setIsLoading(false);
+      setError(err.message || "Failed to confirm destination.");
+    }
+  };
+
+  const handleCancel = () => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    setIsLoading(false);
+    setJobStatus("IDLE");
+    setError(null);
+    setActiveJobId(null);
+    setCompletedStages([]);
+    setCandidateDestinations([]);
+  };
+
+  const currentProgressPercent = Math.min(
+    95,
+    Math.max(15, Math.round(((completedStages.length + 1) / (PIPELINE_STAGES.length + 1)) * 100))
+  );
 
   return (
     <div className="flex flex-col gap-16 pb-20 overflow-hidden">
-      {/* 1. HERO & SOCIAL URL EXTRACTOR */}
+      {/* 1. HERO & DIRECT SOCIAL URL EXTRACTOR */}
       <section className="relative pt-12 sm:pt-20 px-4 sm:px-6">
         {/* Ambient Subtle Glows */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-teal-600/10 rounded-full blur-[120px] pointer-events-none" />
@@ -65,61 +228,188 @@ export default function HomePage() {
             maps, and auto-generates smart day-wise routes.
           </p>
 
-          {/* Core Feature: Interactive Social URL Input Box */}
-          <div className="max-w-2xl mx-auto rounded-lg border border-slate-200 bg-white p-2 sm:p-2.5 shadow-md dark:border-slate-800 dark:bg-slate-900/90 ring-1 ring-slate-950/5">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="relative flex-1">
-                <LinkIcon
-                  size={18}
-                  className="absolute left-3.5 top-3.5 text-slate-400"
-                />
-                <input
-                  type="url"
-                  value={pastedUrl}
-                  onChange={(e) => setPastedUrl(e.target.value)}
-                  placeholder="Paste Instagram Reel, TikTok, YouTube Short, or blog..."
-                  className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
-                />
+          {/* DIRECT INLINE SOCIAL URL EXTRACTOR */}
+          <div className="max-w-3xl mx-auto rounded-xl border border-slate-200 bg-white p-3 sm:p-4 shadow-xl dark:border-slate-800 dark:bg-slate-900/95 ring-1 ring-slate-950/5 text-left transition-all">
+            {!isLoading && candidateDestinations.length === 0 ? (
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <LinkIcon
+                      size={18}
+                      className="absolute left-3.5 top-3.5 text-slate-400"
+                    />
+                    <input
+                      type="url"
+                      value={pastedUrl}
+                      onChange={(e) => {
+                        setPastedUrl(e.target.value);
+                        setError(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleStartDirectExtraction();
+                        }
+                      }}
+                      placeholder="Paste Instagram Reel, TikTok, YouTube Short, or blog link..."
+                      className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-saffron-500 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={() => handleStartDirectExtraction()}
+                    disabled={!pastedUrl.trim()}
+                    className="bg-linear-to-r from-saffron-500 to-saffron-600 hover:from-saffron-600 hover:to-saffron-700 text-white font-semibold text-sm px-6 py-3 rounded-lg enabled:cursor-pointer disabled:cursor-not-allowed shadow-md flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98] shrink-0"
+                  >
+                    <span>Smart trip plan</span>
+                    <ArrowRight size={16} />
+                  </Button>
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/40 dark:border-rose-900 dark:text-rose-300 text-xs">
+                    <AlertCircle size={15} className="shrink-0 text-rose-500" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400 pt-1">
+                  <Sparkles size={12} className="text-teal-600 shrink-0" />
+                  <span>Native Multimodal Video Understanding — Visuals, OCR text, Audio, Landmarks & Duration.</span>
+                </div>
               </div>
+            ) : candidateDestinations.length > 0 ? (
+              /* Seasonal / Multi-Destination Confirmation Screen */
+              <div className="p-4 space-y-4 animate-in fade-in duration-200">
+                <div className="space-y-1 text-center sm:text-left">
+                  <span className="text-xs font-bold uppercase tracking-wider text-saffron-600 dark:text-saffron-400 flex items-center gap-1.5">
+                    <Sparkles size={13} />
+                    Seasonal Recommendation Listicle Detected
+                  </span>
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white font-heading">
+                    Which destination would you like to build an itinerary for?
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    This travel video recommends multiple regions. Choose one to generate your day-wise schedule:
+                  </p>
+                </div>
 
-              <Button
-                onClick={() => handleQuickExtract()}
-                className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold text-sm px-6 py-3 rounded-md enabled:cursor-pointer disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98] shrink-0"
-              >
-                <span>Smart trip plan</span>
-                <ArrowRight size={16} />
-              </Button>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  {candidateDestinations.map((cand) => (
+                    <button
+                      key={cand.name}
+                      type="button"
+                      onClick={() => handleConfirmDestination(cand.name)}
+                      className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-saffron-500 bg-slate-50 hover:bg-saffron-50 dark:bg-slate-950 dark:border-slate-800 dark:hover:border-saffron-500/50 transition-all group enabled:cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-8 w-8 rounded-full bg-saffron-500/10 text-saffron-600 flex items-center justify-center shrink-0">
+                          <MapPin size={16} />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-sm font-semibold text-slate-900 dark:text-white group-hover:text-saffron-600 transition-colors">
+                            {cand.name}
+                          </span>
+                          {cand.country && (
+                            <p className="text-[11px] text-slate-500">{cand.country}</p>
+                          )}
+                        </div>
+                      </div>
+                      <ArrowRight size={15} className="text-slate-400 group-hover:text-saffron-600 group-hover:translate-x-0.5 transition-all" />
+                    </button>
+                  ))}
+                </div>
 
-            {/* Quick Demo Reels Filter Chips */}
-            <div className="pt-2 px-1 flex flex-wrap items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <Sparkles size={12} className="text-saffron-500" />
-                Quick Test Reels:
-              </span>
-              {SAMPLE_REELS_CATALOG.slice(0, 4).map((sample) => (
-                <button
-                  key={sample.id}
-                  type="button"
-                  onClick={() => handleQuickExtract(sample.url)}
-                  className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-saffron-50 border border-slate-200 hover:border-saffron-500/50 text-slate-700 hover:text-saffron-600 dark:bg-slate-800 dark:text-slate-300 text-[11px] transition-all font-medium enabled:cursor-pointer disabled:cursor-not-allowed"
-                >
-                  {sample.title.split(' ')[0]} {sample.category}
-                </button>
-              ))}
-            </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 font-medium px-3 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Active Live Multi-Stage Processing Widget */
+              <div className="p-4 space-y-4 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="h-9 w-9 rounded-lg bg-linear-to-br from-saffron-500/20 to-teal-500/20 text-saffron-600 border border-saffron-500/30 flex items-center justify-center shrink-0 animate-pulse">
+                      <Video size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>Analyzing Travel Video with Multimodal AI</span>
+                        <Loader2 size={13} className="animate-spin text-saffron-500" />
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate max-w-sm sm:max-w-md">
+                        {pastedUrl}
+                      </p>
+                    </div>
+                  </div>
 
-            <div className="pt-2 px-1 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <Sparkles size={12} className="text-teal-600 shrink-0" />
-              <span>Native Multimodal Video Understanding — Visuals, OCR text, Audio, Landmarks & Duration.</span>
-            </div>
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    title="Cancel processing"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-saffron-600 dark:text-saffron-400 flex items-center gap-1.5">
+                      <Sparkles size={12} className="animate-spin text-saffron-500" />
+                      {currentStageMessage || "Extracting landmarks & scheduling..."}
+                    </span>
+                    <span className="font-mono text-[11px] text-slate-400">
+                      {currentProgressPercent}%
+                    </span>
+                  </div>
+
+                  <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div
+                      className="h-full bg-linear-to-r from-saffron-500 via-teal-500 to-teal-600 transition-all duration-500 rounded-full"
+                      style={{ width: `${currentProgressPercent}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Pipeline Checklist Badges */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  {PIPELINE_STAGES.slice(0, 4).map((st) => {
+                    const isDone = completedStages.includes(st.key);
+                    const isCurrent = jobStatus === st.key;
+                    return (
+                      <div
+                        key={st.key}
+                        className={`flex items-center gap-1.5 p-2 rounded-md text-[11px] font-medium border ${
+                          isDone
+                            ? "bg-teal-50 border-teal-200 text-teal-700 dark:bg-teal-950/40 dark:border-teal-900 dark:text-teal-300"
+                            : isCurrent
+                            ? "bg-saffron-50 border-saffron-300 text-saffron-700 dark:bg-saffron-950/40 dark:border-saffron-900 dark:text-saffron-300 animate-pulse"
+                            : "bg-slate-50 border-slate-100 text-slate-400 dark:bg-slate-950/40 dark:border-slate-800"
+                        }`}
+                      >
+                        {isDone ? (
+                          <CheckCircle2 size={12} className="text-teal-600 shrink-0" />
+                        ) : isCurrent ? (
+                          <Loader2 size={12} className="animate-spin text-saffron-500 shrink-0" />
+                        ) : (
+                          <div className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 shrink-0" />
+                        )}
+                        <span className="truncate">{st.label.split(" ")[0]} {st.label.split(" ")[1]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
-
-          <UrlImportModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            onSuccess={(id) => router.push(`/trips/${id}`)}
-          />
         </div>
       </section>
 
