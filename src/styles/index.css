@@ -99,6 +99,63 @@
   animation: pinGentlePulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Floating & Shimmer Animations */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-14px) scale(1.04);
+  }
+}
+
+@keyframes floatSlowReverse {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(14px) scale(0.96);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    border-color: rgba(13, 148, 136, 0.35);
+    box-shadow: 0 0 20px rgba(13, 148, 136, 0.15);
+  }
+  50% {
+    border-color: rgba(249, 115, 22, 0.45);
+    box-shadow: 0 0 30px rgba(249, 115, 22, 0.25);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 8s ease-in-out infinite;
+}
+
+.animate-float-slow-reverse {
+  animation: floatSlowReverse 9s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.4) 50%, rgba(255,255,255,0) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2.5s infinite;
+}
+
+.animate-border-glow {
+  animation: borderGlow 4s ease-in-out infinite;
+}
+
 /* Minimal Teal Slider Track & Thumb */
 input[type="range"].slider-teal {
   -webkit-appearance: none;
