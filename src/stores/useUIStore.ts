@@ -15,8 +15,13 @@
 import { create } from 'zustand';
 
 export type WorkspaceTab = 'itinerary' | 'places' | 'budget' | 'todo' | 'polls' | 'chat' | 'friends';
+export type ProductMode = 'learn' | 'explore' | 'travel';
 
 interface UIState {
+  // Global Product Mode (SIH 2026: Default is 'learn')
+  activeProductMode: ProductMode;
+  setActiveProductMode: (mode: ProductMode) => void;
+
   // Modal visibility
   isImportModalOpen: boolean;
   isAddPlaceModalOpen: boolean;
@@ -40,6 +45,14 @@ interface UIState {
 }
 
 export const useUIStore = create<UIState>((set) => ({
+  activeProductMode: 'learn', // SIH 2026 default
+  setActiveProductMode: (mode) => {
+    try {
+      localStorage.setItem('ghoomo_product_mode', mode);
+    } catch (_) {}
+    set({ activeProductMode: mode });
+  },
+
   isImportModalOpen: false,
   isAddPlaceModalOpen: false,
   isCollabModalOpen: false,
