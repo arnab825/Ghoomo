@@ -731,50 +731,28 @@ export async function extractLocationsFromUrlAction(
   const postThumbnail = transcriptResult.thumbnailUrl || scrapedMeta.thumbnailUrl || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
   const voiceTranscript = transcriptResult.transcript || scrapedMeta.description || '';
 
-  // Enforce voice/speech requirement: If video has no spoken voice or speech, fail with clear error
-  if (!voiceTranscript || voiceTranscript.trim().length < 10) {
-    return {
-      success: false,
-      data: {
-        source: {
-          url: safeUrl,
-          platform: transcriptResult.platform || urlValidation.platform || 'instagram',
-          title: postTitle,
-          author: authorHandle,
-          thumbnailUrl: postThumbnail,
-        },
-        places: [],
-      },
-      tierUsed: 'tier3_rule_based',
-      durationMs: Date.now() - startTime,
-      validation: {
-        warnings: ['No voice or speech could be detected in this video.'],
-        maxPlacesPerDay: 0,
-        flaggedForReview: true,
-        consecutiveTravelAlerts: [],
-        totalDistanceKm: 0,
-        isGeographicallyGrouped: false,
-      },
-      error: 'No voice or speech could be detected in this video. Please provide a video with spoken audio.',
-      message: 'No voice or speech could be detected in this video. Please provide a video with spoken audio.',
-    };
-  }
+  // If no voice transcript was detected, proceed with multimodal visual & OCR metadata instead of failing
+  const hasVoice = Boolean(voiceTranscript && voiceTranscript.trim().length >= 10);
+  const effectiveContent = hasVoice
+    ? voiceTranscript
+    : `Visual & text-based travel reel for "${postTitle}". Platform: ${transcriptResult.platform || scrapedMeta.platform}. Description: ${scrapedMeta.description || postTitle}.`;
 
-  const aiPrompt = `You are an expert travel assistant. We extracted the spoken voice audio transcript and captions from a travel video:
+
+  const aiPrompt = `You are an expert travel assistant. We extracted travel information, OCR text, visual cues, and audio from a travel video:
 URL: "${safeUrl}"
 Video Title: "${postTitle}"
-Spoken Audio Transcript / Captions:
+Video Content / Audio / On-Screen Text:
 """
-${voiceTranscript.slice(0, 10000)}
+${effectiveContent.slice(0, 10000)}
 """
 Platform: "${transcriptResult.platform || scrapedMeta.platform}"
 
 CRITICAL INSTRUCTIONS:
-1. First, check if ANY real geographic travel location, city, state, country, or tourist spot is mentioned in the transcript.
-   - If NO geographic travel destination or places are mentioned/spoken in the transcript, you MUST respond ONLY with:
+1. First, check if ANY real geographic travel location, city, state, country, or tourist spot is shown, written, or mentioned in the video.
+   - If NO geographic travel destination or places can be detected, you MUST respond ONLY with:
      {
        "locationDetected": false,
-       "reason": "Location cannot be detected from this video transcript."
+       "reason": "Location cannot be detected from this travel video."
      }
 2. If travel locations ARE mentioned/spoken, set "locationDetected": true.
    - "destination": Specify primary destination ("City/Region, Country", e.g. "Switzerland", "Manali, Himachal Pradesh", "Paris, France").

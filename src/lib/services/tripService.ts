@@ -132,6 +132,17 @@ function saveLocalTrips(trips: GhoomoTrip[]): void {
 // Server Data Service Operations
 // ----------------------------------------------------------------------------
 export const tripService = {
+  saveLocalTrip(trip: GhoomoTrip): void {
+    const trips = loadLocalTrips();
+    const idx = trips.findIndex((t) => t.id === trip.id);
+    if (idx >= 0) {
+      trips[idx] = trip;
+    } else {
+      trips.unshift(trip);
+    }
+    saveLocalTrips(trips);
+  },
+
   async getAllTrips(): Promise<GhoomoTrip[]> {
     const localTrips = loadLocalTrips();
 
@@ -260,7 +271,7 @@ export const tripService = {
     if (data.initialSocialUrl && data.initialSocialUrl.trim() !== '') {
       const res = await extractLocationsFromUrlAction({ url: data.initialSocialUrl.trim(), tripId });
       if (!res.success || !res.data || !res.data.places || res.data.places.length === 0) {
-        throw new Error(res.error || 'Location cannot be detected from this video transcript.');
+        throw new Error(res.error || 'Unable to detect travel locations from this video link.');
       }
 
       const extracted = res.data;

@@ -2,6 +2,8 @@
 // Ghoomo - Domain Types & Interfaces
 // ============================================================================
 
+import { ProvenanceSource } from './travelVideoPipeline';
+
 export type PlatformType = 'instagram' | 'tiktok' | 'youtube' | 'blog' | 'other';
 export type TravelStyle = 'solo' | 'couple' | 'friends' | 'family';
 export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'night';
@@ -37,6 +39,9 @@ export interface Place {
   notes?: string;
   assignedDay?: number; // 1..N or undefined if in unassigned radar
   timeSlot?: TimeSlot;
+  provenance?: ProvenanceSource;
+  sourceType?: 'creator' | 'ai' | 'user';
+  timestamp?: string;
   createdAt: string;
 }
 
@@ -49,6 +54,13 @@ export interface ItineraryItem {
   durationMinutes: number;
   notes?: string;
   place?: Place;
+  travelMinutesFromPrevious?: number;
+  startTime?: string;
+  endTime?: string;
+  provenance?: ProvenanceSource;
+  sourceType?: 'creator' | 'ai' | 'user';
+  mealSuggestion?: string;
+  practicalNote?: string;
 }
 
 export interface ItineraryDay {
@@ -105,6 +117,8 @@ export interface GhoomoTrip {
   collaborators: Collaborator[];
   budgetItems: BudgetItem[];
   checklistItems: ChecklistItem[];
+  travelEvidence?: any;
+  budgetBreakdown?: any;
   createdAt: string;
   updatedAt: string;
 }

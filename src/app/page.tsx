@@ -20,44 +20,20 @@ import {
 } from "lucide-react";
 import { tripService } from "@/lib/services/tripService";
 import { Button } from "@/components/ui/button";
+import UrlImportModal from "@/components/social-import/UrlImportModal";
+import { SAMPLE_REELS_CATALOG } from "@/lib/video-pipeline/sampleReelsCatalog";
 
 export default function HomePage() {
   const router = useRouter();
   const [pastedUrl, setPastedUrl] = useState("");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [extractError, setExtractError] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleQuickExtract = async (urlToUse?: string) => {
-    let url = (urlToUse || pastedUrl).trim();
-    if (!url) {
-      router.push("/trips/new");
-      return;
+  const handleQuickExtract = (urlToUse?: string) => {
+    const url = (urlToUse || pastedUrl).trim();
+    if (url) {
+      setPastedUrl(url);
     }
-
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
-      url = "https://" + url;
-    }
-
-    setIsProcessing(true);
-    setExtractError(null);
-    try {
-      const newTrip = await tripService.createTrip({
-        title: "",
-        destinationRegion: "",
-        durationDays: 3,
-        budgetTotal: 15000,
-        travelStyle: "friends",
-        initialSocialUrl: url,
-      });
-
-      router.push(`/trips/${newTrip.id}`);
-    } catch (err) {
-      console.error(err);
-      setExtractError(
-        err instanceof Error ? err.message : "Location cannot be detected from this video transcript."
-      );
-      setIsProcessing(false);
-    }
+    setIsModalOpen(true);
   };
 
   return (
@@ -108,32 +84,42 @@ export default function HomePage() {
 
               <Button
                 onClick={() => handleQuickExtract()}
-                disabled={isProcessing}
-                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm px-6 py-3 rounded-md cursor-pointer shadow-xs flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98]"
+                className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold text-sm px-6 py-3 rounded-md enabled:cursor-pointer disabled:cursor-not-allowed shadow-xs flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98] shrink-0"
               >
-                {isProcessing ? (
-                  <span>Extracting Places...</span>
-                ) : (
-                  <>
-                    <span>Smart trip plan</span>
-                    <ArrowRight size={16} />
-                  </>
-                )}
+                <span>Smart trip plan</span>
+                <ArrowRight size={16} />
               </Button>
             </div>
 
-            {extractError && (
-              <div className="mt-2 text-left text-xs text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-md p-2">
-                {extractError}
-              </div>
-            )}
+            {/* Quick Demo Reels Filter Chips */}
+            <div className="pt-2 px-1 flex flex-wrap items-center justify-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <Sparkles size={12} className="text-saffron-500" />
+                Quick Test Reels:
+              </span>
+              {SAMPLE_REELS_CATALOG.slice(0, 4).map((sample) => (
+                <button
+                  key={sample.id}
+                  type="button"
+                  onClick={() => handleQuickExtract(sample.url)}
+                  className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-saffron-50 border border-slate-200 hover:border-saffron-500/50 text-slate-700 hover:text-saffron-600 dark:bg-slate-800 dark:text-slate-300 text-[11px] transition-all font-medium enabled:cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {sample.title.split(' ')[0]} {sample.category}
+                </button>
+              ))}
+            </div>
 
-            {/* Real-time Voice Detection Guarantee */}
             <div className="pt-2 px-1 flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
               <Sparkles size={12} className="text-teal-600 shrink-0" />
-              <span>Paste any travel video with voice speech — AI verifies real locations, sets budget, and builds your checklist.</span>
+              <span>Native Multimodal Video Understanding — Visuals, OCR text, Audio, Landmarks & Duration.</span>
             </div>
           </div>
+
+          <UrlImportModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            onSuccess={(id) => router.push(`/trips/${id}`)}
+          />
         </div>
       </section>
 

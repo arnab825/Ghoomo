@@ -141,6 +141,10 @@ export default function InteractiveMap({
           placesByDay[dayNumber].push(place);
         }
 
+        const isCreator = place.sourceType === 'creator' || place.provenance?.startsWith('creator_');
+        const provenanceLabel = isCreator ? '🎬 Creator' : place.sourceType === 'user' ? '👤 User' : '✨ AI Added';
+        const provenanceColor = isCreator ? '#ff9933' : place.sourceType === 'user' ? '#0284c7' : '#7c3aed';
+
         const markerHtml = `
           <div id="pin-${place.id}" class="${isSelected ? "active-pin-pulse" : ""}" style="
             position: relative;
@@ -155,7 +159,7 @@ export default function InteractiveMap({
             font-size: ${isSelected ? "13px" : "11px"};
             font-family: var(--font-body, system-ui);
             border-radius: 50%;
-            border: 2.5px solid #ffffff;
+            border: 2.5px solid ${isCreator ? "#ff9933" : "#ffffff"};
             box-shadow: 0 4px 14px rgba(0,0,0,0.28);
             opacity: ${isDimmed ? "0.35" : "1"};
             transform: ${isSelected ? "scale(1.15)" : "scale(1)"};
@@ -163,6 +167,7 @@ export default function InteractiveMap({
             cursor: pointer;
           ">
             ${dayNumber > 0 ? `D${dayNumber}` : index + 1}
+            ${isCreator ? `<span style="position: absolute; top: -5px; right: -5px; background: #ff9933; color: #fff; font-size: 8px; border-radius: 4px; padding: 1px 3px; font-weight: 900; line-height: 1;">★</span>` : ''}
           </div>
         `;
 
@@ -179,16 +184,19 @@ export default function InteractiveMap({
         });
 
         const popupContent = `
-          <div style="min-width: 200px; font-family: var(--font-body, system-ui); padding: 4px;">
+          <div style="min-width: 210px; font-family: var(--font-body, system-ui); padding: 4px;">
             ${place.imageUrl ? `<img src="${place.imageUrl}" style="width: 100%; height: 95px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;" />` : ""}
-            <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 2px;">${place.name}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px;">
+              <div style="font-weight: 700; font-size: 13px; color: #0f172a;">${place.name}</div>
+              <span style="background: ${provenanceColor}18; color: ${provenanceColor}; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px;">${provenanceLabel}</span>
+            </div>
             <div style="font-size: 11px; color: #64748b; margin-bottom: 6px;">${place.city || ""}${place.state ? `, ${place.state}` : ""}</div>
             <div style="display: flex; align-items: center; justify-content: space-between; font-size: 10px; border-top: 1px solid #f1f5f9; padding-top: 6px;">
               <span style="background: ${color}20; color: ${color}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">
                 ${dayNumber > 0 ? `Day ${dayNumber} (${place.timeSlot || "Day"})` : "Unassigned"}
               </span>
               <span style="color: #059669; font-weight: 700;">
-                ${Math.round((place.confidence || 0.9) * 100)}% • How sure we are
+                ${Math.round((place.confidence || 0.9) * 100)}% confidence
               </span>
             </div>
           </div>

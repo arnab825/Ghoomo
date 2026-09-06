@@ -9,6 +9,7 @@ import AddPlaceModal from "@/components/places/AddPlaceModal";
 import CollaborationModal from "@/components/collaboration/CollaborationModal";
 import BudgetAndChecklist from "@/components/budget-checklist/BudgetAndChecklist";
 import LivePollWidget from "@/components/collaboration/LivePollWidget";
+import TripChat from "@/components/chat/TripChat";
 import { Button } from "@/components/ui/button";
 import {
   Compass,
@@ -51,6 +52,7 @@ import {
   ValidationSummary,
 } from "@/lib/types/ghoomo";
 import ProgressiveLoading from "@/components/shared/ProgressiveLoading";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useTrip,
   useAutoGenerateItineraryMutation,
@@ -58,6 +60,7 @@ import {
   useUpdatePlaceConfidenceMutation,
   useMovePlaceToDayMutation,
   useDeleteTripMutation,
+  TRIP_KEYS,
 } from "@/hooks/useTripQueries";
 import { useUIStore } from "@/stores/useUIStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -119,6 +122,7 @@ export default function TripWorkspacePage({
   const router = useRouter();
   const resolvedParams = use(params);
   const tripId = resolvedParams.id;
+  const queryClient = useQueryClient();
 
   // 1. TanStack Query Server State (with Caching & Auto-Refetch)
   const { data: trip, isLoading, isError, error, refetch } = useTrip(tripId);
@@ -412,46 +416,66 @@ export default function TripWorkspacePage({
         {/* LEFT COLUMN: ITINERARY, PLACES & BUDGET (5 COLUMNS) */}
         <div className="lg:col-span-5 border-r border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-950/50 p-4 sm:p-5 overflow-y-auto max-h-[calc(100vh-130px)] space-y-4">
           {/* Tabs Navigation */}
-          <div className="flex p-1 rounded-md bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+          <div className="flex p-1 rounded-md bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 overflow-x-auto gap-1">
             <button
               onClick={() => setActiveTab("itinerary")}
-              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
                 activeTab === "itinerary"
-                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
-              Daily Itinerary
+              Plan
             </button>
             <button
               onClick={() => setActiveTab("places")}
-              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
                 activeTab === "places"
-                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
-              Places & Sources ({trip.places.length})
+              Places ({trip.places.length})
             </button>
             <button
               onClick={() => setActiveTab("budget")}
-              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
                 activeTab === "budget"
-                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
-              Budget & Tasks
+              Budget
+            </button>
+            <button
+              onClick={() => setActiveTab("chat")}
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                activeTab === "chat"
+                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              }`}
+            >
+              Chat & AI
             </button>
             <button
               onClick={() => setActiveTab("polls")}
-              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
                 activeTab === "polls"
-                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
                   : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
-              Live Polls
+              Polls
+            </button>
+            <button
+              onClick={() => setActiveTab("friends")}
+              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                activeTab === "friends"
+                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              }`}
+            >
+              Friends
             </button>
           </div>
 
@@ -700,22 +724,47 @@ export default function TripWorkspacePage({
                                       )}
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between gap-1">
-                                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                            {idx + 1}. {place.name}
+                                          <div className="flex items-center gap-1.5 truncate">
+                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                              {idx + 1}. {place.name}
+                                            </span>
+                                            {place.sourceType === 'creator' || place.provenance?.startsWith('creator_') || item.sourceType === 'creator' ? (
+                                              <span className="text-[10px] font-semibold text-saffron-600 bg-saffron-50 dark:bg-saffron-950/60 px-1.5 py-0.2 rounded border border-saffron-200 dark:border-saffron-800 shrink-0">
+                                                🎬 Creator
+                                              </span>
+                                            ) : (
+                                              <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.2 rounded border border-violet-200 dark:border-violet-800 shrink-0">
+                                                ✨ AI Added
+                                              </span>
+                                            )}
                                           </div>
-                                          <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
-                                            {Math.round(place.confidence * 100)}
-                                            % • How sure we are
+                                          <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20 shrink-0">
+                                            {Math.round((place.confidence || 0.9) * 100)}%
                                           </span>
                                         </div>
 
-                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                          {place.city} •{" "}
-                                          <span className="capitalize">
-                                            {item.timeSlot}
-                                          </span>{" "}
-                                          ({item.durationMinutes}m)
+                                        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                          <span>{place.city}</span>
+                                          <span>•</span>
+                                          <span className="capitalize">{item.timeSlot}</span>
+                                          <span>({item.durationMinutes}m)</span>
+                                          {item.startTime && item.endTime && (
+                                            <span className="font-mono text-[10px] text-slate-600 dark:text-slate-300 bg-slate-200/60 dark:bg-slate-800 px-1.5 py-0.2 rounded">
+                                              ⏰ {item.startTime}–{item.endTime}
+                                            </span>
+                                          )}
+                                          {item.travelMinutesFromPrevious !== undefined && item.travelMinutesFromPrevious > 0 && (
+                                            <span className="text-[10px] text-teal-700 dark:text-teal-400">
+                                              🚗 {item.travelMinutesFromPrevious}m transit
+                                            </span>
+                                          )}
                                         </div>
+
+                                        {item.mealSuggestion && (
+                                          <div className="text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30 px-2 py-0.5 rounded mt-1 border border-amber-200/50 dark:border-amber-900/40">
+                                            🍽️ Recommendation: {item.mealSuggestion}
+                                          </div>
+                                        )}
 
                                         {place.notes && (
                                           <div className="text-[10px] text-slate-500 line-clamp-1 mt-1">
@@ -948,19 +997,27 @@ export default function TripWorkspacePage({
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                            <MapPin size={13} className="text-teal-600" />
-                            <span>{place.name}</span>
+                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5 truncate">
+                            <MapPin size={13} className="text-teal-600 shrink-0" />
+                            <span className="truncate">{place.name}</span>
+                            {place.sourceType === 'creator' || place.provenance?.startsWith('creator_') ? (
+                              <span className="text-[10px] font-semibold text-saffron-600 bg-saffron-50 dark:bg-saffron-950/60 px-1.5 py-0.2 rounded border border-saffron-200 dark:border-saffron-800 shrink-0">
+                                🎬 Creator
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.2 rounded border border-violet-200 dark:border-violet-800 shrink-0">
+                                ✨ AI Added
+                              </span>
+                            )}
                           </div>
                           <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-md shrink-0 ${
                               place.confidence > 0.85
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                 : "bg-amber-50 text-amber-700 border border-amber-200"
                             }`}
                           >
-                            {Math.round(place.confidence * 100)}% • How sure we
-                            are
+                            {Math.round(place.confidence * 100)}%
                           </span>
                         </div>
 
@@ -1013,6 +1070,89 @@ export default function TripWorkspacePage({
           {activeTab === "polls" && (
             <div className="tab-fade-enter">
               <LivePollWidget tripId={tripId} />
+            </div>
+          )}
+
+          {/* TAB 5: CHAT & AI TRIP ASSISTANT */}
+          {activeTab === "chat" && (
+            <div className="tab-fade-enter">
+              <TripChat
+                trip={trip}
+                onTripUpdated={(updated) => {
+                  queryClient.setQueryData(TRIP_KEYS.detail(tripId), updated);
+                  refetch();
+                }}
+              />
+            </div>
+          )}
+
+          {/* TAB 6: FRIENDS & SHARE */}
+          {activeTab === "friends" && (
+            <div className="tab-fade-enter p-4 rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900/60 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-saffron-500/10 text-saffron-600 flex items-center justify-center font-bold text-sm shrink-0">
+                    <Users size={16} />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-slate-900 dark:text-white">Trip Collaborators & Invite</h3>
+                    <p className="text-[10px] text-slate-500">Plan together in real-time with your travel squad</p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => setCollabModalOpen(true)}
+                  className="bg-saffron-500 hover:bg-saffron-600 text-white text-xs h-7 px-2.5 rounded-md enabled:cursor-pointer disabled:cursor-not-allowed shadow-xs"
+                >
+                  <Share2 size={12} className="mr-1" />
+                  <span>Invite</span>
+                </Button>
+              </div>
+
+              {/* Instant Share Link */}
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 space-y-2">
+                <label className="text-[11px] font-semibold text-slate-700 dark:text-slate-300">Fast Invite Link</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    readOnly
+                    value={typeof window !== 'undefined' ? `${window.location.origin}/trips/${trip.id}` : ''}
+                    className="flex-1 px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md text-xs font-mono select-all"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        navigator.clipboard.writeText(`${window.location.origin}/trips/${trip.id}`);
+                        setCreditAlert('Invite link copied to clipboard!');
+                      }
+                    }}
+                    className="bg-teal-600 hover:bg-teal-700 text-white text-xs h-8 px-3 rounded-md enabled:cursor-pointer disabled:cursor-not-allowed shrink-0"
+                  >
+                    Copy Link
+                  </Button>
+                </div>
+                <p className="text-[10px] text-slate-500">Anyone with this link can view, vote on polls, and chat in this trip room.</p>
+              </div>
+
+              {/* Active Members */}
+              <div className="space-y-2 pt-1">
+                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">Active Members (1)</div>
+                <div className="flex items-center justify-between p-2.5 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-linear-to-br from-saffron-500 to-teal-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                      {currentUser?.name?.[0] || 'Y'}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-900 dark:text-white">{currentUser?.name || 'You'} (Trip Owner)</p>
+                      <p className="text-[10px] text-slate-500">{currentUser?.email || 'traveler@ghoomo.in'}</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold text-saffron-600 bg-saffron-50 dark:bg-saffron-950/60 px-2 py-0.5 rounded border border-saffron-200 dark:border-saffron-800">
+                    OWNER
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>
