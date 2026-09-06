@@ -74,6 +74,8 @@ export interface LearningActivity {
   objectiveSnippet?: string;
   instruction?: string;
   thinkingPrompt?: string;
+  fieldChecklist?: Array<{ id: string; label: string; checked?: boolean }>;
+  bloomsLevel?: BloomsTaxonomy;
   quizQuestions?: LearningQuestion[];
   reflectionPrompt?: string;
   status: 'pending' | 'in_progress' | 'completed';
@@ -98,6 +100,11 @@ export interface StudentReflection {
   prompt: string;
   studentResponse: string;
   aiFeedback?: string;
+  rubricScores?: {
+    conceptualUnderstanding?: number;
+    fieldEvidence?: number;
+    criticalSynthesis?: number;
+  };
   createdAt: string;
 }
 

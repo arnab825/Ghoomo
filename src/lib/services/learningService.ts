@@ -17,7 +17,7 @@ const STORAGE_KEY = 'ghoomo_learning_journeys_v1';
 // Seed demo journey ID
 export const FLAGSHIP_KOLKATA_JOURNEY_ID = 'kolkata-heritage-demo';
 
-function getInitialDemoJourney(): LearningJourney {
+export function getInitialDemoJourney(): LearningJourney {
   // Use the curated Kolkata journey
   const base = {
     id: FLAGSHIP_KOLKATA_JOURNEY_ID,
@@ -84,6 +84,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 1,
         stage: 'before' as const,
         type: 'briefing' as const,
+        bloomsLevel: 'understand' as const,
         title: 'Contextual Briefing: Imperial Architecture & Symbolic Power',
         description:
           'A 3-minute conceptual orientation explaining why the British Raj utilized Indo-Saracenic and classical Italianate styles in Calcutta after Queen Victoria’s death.',
@@ -101,6 +102,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 2,
         stage: 'during' as const,
         type: 'observation' as const,
+        bloomsLevel: 'analyze' as const,
         title: 'Observation Mission: Decoding European Architectural Motifs',
         description:
           'Investigate the exterior and grand dome of Victoria Memorial to spot European and Mughal design fusions.',
@@ -112,6 +114,12 @@ function getInitialDemoJourney(): LearningJourney {
           'Locate the 16-foot bronze Angel of Victory on the central dome. Observe the corners for classical British imperial statues paired with Mughal dome proportions.',
         thinkingPrompt:
           'Notice how the angel rotates with wind currents. What message did this mechanical mastery send to 1906 visitors?',
+        fieldChecklist: [
+          { id: 'chk-1', label: '16-foot bronze Angel of Victory rotating with wind on central dome', checked: true },
+          { id: 'chk-2', label: 'White Makrana marble exterior blocks (identical to Taj Mahal quarry)', checked: true },
+          { id: 'chk-3', label: 'Indo-Saracenic corner chattris fused with Italian Renaissance colonnades', checked: true },
+          { id: 'chk-4', label: 'Allegorical statues representing Motherhood, Architecture, and Justice', checked: false },
+        ],
         status: 'completed' as const,
         submission: {
           text: 'Observed the rotating bronze angel atop the central dome. The white marble is Makrana marble, identical to the Taj Mahal.',
@@ -128,6 +136,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 3,
         stage: 'during' as const,
         type: 'quiz' as const,
+        bloomsLevel: 'remember' as const,
         title: 'In-Situ Check: Victoria Memorial Context Quiz',
         description:
           'Three quick comprehension questions assessing your active observation of the monument.',
@@ -192,6 +201,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 4,
         stage: 'during' as const,
         type: 'mission' as const,
+        bloomsLevel: 'apply' as const,
         title: 'Artifact Investigation: Indian Museum & 19th Century Knowledge',
         description:
           'Walk through India’s oldest and largest museum to examine how natural history and archaeological relics were cataloged.',
@@ -203,6 +213,11 @@ function getInitialDemoJourney(): LearningJourney {
           'Visit the Bharhut Buddhist rail gallery and the fossil gallery. Document how the British Asiatic Society used scientific cataloging to project modern authority.',
         thinkingPrompt:
           'How does curating the historical treasures of an ancient culture inside an imperial museum alter how citizens perceive their own history?',
+        fieldChecklist: [
+          { id: 'chk-5', label: 'Ashokan lion capital casts & Bharhut Buddhist sandstone gateways', checked: true },
+          { id: 'chk-6', label: '4,000-year-old Ptolemaic Egyptian mummy preservation chamber', checked: false },
+          { id: 'chk-7', label: 'Siwalik mammal fossils and meteorites cataloged by the Geological Survey', checked: false },
+        ],
         status: 'in_progress' as const,
       },
       {
@@ -212,6 +227,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 1,
         stage: 'during' as const,
         type: 'observation' as const,
+        bloomsLevel: 'analyze' as const,
         title: 'Intellectual Awakening: College Street & The Bengal Renaissance',
         description:
           'Explore Boi Para (College Street), Presidency University, and the famous Indian Coffee House where freedom fighters congregated.',
@@ -223,6 +239,11 @@ function getInitialDemoJourney(): LearningJourney {
           'Walk along the historic bookstores. Notice how the close proximity of printing presses, universities, and coffee shops catalyzed revolutionary publications.',
         thinkingPrompt:
           'Why was access to cheap independent printing presses considered dangerous by colonial administrators?',
+        fieldChecklist: [
+          { id: 'chk-8', label: '1817 Presidency College (now University) historic neo-classical portico', checked: false },
+          { id: 'chk-9', label: 'Pavement wooden book kiosks stacked with vernacular political tracts', checked: false },
+          { id: 'chk-10', label: 'Indian Coffee House high-ceilinged salon & freedom fighter meeting plaque', checked: false },
+        ],
         status: 'pending' as const,
       },
       {
@@ -232,6 +253,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 2,
         stage: 'during' as const,
         type: 'mission' as const,
+        bloomsLevel: 'evaluate' as const,
         title: 'Mission: The Great Escape at Netaji Bhawan',
         description:
           'Trace the December 1940 and January 1941 planning room where Subhas Chandra Bose executed his historic escape from British house arrest.',
@@ -243,6 +265,11 @@ function getInitialDemoJourney(): LearningJourney {
           'Observe the preserved 1937 Wanderer car in which Netaji was driven under cover of night toward Gomoh railway station.',
         thinkingPrompt:
           'What psychological and physical courage was required to slip past 24/7 armed British police surveillance disguised as Ziauddin?',
+        fieldChecklist: [
+          { id: 'chk-11', label: '1937 Wanderer BLA 7169 sedan preserved in front courtyard glass pavilion', checked: false },
+          { id: 'chk-12', label: 'Netaji’s bedroom, writing desk, and military Azad Hind Fauj uniform', checked: false },
+          { id: 'chk-13', label: 'Secret INA telegram archives and original handwritten speech drafts', checked: false },
+        ],
         status: 'pending' as const,
       },
       {
@@ -252,6 +279,7 @@ function getInitialDemoJourney(): LearningJourney {
         orderIndex: 3,
         stage: 'after' as const,
         type: 'reflection' as const,
+        bloomsLevel: 'evaluate' as const,
         title: 'Synthesis & Reflection: Textbook vs. Ground Reality',
         description:
           'Reflect on how physically walking through colonial monuments and freedom fighter houses transformed your comprehension of history.',
@@ -304,9 +332,14 @@ function getInitialDemoJourney(): LearningJourney {
         prompt:
           'What changed in your understanding after observing the monumental scale of Victoria Memorial in person?',
         studentResponse:
-          'Seeing how tall and dominating the monument is compared to the pedestrians around it made me realize how imperial architecture was deliberately constructed to make citizens feel small and obedient.',
+          'Standing under the central dome, the sheer scale of the white Makrana marble and Italian colonnades created an overwhelming feeling of authority compared to ordinary Bengali dwellings in 1906. It wasn’t merely a memorial; it was a deliberate architectural instrument of political hierarchy.',
         aiFeedback:
-          'Outstanding analytical depth! You connected spatial scale with political psychology—precisely what architectural historians call institutional hegemony.',
+          'Outstanding analytical depth! You connected physical spatial scale with political psychology—precisely demonstrating Bloom’s Taxonomy Level 4 (Analyze).',
+        rubricScores: {
+          conceptualUnderstanding: 96,
+          fieldEvidence: 92,
+          criticalSynthesis: 95,
+        },
         createdAt: '2026-09-06T11:00:00Z',
       },
     ],
@@ -481,10 +514,38 @@ export const learningService = {
       prompt,
       studentResponse,
       aiFeedback,
+      rubricScores: {
+        conceptualUnderstanding: Math.floor(Math.random() * 6) + 92,
+        fieldEvidence: Math.floor(Math.random() * 8) + 89,
+        criticalSynthesis: Math.floor(Math.random() * 6) + 92,
+      },
       createdAt: new Date().toISOString(),
     };
 
     journey.reflections.unshift(newReflection);
+    journey.updatedAt = new Date().toISOString();
+    saveLocalJourneys(journeys);
+    return journey;
+  },
+
+  async toggleChecklistItem(
+    journeyId: string,
+    activityId: string,
+    checklistItemId: string,
+    checked: boolean
+  ): Promise<LearningJourney | null> {
+    const journeys = loadLocalJourneys();
+    const journey = journeys.find((j) => j.id === journeyId);
+    if (!journey) return null;
+
+    const activity = journey.activities.find((a) => a.id === activityId);
+    if (!activity || !activity.fieldChecklist) return null;
+
+    const item = activity.fieldChecklist.find((i) => i.id === checklistItemId);
+    if (item) {
+      item.checked = checked;
+    }
+
     journey.updatedAt = new Date().toISOString();
     saveLocalJourneys(journeys);
     return journey;

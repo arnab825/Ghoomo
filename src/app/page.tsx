@@ -157,6 +157,71 @@ export default function HomePage() {
             </Button>
           </Link>
         </div>
+
+        {/* 10-Second Executive Brief for Hackathon Judges & Educators */}
+        <div className="max-w-4xl mx-auto mt-8 p-5 rounded-2xl bg-white/95 dark:bg-slate-900/90 border border-indigo-200/80 dark:border-indigo-950/80 shadow-lg shadow-indigo-950/5 text-left space-y-3.5 backdrop-blur-md">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="h-6 w-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                ★
+              </span>
+              <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                SIH 2026 Executive Architecture (The 10-Second Test)
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400">
+              <GraduationCap size={13} />
+              <span>AICTE Problem Statement 26207</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-xs">
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                WHAT
+              </span>
+              <p className="font-semibold text-slate-900 dark:text-white leading-snug">
+                AI-powered smart learning journeys.
+              </p>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                WHO
+              </span>
+              <p className="font-semibold text-slate-900 dark:text-white leading-snug">
+                Students, teachers & educational groups.
+              </p>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                HOW
+              </span>
+              <p className="font-semibold text-slate-900 dark:text-white leading-snug">
+                Converts digital topics into personalized inquiry journeys.
+              </p>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 block">
+                WHY
+              </span>
+              <p className="font-semibold text-slate-900 dark:text-white leading-snug">
+                Effective, efficient, flexible & comfortable.
+              </p>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 dark:bg-emerald-950/40 dark:border-emerald-800/60 space-y-1 sm:col-span-2 lg:col-span-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block">
+                THE PARADIGM
+              </span>
+              <p className="font-bold text-emerald-900 dark:text-emerald-200 leading-snug text-[11px]">
+                "Places are not merely destinations. They are learning contexts."
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* Mode Architecture Cards (Learn, Explore, Travel) */}

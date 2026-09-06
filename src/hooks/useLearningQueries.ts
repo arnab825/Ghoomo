@@ -6,7 +6,11 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { learningService } from '@/lib/services/learningService';
+import {
+  learningService,
+  getInitialDemoJourney,
+  FLAGSHIP_KOLKATA_JOURNEY_ID,
+} from '@/lib/services/learningService';
 import { GenerateJourneyParams, LearningJourney } from '@/lib/types/learning';
 
 export const LEARNING_KEYS = {
@@ -18,6 +22,7 @@ export function useLearningJourneys() {
   return useQuery({
     queryKey: LEARNING_KEYS.all,
     queryFn: () => learningService.getAllJourneys(),
+    initialData: [getInitialDemoJourney()],
     staleTime: 30 * 1000,
   });
 }
@@ -26,6 +31,7 @@ export function useLearningJourney(id: string) {
   return useQuery({
     queryKey: LEARNING_KEYS.detail(id),
     queryFn: () => learningService.getJourneyById(id),
+    initialData: id === FLAGSHIP_KOLKATA_JOURNEY_ID ? getInitialDemoJourney() : undefined,
     staleTime: 30 * 1000,
     enabled: !!id,
   });
@@ -102,6 +108,28 @@ export function useAddReflectionMutation(journeyId: string) {
       studentResponse: string;
       aiFeedback?: string;
     }) => learningService.addReflection(journeyId, activityId, prompt, studentResponse, aiFeedback),
+    onSuccess: (updated) => {
+      if (updated) {
+        queryClient.setQueryData(LEARNING_KEYS.detail(journeyId), updated);
+        queryClient.invalidateQueries({ queryKey: LEARNING_KEYS.all });
+      }
+    },
+  });
+}
+
+export function useToggleChecklistItemMutation(journeyId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      activityId,
+      checklistItemId,
+      checked,
+    }: {
+      activityId: string;
+      checklistItemId: string;
+      checked: boolean;
+    }) => learningService.toggleChecklistItem(journeyId, activityId, checklistItemId, checked),
     onSuccess: (updated) => {
       if (updated) {
         queryClient.setQueryData(LEARNING_KEYS.detail(journeyId), updated);

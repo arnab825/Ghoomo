@@ -5,9 +5,9 @@ import { Providers } from "@/components/shared/Providers";
 import "@/styles/index.css";
 
 export const metadata: Metadata = {
-  title: "Ghoomo | Social-to-Itinerary Travel Platform for India",
+  title: "Ghoomo | AI-Powered Smart Learning Journeys",
   description:
-    "Transform Instagram Reels, TikTok, YouTube Shorts, and blogs into practical, collaborative, map-based itineraries across India.",
+    "Turn digital content, curriculum topics, and real-world places into personalized experiential learning journeys. SIH 2026 Problem Statement 26207 (Smart Education).",
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="min-h-screen flex flex-col bg-[#fafbfc] dark:bg-[#070a10] text-slate-900 dark:text-slate-100 antialiased selection:bg-orange-500/20 selection:text-orange-600 transition-colors duration-200"
+        className="min-h-screen flex flex-col bg-[#fbfbfa] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 antialiased selection:bg-indigo-500/20 selection:text-indigo-600 transition-colors duration-200"
       >
         <Providers>
           <Navbar />

@@ -2,9 +2,12 @@
 
 import React from 'react';
 
+import { useUIStore } from '@/stores/useUIStore';
+
 interface GhoomoLogoProps {
   size?: 'sm' | 'md' | 'lg';
   showSubtitle?: boolean;
+  subtitle?: string;
   className?: string;
 }
 
@@ -66,10 +69,14 @@ export function GhoomoPinIcon({ className = "h-9 w-9", size = 36 }: { className?
 export function GhoomoWordmark({
   size = 'md',
   showSubtitle = true,
+  subtitle,
 }: {
   size?: 'sm' | 'md' | 'lg';
   showSubtitle?: boolean;
+  subtitle?: string;
 }) {
+  const activeProductMode = useUIStore((s) => s.activeProductMode);
+
   const textSizes = {
     sm: 'text-lg',
     md: 'text-2xl',
@@ -81,6 +88,9 @@ export function GhoomoWordmark({
     md: 13,
     lg: 16,
   };
+
+  const resolvedSubtitle =
+    subtitle || (activeProductMode === 'travel' ? 'Social Travel Studio' : 'Smart Learning Journeys');
 
   return (
     <div className="flex flex-col leading-none select-none">
@@ -110,8 +120,8 @@ export function GhoomoWordmark({
       </div>
 
       {showSubtitle && (
-        <span className="text-[8.5px] sm:text-[9.5px] font-extrabold tracking-[0.22em] text-[#ff6347] dark:text-orange-400 uppercase mt-0.5 opacity-90">
-          Social Travel Studio
+        <span className="text-[8px] sm:text-[9px] font-extrabold tracking-[0.2em] text-[#ff6347] dark:text-orange-400 uppercase mt-0.5 opacity-95">
+          {resolvedSubtitle}
         </span>
       )}
     </div>
@@ -121,6 +131,7 @@ export function GhoomoWordmark({
 export default function GhoomoLogo({
   size = 'md',
   showSubtitle = true,
+  subtitle,
   className = '',
 }: GhoomoLogoProps) {
   const iconDimensions = {
@@ -132,7 +143,7 @@ export default function GhoomoLogo({
   return (
     <div className={`flex items-center gap-2.5 ${className}`}>
       <GhoomoPinIcon size={iconDimensions[size]} />
-      <GhoomoWordmark size={size} showSubtitle={showSubtitle} />
+      <GhoomoWordmark size={size} showSubtitle={showSubtitle} subtitle={subtitle} />
     </div>
   );
 }
