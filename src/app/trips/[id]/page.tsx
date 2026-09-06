@@ -1,0 +1,758 @@
+'use client';
+
+import React, { use, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import InteractiveMap from '@/components/map/InteractiveMap';
+import UrlImportModal from '@/components/social-import/UrlImportModal';
+import AddPlaceModal from '@/components/places/AddPlaceModal';
+import CollaborationModal from '@/components/collaboration/CollaborationModal';
+import BudgetAndChecklist from '@/components/budget-checklist/BudgetAndChecklist';
+import { Button } from '@/components/ui/button';
+import {
+  Compass,
+  MapPin,
+  Calendar,
+  Users,
+  Link as LinkIcon,
+  Plus,
+  Share2,
+  Trash2,
+  ArrowLeft,
+  Sparkles,
+  ExternalLink,
+  ShieldCheck,
+  Clock,
+  Shuffle,
+  ChevronRight,
+  Layers,
+  DollarSign,
+  CheckSquare,
+  AlertTriangle,
+  CheckCircle2,
+  Zap,
+  RefreshCw
+} from 'lucide-react';
+import { Place, TimeSlot, GhoomoTrip, ItineraryDay, ItineraryItem, TripSource, Collaborator } from '@/lib/types/ghoomo';
+import ProgressiveLoading from '@/components/shared/ProgressiveLoading';
+import { AITier, ValidationSummary } from '@/app/actions/aiActions';
+import {
+  useTrip,
+  useAutoGenerateItineraryMutation,
+  useDeletePlaceMutation,
+  useUpdatePlaceConfidenceMutation,
+  useMovePlaceToDayMutation,
+  useDeleteTripMutation,
+} from '@/hooks/useTripQueries';
+import { useUIStore } from '@/stores/useUIStore';
+import { TripWorkspaceSkeleton } from '@/components/shared/skeletons/TripWorkspaceSkeleton';
+import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+
+const DAY_COLOR_CLASSES: Record<number, { text: string; bg: string; border: string }> = {
+  1: { text: 'text-teal-700 dark:text-teal-300', bg: 'bg-teal-50 dark:bg-teal-950/40', border: 'border-teal-200 dark:border-teal-800' },
+  2: { text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', border: 'border-emerald-200 dark:border-emerald-800' },
+  3: { text: 'text-cyan-700 dark:text-cyan-300', bg: 'bg-cyan-50 dark:bg-cyan-950/40', border: 'border-cyan-200 dark:border-cyan-800' },
+  4: { text: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 dark:bg-purple-950/40', border: 'border-purple-200 dark:border-purple-800' },
+  5: { text: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-50 dark:bg-orange-950/40', border: 'border-orange-200 dark:border-orange-800' },
+};
+
+export default function TripWorkspacePage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter();
+  const resolvedParams = use(params);
+  const tripId = resolvedParams.id;
+
+  // 1. TanStack Query Server State (with Caching & Auto-Refetch)
+  const { data: trip, isLoading, isError, error, refetch } = useTrip(tripId);
+
+  // Mutations
+  const autoGroupMutation = useAutoGenerateItineraryMutation(tripId);
+  const deletePlaceMutation = useDeletePlaceMutation(tripId);
+  const updateConfidenceMutation = useUpdatePlaceConfidenceMutation(tripId);
+  const movePlaceMutation = useMovePlaceToDayMutation(tripId);
+  const deleteTripMutation = useDeleteTripMutation();
+
+  // 2. Zustand Store strictly for Local UI State
+  const {
+    isImportModalOpen,
+    setImportModalOpen,
+    isAddPlaceModalOpen,
+    setAddPlaceModalOpen,
+    isCollabModalOpen,
+    setCollabModalOpen,
+    activeTab,
+    setActiveTab,
+    selectedDayFilter,
+    setSelectedDayFilter,
+    selectedPlaceId,
+    setSelectedPlaceId,
+  } = useUIStore();
+
+  const [aiTierUsed, setAiTierUsed] = useState<AITier | null>(null);
+  const [validationSummary, setValidationSummary] = useState<ValidationSummary | null>(null);
+
+  // Loading Skeleton State
+  if (isLoading) {
+    return <TripWorkspaceSkeleton />;
+  }
+
+  // Error State with Retry
+  if (isError || !trip) {
+    return (
+      <div className="container mx-auto max-w-md py-20 text-center space-y-4">
+        <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-rose-950/50">
+          <AlertTriangle size={28} />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white font-heading">
+          {isError ? 'Unable to Load Trip' : 'Trip Not Found'}
+        </h2>
+        <p className="text-xs text-slate-500">
+          {error instanceof Error
+            ? error.message
+            : 'This trip workspace does not exist or has been removed from the server.'}
+        </p>
+        <div className="flex items-center justify-center gap-2.5 pt-2">
+          <Button
+            onClick={() => refetch()}
+            className="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-md shadow-xs active:scale-[0.98] cursor-pointer"
+          >
+            <RefreshCw size={13} className="mr-1.5" />
+            <span>Try Again</span>
+          </Button>
+          <Link href="/trips">
+            <Button
+              variant="outline"
+              className="bg-white border-slate-300 text-slate-700 hover:bg-slate-50 text-xs px-4 py-2 rounded-md shadow-xs active:scale-[0.98] cursor-pointer"
+            >
+              <ArrowLeft size={13} className="mr-1.5" />
+              <span>Return to Trips</span>
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleSelectPlace = (placeId: string) => {
+    setSelectedPlaceId(placeId);
+  };
+
+  const handleDeleteTrip = async () => {
+    if (confirm('Are you sure you want to permanently delete this trip?')) {
+      await deleteTripMutation.mutateAsync(tripId);
+      router.push('/trips');
+    }
+  };
+
+  const handleAutoGroupWithAI = async () => {
+    if (!trip) return;
+    try {
+      const res = await autoGroupMutation.mutateAsync({
+        destination: trip.destinationRegion,
+        durationDays: trip.durationDays,
+        places: trip.places,
+      });
+      setAiTierUsed(res.tierUsed);
+      setValidationSummary(res.validation);
+    } catch (err) {
+      console.error('[AI Fallback] Action error:', err);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col min-h-[calc(100vh-72px)] bg-[#fafafa] dark:bg-[#0a0e17] text-slate-900 dark:text-slate-100">
+      {/* 1. TOP CONTROL BAR */}
+      <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md px-4 sm:px-6 py-3 sticky top-16 z-30 dark:border-slate-800 dark:bg-slate-950/80 shadow-xs">
+        <div className="container mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          {/* Left: Back + Title + Meta */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="/trips"
+              className="p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-heading truncate max-w-md">
+                  {trip.title}
+                </h1>
+                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-teal-600/10 text-teal-700 border border-teal-600/20 dark:bg-teal-950/50 dark:text-teal-300">
+                  {trip.travelStyle}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span className="flex items-center gap-1 text-teal-700 dark:text-teal-400 font-medium">
+                  <MapPin size={12} /> {trip.destinationRegion}
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Calendar size={12} /> {trip.durationDays} Days ({trip.places.length} places)
+                </span>
+                <span>•</span>
+                <span className="text-emerald-600 font-semibold font-mono">
+                  Budget ₹{trip.budgetTotal.toLocaleString('en-IN')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Actions Cluster */}
+          <div className="flex items-center flex-wrap gap-2">
+            {/* Collaborators Stack */}
+            <button
+              onClick={() => setCollabModalOpen(true)}
+              title="Plan with friends"
+              className="flex items-center gap-2 p-1.5 pr-3 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/70 transition-all duration-100 cursor-pointer active:scale-[0.98]"
+            >
+              <div className="flex -space-x-2">
+                {trip.collaborators.slice(0, 3).map((c: Collaborator, i: number) => (
+                  <div
+                    key={c.id}
+                    className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-slate-700 overflow-hidden"
+                  >
+                    {c.avatarUrl ? (
+                      <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" />
+                    ) : (
+                      c.name.charAt(0).toUpperCase()
+                    )}
+                  </div>
+                ))}
+              </div>
+              <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                {trip.collaborators.length} {trip.collaborators.length === 1 ? 'member' : 'members'}
+              </span>
+            </button>
+
+            {/* Import Social Reel CTA */}
+            <Button
+              onClick={() => setImportModalOpen(true)}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs py-2 px-3.5 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100"
+            >
+              <LinkIcon size={14} className="mr-1.5" />
+              <span>Add from Reel, Short, or blog</span>
+            </Button>
+
+            {/* Add Manual Place */}
+            <Button
+              onClick={() => setAddPlaceModalOpen(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white border border-teal-600 text-teal-600 hover:bg-teal-50 text-xs px-3 py-2 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100 dark:bg-slate-900 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-slate-800"
+            >
+              <Plus size={14} className="mr-1 text-teal-600" />
+              <span>Add Place</span>
+            </Button>
+
+            {/* Auto-Cluster Itinerary via 3-Tier AI Fallback */}
+            <Button
+              onClick={handleAutoGroupWithAI}
+              disabled={autoGroupMutation.isPending}
+              size="sm"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100"
+            >
+              <Shuffle size={13} className={`mr-1.5 text-white ${autoGroupMutation.isPending ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{autoGroupMutation.isPending ? 'Building route...' : 'Best route for your trip'}</span>
+            </Button>
+
+            {/* Share / Collab Modal */}
+            <Button
+              onClick={() => setCollabModalOpen(true)}
+              variant="ghost"
+              size="sm"
+              title="Plan with friends"
+              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white cursor-pointer px-2 rounded-md active:scale-[0.98]"
+            >
+              <Share2 size={16} />
+            </Button>
+
+            {/* Delete Trip */}
+            <Button
+              onClick={handleDeleteTrip}
+              variant="ghost"
+              size="sm"
+              className="text-slate-400 hover:text-red-600 cursor-pointer px-2 rounded-md active:scale-[0.98]"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* 2. MAIN WORKSPACE (SPLIT VIEW: CONTROLS + MAP-FIRST) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
+        {/* LEFT COLUMN: ITINERARY, PLACES & BUDGET (5 COLUMNS) */}
+        <div className="lg:col-span-5 border-r border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-950/50 p-4 sm:p-5 overflow-y-auto max-h-[calc(100vh-130px)] space-y-4">
+          {/* Tabs Navigation */}
+          <div className="flex p-1 rounded-md bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
+            <button
+              onClick={() => setActiveTab('itinerary')}
+              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                activeTab === 'itinerary'
+                  ? 'bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              Daily Itinerary
+            </button>
+            <button
+              onClick={() => setActiveTab('places')}
+              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                activeTab === 'places'
+                  ? 'bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              Places & Sources ({trip.places.length})
+            </button>
+            <button
+              onClick={() => setActiveTab('budget')}
+              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                activeTab === 'budget'
+                  ? 'bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold'
+                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+              }`}
+            >
+              Budget & Tasks
+            </button>
+          </div>
+
+          {/* TAB 1: DAILY ITINERARY */}
+          {activeTab === 'itinerary' && (
+            <div className="tab-fade-enter space-y-4">
+              {/* Progressive Loading State during AI generation */}
+              <ProgressiveLoading isLoading={autoGroupMutation.isPending} tierHint={aiTierUsed || undefined} />
+
+              {/* AI Tier & Validation Alert Banner */}
+              {aiTierUsed && !autoGroupMutation.isPending && (
+                <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50 space-y-2.5 dark:border-slate-800 dark:bg-slate-900/60 text-xs animate-in fade-in">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
+                      <Zap size={13} className="text-teal-600" />
+                      <span>Best route for your trip:</span>
+                      <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/60 dark:text-teal-300">
+                        {aiTierUsed === 'tier1_gemini'
+                          ? 'Tier 1: Gemini 1.5 Flash'
+                          : aiTierUsed === 'tier2_groq'
+                          ? 'Tier 2: Groq Llama 3.1 70B'
+                          : 'Tier 3: Rule Clustering'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {validationSummary?.flaggedForReview ? (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800">
+                          <AlertTriangle size={11} className="text-amber-600" />
+                          <span>Needs Review</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
+                          <CheckCircle2 size={11} className="text-emerald-600" />
+                          <span>Pace Validated</span>
+                        </span>
+                      )}
+
+                      {validationSummary && (
+                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                          ~{validationSummary.totalDistanceKm} km
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Travel Alerts (>2h consecutive transit) */}
+                  {validationSummary && validationSummary.consecutiveTravelAlerts && validationSummary.consecutiveTravelAlerts.length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                      <div className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                        <Clock size={12} className="text-amber-600" />
+                        <span>Transit Time Exceeds Ideal 2 Hours:</span>
+                      </div>
+                      {validationSummary.consecutiveTravelAlerts.map((alert, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 pl-3 border-l-2 border-amber-400">
+                          <span>{alert}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Warnings (e.g. >8 places capped or high pace) */}
+                  {validationSummary && validationSummary.warnings && validationSummary.warnings.length > 0 && (
+                    <div className="space-y-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                      {validationSummary.warnings.map((warn, i) => (
+                        <div key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                          <AlertTriangle size={12} className="shrink-0 mt-0.5 text-amber-500" />
+                          <span>{warn}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Day Filter Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                <button
+                  onClick={() => setSelectedDayFilter(null)}
+                  className={`px-3 py-1.5 rounded-md whitespace-nowrap font-medium transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                    selectedDayFilter === null
+                      ? 'bg-slate-900 text-white font-semibold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400'
+                  }`}
+                >
+                  All Days
+                </button>
+                {trip.days.map((day: ItineraryDay) => {
+                  const style = DAY_COLOR_CLASSES[day.dayNumber] || {
+                    text: 'text-teal-700',
+                    bg: 'bg-teal-50',
+                    border: 'border-teal-200',
+                  };
+                  const isSelected = selectedDayFilter === day.dayNumber;
+                  return (
+                    <button
+                      key={day.id}
+                      onClick={() => setSelectedDayFilter(isSelected ? null : day.dayNumber)}
+                      className={`px-3 py-1.5 rounded-md whitespace-nowrap font-medium transition-all duration-100 cursor-pointer border active:scale-[0.98] ${
+                        isSelected
+                          ? `${style.bg} ${style.text} ${style.border} font-bold shadow-xs`
+                          : 'text-slate-600 hover:text-slate-900 bg-white border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400'
+                      }`}
+                    >
+                      Day {day.dayNumber} ({day.items.length})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Day Cards List */}
+              <div className="space-y-4">
+                {trip.days
+                  .filter((day: ItineraryDay) => selectedDayFilter === null || day.dayNumber === selectedDayFilter)
+                  .map((day: ItineraryDay) => {
+                    const style = DAY_COLOR_CLASSES[day.dayNumber] || {
+                      text: 'text-teal-700',
+                      bg: 'bg-teal-50',
+                      border: 'border-teal-200',
+                    };
+
+                    return (
+                      <div
+                        key={day.id}
+                        className="card-micro rounded-lg border border-slate-200 bg-white p-4 space-y-3 shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/60"
+                      >
+                        {/* Day Header */}
+                        <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`h-7 w-7 rounded-md flex items-center justify-center text-xs font-bold ${style.bg} ${style.text} border ${style.border}`}
+                            >
+                              D{day.dayNumber}
+                            </span>
+                            <div>
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{day.theme}</h3>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                {day.items.length === 0
+                                  ? 'No places scheduled yet'
+                                  : `${day.items.length} locations • Clustered by proximity`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <Button
+                            onClick={() => setAddPlaceModalOpen(true)}
+                            size="sm"
+                            variant="ghost"
+                            className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded-md active:scale-[0.98]"
+                          >
+                            <Plus size={13} className="mr-0.5" /> Place
+                          </Button>
+                        </div>
+
+                        {/* Items in this Day */}
+                        {day.items.length === 0 ? (
+                          <div className="text-center py-6 text-xs text-slate-400">
+                            Click &quot;Best route for your trip&quot; or import a reel to populate Day {day.dayNumber}.
+                          </div>
+                        ) : (
+                          <div className="space-y-2.5">
+                            {day.items.map((item: ItineraryItem, idx: number) => {
+                              const place = item.place || trip.places.find((p: Place) => p.id === item.placeId);
+                              if (!place) return null;
+                              const isSelected = selectedPlaceId === place.id;
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  onClick={() => handleSelectPlace(place.id)}
+                                  className={`p-3 rounded-md border transition-all duration-100 cursor-pointer active:scale-[0.99] ${
+                                    isSelected
+                                      ? 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30'
+                                      : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60'
+                                  }`}
+                                >
+                                  <div className="flex gap-3">
+                                    {place.imageUrl && (
+                                      <img
+                                        src={place.imageUrl}
+                                        alt={place.name}
+                                        className="h-16 w-16 rounded-md object-cover shrink-0"
+                                      />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between gap-1">
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                          {idx + 1}. {place.name}
+                                        </div>
+                                        <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
+                                          {Math.round(place.confidence * 100)}% • How sure we are
+                                        </span>
+                                      </div>
+
+                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                        {place.city} • <span className="capitalize">{item.timeSlot}</span> ({item.durationMinutes}m)
+                                      </div>
+
+                                      {place.notes && (
+                                        <div className="text-[10px] text-slate-500 line-clamp-1 mt-1">
+                                          {place.notes}
+                                        </div>
+                                      )}
+
+                                      {/* Quick Move Day Dropdown */}
+                                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/60 text-[10px]">
+                                        <div className="flex items-center gap-1 text-slate-500">
+                                          <span>Move:</span>
+                                          {trip.days.map((d: ItineraryDay) => (
+                                            <button
+                                              key={d.dayNumber}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                movePlaceMutation.mutate({
+                                                  placeId: place.id,
+                                                  dayNumber: d.dayNumber,
+                                                  timeSlot: item.timeSlot,
+                                                });
+                                              }}
+                                              className={`px-1.5 py-0.5 rounded-md text-[10px] cursor-pointer active:scale-[0.98] transition-all duration-100 ${
+                                                d.dayNumber === day.dayNumber
+                                                  ? 'bg-teal-600 text-white font-bold'
+                                                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-900 dark:text-slate-300'
+                                              }`}
+                                            >
+                                              D{d.dayNumber}
+                                            </button>
+                                          ))}
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            deletePlaceMutation.mutate(place.id);
+                                          }}
+                                          className="text-slate-400 hover:text-red-600 p-1 cursor-pointer active:scale-[0.98] transition-all duration-100"
+                                        >
+                                          <Trash2 size={12} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: PLACES & SOCIAL SOURCES RADAR */}
+          {activeTab === 'places' && (
+            <div className="tab-fade-enter space-y-4">
+              {/* Ingested Social Sources Showcase */}
+              {trip.sources.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <LinkIcon size={12} className="text-teal-600" />
+                    <span>Add from Reel, Short, or blog ({trip.sources.length})</span>
+                  </div>
+                  <div className="space-y-2">
+                    {trip.sources.map((src: TripSource) => (
+                      <div
+                        key={src.id}
+                        className="card-micro flex items-center gap-3 p-2.5 rounded-md border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/80 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200"
+                      >
+                        <img
+                          src={src.thumbnailUrl}
+                          alt={src.title}
+                          className="h-12 w-12 rounded-md object-cover shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">{src.title}</div>
+                          <div className="text-[11px] text-slate-500">
+                            By {src.author} on <span className="uppercase text-orange-600 font-medium">{src.platform}</span>
+                          </div>
+                          <a
+                            href={src.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center text-[10px] text-teal-600 hover:text-teal-700 font-medium mt-0.5 cursor-pointer"
+                          >
+                            <span>Open original link</span>
+                            <ExternalLink size={10} className="ml-1" />
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* All Places List with Confidence Sliders */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                  <span>Detected Places & How sure we are</span>
+                  <span className="text-[10px] text-slate-500">Tap to zoom on map</span>
+                </div>
+
+                <div className="space-y-2">
+                  {trip.places.map((place: Place) => {
+                    const isSelected = selectedPlaceId === place.id;
+                    return (
+                      <div
+                        key={place.id}
+                        onClick={() => handleSelectPlace(place.id)}
+                        className={`card-micro p-3 rounded-md border text-xs space-y-2 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                          isSelected
+                            ? 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30'
+                            : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/50'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <MapPin size={13} className="text-teal-600" />
+                            <span>{place.name}</span>
+                          </div>
+                          <span
+                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                              place.confidence > 0.85
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                            }`}
+                          >
+                            {Math.round(place.confidence * 100)}% • How sure we are
+                          </span>
+                        </div>
+
+                        <div className="text-[11px] text-slate-500">
+                          {place.city}, {place.state} • {place.category}
+                        </div>
+
+                        {/* Confidence Adjustment Slider */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-[10px] text-slate-500 font-medium">How sure we are:</span>
+                          <input
+                            type="range"
+                            min="0.1"
+                            max="1.0"
+                            step="0.05"
+                            value={place.confidence}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              updateConfidenceMutation.mutate({
+                                placeId: place.id,
+                                confidence: parseFloat(e.target.value),
+                              });
+                            }}
+                            className="slider-teal flex-1"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: BUDGET & CHECKLIST */}
+          {activeTab === 'budget' && (
+            <div className="tab-fade-enter">
+              <BudgetAndChecklist
+                tripId={tripId}
+                budgetTotal={trip.budgetTotal}
+                budgetItems={trip.budgetItems}
+                checklistItems={trip.checklistItems}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN: FLAGSHIP INTERACTIVE MAP (7 COLUMNS) */}
+        <div className="lg:col-span-7 h-125 lg:h-full relative p-4 flex flex-col">
+          <div className="flex-1 rounded-lg overflow-hidden shadow-xs border border-slate-200 bg-white relative dark:border-slate-800 dark:bg-slate-950">
+            <ErrorBoundary
+              fallbackTitle="Map Rendering Glitch"
+              fallbackMessage="We couldn't initialize the map view. Your places and itinerary schedule remain fully accessible."
+            >
+              <InteractiveMap
+                places={trip.places}
+                selectedPlaceId={selectedPlaceId}
+                onSelectPlace={handleSelectPlace}
+                highlightDay={selectedDayFilter}
+              />
+            </ErrorBoundary>
+
+            {/* Floating Map Legend Overlay */}
+            <div className="absolute top-4 left-4 z-400 bg-white/95 backdrop-blur-md border border-slate-200 rounded-lg p-3 text-[11px] space-y-1.5 shadow-sm pointer-events-auto dark:bg-slate-950/85 dark:border-slate-800">
+              <div className="font-bold text-slate-900 dark:text-white text-[10px] uppercase tracking-wider mb-1">
+                Day Routes Legend
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#0d9488]" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Day 1</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#0f766e]" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Day 2</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#14b8a6]" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">Day 3</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />
+                <span className="text-slate-500 font-medium">Unassigned</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* MODALS */}
+      <UrlImportModal
+        tripId={tripId}
+        isOpen={isImportModalOpen}
+        onClose={() => setImportModalOpen(false)}
+      />
+
+      <AddPlaceModal
+        tripId={tripId}
+        isOpen={isAddPlaceModalOpen}
+        onClose={() => setAddPlaceModalOpen(false)}
+        defaultCity={trip.destinationRegion}
+      />
+
+      <CollaborationModal
+        tripId={tripId}
+        isOpen={isCollabModalOpen}
+        onClose={() => setCollabModalOpen(false)}
+        collaborators={trip.collaborators}
+      />
+    </div>
+  );
+}

@@ -1,11 +1,13 @@
-import type { Metadata } from 'next';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import '@/styles/index.css';
+import type { Metadata } from "next";
+import Navbar from "@/components/shared/Navbar";
+import Footer from "@/components/shared/Footer";
+import { Providers } from "@/components/shared/Providers";
+import "@/styles/index.css";
 
 export const metadata: Metadata = {
-  title: 'BharatSmartTour | Smart Tourism & Hospitality Platform for India',
-  description: 'Discover India, Every Step of the Way. Trust-first AI itinerary planning, dynamic weather rerouting, fair-price & scam shield, cultural etiquette, and verified homestays.',
+  title: "Ghoomo | Social-to-Itinerary Travel Platform for India",
+  description:
+    "Transform Instagram Reels, TikTok, YouTube Shorts, and blogs into practical, collaborative, map-based itineraries across India.",
 };
 
 export default function RootLayout({
@@ -15,12 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
-        <Navbar />
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {children}
-        </main>
-        <Footer />
+      <body className="min-h-screen flex flex-col bg-[#fafafa] text-slate-900 antialiased selection:bg-teal-600/20 selection:text-teal-700">
+        <Providers>
+          <Navbar />
+          <main className="flex-1 flex flex-col">{children}</main>
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

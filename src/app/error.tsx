@@ -1,63 +1,57 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import * as React from 'react';
+import { AlertCircle, RefreshCw, Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
-interface ErrorPageProps {
+export default function RootError({
+  error,
+  reset,
+}: {
   error: Error & { digest?: string };
   reset: () => void;
-}
-
-export default function ErrorPage({ error, reset }: ErrorPageProps) {
-  useEffect(() => {
-    // Log full error details server-side/console for developer debugging
-    console.error('[App Error Boundary Caught Exception]:', {
-      message: error?.message,
-      stack: error?.stack,
-      digest: error?.digest,
-      cause: (error as any)?.cause,
-    });
+}) {
+  React.useEffect(() => {
+    console.error('[RootError] Unhandled application error:', error);
   }, [error]);
 
   return (
-    <div className="container" style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
-      <div className="glass-panel" style={{ maxWidth: '520px', width: '100%', padding: '2.5rem', textAlign: 'center', borderRadius: '1rem' }}>
-        <div style={{ display: 'inline-flex', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '50%', marginBottom: '1.25rem' }}>
-          <AlertTriangle size={36} />
+    <div className="min-h-[calc(100vh-72px)] flex items-center justify-center p-6 bg-[#fafafa] dark:bg-slate-950">
+      <div className="max-w-md w-full p-8 rounded-lg border border-red-200 bg-white dark:border-rose-900/50 dark:bg-slate-900 shadow-md text-center space-y-4">
+        <div className="mx-auto inline-flex h-14 w-14 items-center justify-center rounded-lg bg-red-50 text-red-600 dark:bg-rose-950/50 dark:text-rose-400">
+          <AlertCircle size={28} />
         </div>
 
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.75rem', color: 'var(--text-primary)' }}>
-          Something went wrong
-        </h2>
+        <div>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white font-heading">
+            Application Glitch Detected
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
+            {error.message ||
+              'A temporary glitch prevented this screen from displaying. Please click retry below.'}
+          </p>
+        </div>
 
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: '2rem' }}>
-          We encountered an unexpected issue while loading this experience. Our system has safely logged the technical details for review.
-        </p>
-
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
+          <Button
             onClick={() => reset()}
-            className="btn btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem' }}
+            className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-md shadow-xs active:scale-[0.98] cursor-pointer"
           >
-            <RefreshCw size={16} /> Try Again
-          </button>
+            <RefreshCw size={13} className="mr-1.5" />
+            <span>Try Again</span>
+          </Button>
 
-          <Link
-            href="/"
-            className="btn btn-secondary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem' }}
-          >
-            <Home size={16} /> Return to Home
+          <Link href="/" className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              className="w-full bg-white border-slate-300 text-slate-700 hover:bg-slate-50 text-xs px-4 py-2 rounded-md shadow-xs active:scale-[0.98] cursor-pointer"
+            >
+              <Home size={13} className="mr-1.5" />
+              <span>Go Home</span>
+            </Button>
           </Link>
         </div>
-
-        {error?.digest && (
-          <p style={{ marginTop: '1.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            Error Reference ID: {error.digest}
-          </p>
-        )}
       </div>
     </div>
   );

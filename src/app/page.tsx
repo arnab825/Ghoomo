@@ -3,329 +3,284 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  CloudRain, 
-  Languages, 
-  MapPin, 
-  Sparkles, 
-  ArrowRight, 
-  Calendar, 
-  Wallet,
-  BedDouble,
+import {
   Compass,
+  Sparkles,
+  Link as LinkIcon,
+  ArrowRight,
+  MapPin,
+  Calendar,
+  Users,
   ShieldCheck,
   CheckCircle2,
-  Users,
-  Search,
-  ExternalLink
+  Share2,
+  DollarSign,
+  CheckSquare,
+  Play
 } from 'lucide-react';
-import destinationsData from '@/data/destinations.json';
-import communityTripsData from '@/data/community-trips.json';
-
-const featuredCities = [
-  {
-    city: 'Jaipur',
-    state: 'Rajasthan',
-    activitiesCount: '35+ experiences',
-    tagline: 'Pink City, Royal Havelis & Amber Hilltop',
-    imageUrl: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    city: 'Varanasi',
-    state: 'Uttar Pradesh',
-    activitiesCount: '28+ experiences',
-    tagline: 'Sacred Ganga Ghats, Sunrise Boats & Silk Weavers',
-    imageUrl: 'https://images.unsplash.com/photo-1561361513-2d000a50f0dc?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    city: 'Goa',
-    state: 'Goa',
-    activitiesCount: '45+ experiences',
-    tagline: 'Water Sports, Spice Farms & Portuguese Quarters',
-    imageUrl: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    city: 'Agra',
-    state: 'Uttar Pradesh',
-    activitiesCount: '22+ experiences',
-    tagline: 'Taj Mahal at Dawn, Mughal Forts & Marble Inlay',
-    imageUrl: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    city: 'Kerala',
-    state: 'Kerala',
-    activitiesCount: '32+ experiences',
-    tagline: 'Alleppey Backwaters, Tea Plantations & Ayurveda',
-    imageUrl: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    city: 'Delhi',
-    state: 'Capital Region',
-    activitiesCount: '40+ experiences',
-    tagline: 'Mughal Architecture, Spice Bazaars & Street Food',
-    imageUrl: 'https://images.unsplash.com/photo-1587474260584-136574528ed5?auto=format&fit=crop&w=800&q=80',
-  },
-];
+import { SAMPLE_VIRAL_REELS } from '@/features/social-import/sampleReels';
+import { useGhoomoStore } from '@/stores/useGhoomoStore';
+import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
   const router = useRouter();
-  const [city, setCity] = useState('Jaipur');
-  const [days, setDays] = useState(3);
-  const [budget, setBudget] = useState(12000);
-  const [style, setStyle] = useState('balanced');
+  const { createTrip } = useGhoomoStore();
+  const [pastedUrl, setPastedUrl] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleQuickPlan = (e: React.FormEvent) => {
-    e.preventDefault();
-    router.push(`/itinerary?city=${encodeURIComponent(city)}&days=${days}&budget=${budget}&style=${style}`);
+  const handleQuickExtract = async (urlToUse?: string) => {
+    const url = urlToUse || pastedUrl;
+    if (!url || url.trim() === '') {
+      router.push('/trips/new');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // Find matching sample or default destination
+      const matched = SAMPLE_VIRAL_REELS.find((s) => url.includes(s.id) || url === s.url);
+      const destination = matched ? matched.destination : 'India Expedition';
+      const title = matched ? matched.title.slice(0, 40) : 'Discovered Social Reel Itinerary';
+
+      const newTripId = await createTrip({
+        title,
+        destinationRegion: destination,
+        durationDays: 3,
+        budgetTotal: 15000,
+        travelStyle: 'friends',
+        initialSocialUrl: url,
+      });
+
+      router.push(`/trips/${newTripId}`);
+    } catch (err) {
+      console.error(err);
+      setIsProcessing(false);
+    }
   };
 
   return (
-    <div className="home-container">
-      {/* ----------------------------------------------------------------- */}
-      {/* 1. HERO SECTION: Competitor NextDestination.ai Parity + AI Power   */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="hero-section">
-        <div className="container hero-content">
-          <div className="hero-badge animate-fade-in">
-            <span className="badge badge-saffron">
-              <Sparkles size={13} /> SIH26207 Smart Tourism Studio
-            </span>
-            <span className="hero-badge-text">100% Free Cloud • Reality-Aware AI Platform</span>
+    <div className="flex flex-col gap-16 pb-20 overflow-hidden">
+      {/* 1. HERO & SOCIAL URL EXTRACTOR */}
+      <section className="relative pt-12 sm:pt-20 px-4 sm:px-6">
+        {/* Ambient Subtle Glows */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-96 h-96 bg-teal-600/10 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-orange-500/10 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="container mx-auto max-w-5xl space-y-7 relative z-10 text-center">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-teal-600/20 bg-teal-600/10 px-4 py-1.5 text-xs font-semibold text-teal-700 dark:text-teal-300">
+            <Sparkles size={14} />
+            <span>Turn Social Travel Inspiration into Real Indian Trips</span>
           </div>
 
-          <h1 className="hero-title animate-fade-in">
-            Plan your dream trip in minutes. <br />
-            <span className="gradient-text-saffron">Personalized, Safe & Reality-Aware.</span>
+          {/* Heading */}
+          <h1 className="text-5xl sm:text-7xl font-normal tracking-tight text-slate-900 dark:text-white font-heading leading-[1.08]">
+            Stop Saving Reels. <br />
+            <span className="italic bg-linear-to-r from-teal-600 via-teal-700 to-orange-500 bg-clip-text text-transparent">
+              Start Traveling India.
+            </span>
           </h1>
 
-          <p className="hero-subtitle animate-fade-in">
-            Unlike generic AI planners, works like your personal local concierge — giving you dynamic monsoon rerouting, 
-            fair auto-rickshaw benchmarks, cultural dress-code alerts, and verified heritage homestays across India.
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
+            Paste any Instagram Reel, TikTok, YouTube Short, or travel blog. Ghoomo extracts verified Indian places,
+            pins them on Light Matter maps, and auto-generates smart day-wise routes.
           </p>
 
-          {/* Quick AI Trip Planner Card */}
-          <div className="planner-card glass-panel animate-fade-in">
-            <div className="planner-header">
-              <h3>Plan Your AI Smart Trip Instantly</h3>
-              <p>Tailored by Kaggle datasets, Gemini & Multi-LLM intelligence</p>
+          {/* Core Feature: Interactive Social URL Input Box */}
+          <div className="max-w-2xl mx-auto rounded-lg border border-slate-200 bg-white p-2 sm:p-2.5 shadow-md dark:border-slate-800 dark:bg-slate-900/90 ring-1 ring-slate-950/5">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <LinkIcon size={18} className="absolute left-3.5 top-3.5 text-slate-400" />
+                <input
+                  type="url"
+                  value={pastedUrl}
+                  onChange={(e) => setPastedUrl(e.target.value)}
+                  placeholder="Paste Instagram Reel, TikTok, YouTube Short, or blog..."
+                  className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
+                />
+              </div>
+
+              <Button
+                onClick={() => handleQuickExtract()}
+                disabled={isProcessing}
+                className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm px-6 py-3 rounded-md cursor-pointer shadow-xs flex items-center justify-center gap-2 transition-all duration-100 active:scale-[0.98]"
+              >
+                {isProcessing ? (
+                  <span>Extracting Places...</span>
+                ) : (
+                  <>
+                    <span>Smart trip plan</span>
+                    <ArrowRight size={16} />
+                  </>
+                )}
+              </Button>
             </div>
 
-            <form onSubmit={handleQuickPlan} className="planner-form">
-              <div className="form-group">
-                <label className="form-label"><MapPin size={15} /> Destination</label>
-                <select 
-                  value={city} 
-                  onChange={(e) => setCity(e.target.value)} 
-                  className="form-select"
-                >
-                  <option value="Jaipur">Jaipur (Pink City, Rajasthan)</option>
-                  <option value="Varanasi">Varanasi (Kashi Ghats, UP)</option>
-                  <option value="Goa">Goa (Beaches, Forts & Water Sports)</option>
-                  <option value="Agra">Agra (Taj & Mughal Forts, UP)</option>
-                  <option value="Kerala">Kerala (Backwaters & Hills)</option>
-                  <option value="Delhi">Delhi (Historic Capital)</option>
-                </select>
+            {/* Quick Reel Chips */}
+            <div className="pt-3 px-1 flex items-center justify-between flex-wrap gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <Play size={11} className="text-orange-500" /> Try viral reels:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {SAMPLE_VIRAL_REELS.map((sample) => (
+                  <button
+                    key={sample.id}
+                    onClick={() => handleQuickExtract(sample.url)}
+                    className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 hover:border-teal-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all duration-100 cursor-pointer active:scale-[0.98]"
+                  >
+                    {sample.destination.split(',')[0]}
+                  </button>
+                ))}
               </div>
-
-              <div className="form-group">
-                <label className="form-label"><Calendar size={15} /> Duration</label>
-                <select 
-                  value={days} 
-                  onChange={(e) => setDays(Number(e.target.value))} 
-                  className="form-select"
-                >
-                  <option value={2}>2 Days (Weekend Getaway)</option>
-                  <option value={3}>3 Days (Recommended)</option>
-                  <option value={5}>5 Days (Deep Exploration)</option>
-                  <option value={7}>7 Days (Heritage Circuit)</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label"><Wallet size={15} /> Total Budget</label>
-                <select 
-                  value={budget} 
-                  onChange={(e) => setBudget(Number(e.target.value))} 
-                  className="form-select"
-                >
-                  <option value={6000}>₹6,000 (Backpacker / Student)</option>
-                  <option value={12000}>₹12,000 (Comfort Solo/Couple)</option>
-                  <option value={25000}>₹25,000 (Family / Heritage)</option>
-                  <option value={50000}>₹50,000 (Luxury Palace)</option>
-                </select>
-              </div>
-
-              <div className="planner-submit">
-                <button type="submit" className="btn btn-primary w-full" style={{ height: '44px' }}>
-                  <Sparkles size={18} />
-                  <span>Generate Plan</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Category Quick-Filter Icons Row (Matching NextDestination.ai) */}
-          <div className="category-icons-row animate-fade-in">
-            <Link href="/itinerary?city=Jaipur" className="category-icon-pill">
-              <Compass size={16} className="text-saffron" />
-              <span>AI Day Planner</span>
-            </Link>
-            <Link href="/marketplace" className="category-icon-pill">
-              <BedDouble size={16} className="text-accent" />
-              <span>Verified Havelis & Stays</span>
-            </Link>
-            <Link href="/scam-shield" className="category-icon-pill">
-              <ShieldCheck size={16} className="text-emerald" />
-              <span>Fair Auto Fare & Scam Shield</span>
-            </Link>
-            <Link href="/translator" className="category-icon-pill">
-              <Languages size={16} className="text-cyan" />
-              <span>Voice Translator</span>
-            </Link>
-            <Link href="/etiquette" className="category-icon-pill">
-              <CheckCircle2 size={16} className="text-warning" />
-              <span>Temple Dress Codes</span>
-            </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* 2. "WHERE TO NEXT?" FEATURED DESTINATIONS (NextDestination Parity) */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="container" style={{ marginTop: '3.5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <span className="badge badge-saffron" style={{ marginBottom: '0.5rem' }}>Popular Circuits</span>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Where to next?</h2>
-            <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
-              Explore India's most celebrated heritage, spiritual, and coastal destinations.
-            </p>
+      {/* 2. HOW GHOOMO WORKS (4 STEPS) */}
+      <section className="px-4 sm:px-6">
+        <div className="container mx-auto max-w-6xl space-y-10">
+          <div className="text-center space-y-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-teal-600">
+              The Core Problem & Solution
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-normal text-slate-900 dark:text-white font-heading">
+              From Scattered Saved Links to a Master Trip Plan
+            </h2>
           </div>
-          <Link href="/itinerary" className="feature-link">
-            <span>Explore all circuits</span> <ArrowRight size={15} />
-          </Link>
-        </div>
 
-        <div className="destinations-showcase-grid">
-          {featuredCities.map((dest) => (
-            <Link 
-              key={dest.city} 
-              href={`/itinerary?city=${encodeURIComponent(dest.city)}&days=3`}
-              className="featured-dest-card"
-            >
-              <img src={dest.imageUrl} alt={dest.city} className="featured-dest-bg" />
-              <div className="featured-dest-overlay" />
-              <span className="featured-activity-badge">{dest.activitiesCount}</span>
-              <div className="featured-dest-content">
-                <h3>{dest.city}, {dest.state}</h3>
-                <p>{dest.tagline}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* ----------------------------------------------------------------- */}
-      {/* 3. TRENDING COMMUNITY TRIPS (NextDestination.ai Parity)           */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="container" style={{ marginTop: '5rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <span className="badge badge-cyan" style={{ marginBottom: '0.5rem' }}>Traveler Showcase</span>
-            <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Trending Trips by the Community</h2>
-            <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0' }}>
-              Browse itineraries created by fellow travelers and customize them for your own journey.
-            </p>
-          </div>
-          <Link href="/itinerary" className="feature-link">
-            <span>Open AI Planner</span> <ArrowRight size={15} />
-          </Link>
-        </div>
-
-        <div className="community-trips-grid">
-          {communityTripsData.map((trip) => (
-            <div key={trip.id} className="community-trip-card glass-panel">
-              <img src={trip.coverImage} alt={trip.title} className="comm-trip-cover" />
-              <div className="comm-trip-body">
-                <h4>{trip.title}</h4>
-                <div className="comm-trip-meta">
-                  <span>📍 {trip.destination} • {trip.durationDays} Days</span>
-                  <span>❤️ {trip.likes} likes</span>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+            {[
+              {
+                step: '01',
+                title: 'Add from Reel, Short, or blog',
+                desc: 'Drop in any TikTok, Instagram Reel, YouTube short, or travel blog. No manual typing needed.',
+                icon: LinkIcon,
+                color: 'text-orange-500 bg-orange-50 dark:bg-slate-800',
+              },
+              {
+                step: '02',
+                title: 'Extract Locations',
+                desc: 'Verified coordinates with Indian reference datasets and how sure we are match scores.',
+                icon: MapPin,
+                color: 'text-teal-600 bg-teal-50 dark:bg-slate-800',
+              },
+              {
+                step: '03',
+                title: 'Smart trip plan',
+                desc: 'Best route for your trip grouped into days without zigzagging across India traffic.',
+                icon: Compass,
+                color: 'text-emerald-600 bg-emerald-50 dark:bg-slate-800',
+              },
+              {
+                step: '04',
+                title: 'Plan with friends',
+                desc: 'Invite friends via shareable link to vote on stops, split estimated budget, and check packing lists.',
+                icon: Users,
+                color: 'text-cyan-600 bg-cyan-50 dark:bg-slate-800',
+              },
+            ].map((card) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={card.step}
+                  className="card-micro rounded-lg border border-slate-200 bg-white p-6 space-y-3 relative hover:border-teal-600/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/50 shadow-xs"
+                >
+                  <span className="text-xs font-mono font-bold text-slate-400 block">{card.step}</span>
+                  <div className={`h-10 w-10 rounded-md flex items-center justify-center ${card.color}`}>
+                    <Icon size={20} />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{card.title}</h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{card.desc}</p>
                 </div>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.4rem 0' }}>
-                  By {trip.author} • Category: <strong style={{ color: '#ffb86c' }}>{trip.category}</strong>
-                </p>
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-                  {trip.highlights.slice(0, 2).map((h, hIdx) => (
-                    <span key={hIdx} style={{ fontSize: '0.72rem', background: 'rgba(255,255,255,0.06)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
-                      {h}
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. FEATURED VIRAL EXPERIENCES READY TO CLONE */}
+      <section className="px-4 sm:px-6">
+        <div className="container mx-auto max-w-6xl space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-teal-600">
+                Trending Indian Experiences
+              </span>
+              <h2 className="text-3xl font-normal text-slate-900 dark:text-white font-heading">
+                Explore Pre-Mapped Itineraries
+              </h2>
+            </div>
+            <Link href="/trips" className="cursor-pointer">
+              <Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300 rounded-md active:scale-[0.98] cursor-pointer">
+                View All Workspaces <ArrowRight size={13} className="ml-1" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {SAMPLE_VIRAL_REELS.map((sample) => (
+              <div
+                key={sample.id}
+                onClick={() => handleQuickExtract(sample.url)}
+                className="card-micro group rounded-lg border border-slate-200 bg-white overflow-hidden hover:border-teal-600/50 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 cursor-pointer shadow-xs flex flex-col dark:border-slate-800 dark:bg-slate-900/70 active:scale-[0.99]"
+              >
+                <div className="relative h-44 w-full overflow-hidden">
+                  <img
+                    src={sample.thumbnailUrl}
+                    alt={sample.title}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
+                  <div className="absolute top-2.5 left-2.5">
+                    <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-md bg-white/90 text-slate-900 backdrop-blur-xs shadow-xs">
+                      {sample.platform}
                     </span>
-                  ))}
+                  </div>
                 </div>
-                <Link 
-                  href={`/itinerary?city=${encodeURIComponent(trip.destination)}&days=${trip.durationDays}`}
-                  className="btn btn-primary w-full"
-                  style={{ fontSize: '0.82rem', padding: '0.5rem', marginTop: 'auto', textAlign: 'center', justifyContent: 'center' }}
-                >
-                  Clone & Customize Plan
-                </Link>
+
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-2">
+                  <div>
+                    <span className="text-[11px] text-teal-600 font-semibold block">
+                      {sample.destination}
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900 group-hover:text-teal-700 dark:text-white transition-colors line-clamp-2">
+                      {sample.title}
+                    </h4>
+                  </div>
+                  <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <span>{sample.places.length} places</span>
+                    <span className="text-emerald-600 font-semibold">Ready to map</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ----------------------------------------------------------------- */}
-      {/* 4. OUR UNFAIR COMPETITIVE ADVANTAGES (What Competitor is Lacking)   */}
-      {/* ----------------------------------------------------------------- */}
-      <section className="features-section container">
-        <div className="section-header">
-          <span className="badge badge-emerald">Realities of Travel in India</span>
-          <h2>What Other AI Travel Planners Miss</h2>
-          <p>India-first intelligent safeguards engineered for domestic & international tourists.</p>
-        </div>
-
-        <div className="grid-3">
-          <div className="glass-card feature-box">
-            <div className="feature-icon saffron-bg">
-              <CloudRain size={24} />
-            </div>
-            <h3>Dynamic Monsoon Rerouting</h3>
-            <p>
-              Sudden cloudburst at 2 PM? While competitors show static weather, our AI dynamically swaps waterlogged 
-              outdoor battlements with covered royal palaces and indoor artisan studios in real time.
+      {/* 4. CALL TO ACTION */}
+      <section className="px-4 sm:px-6">
+        <div className="container mx-auto max-w-5xl rounded-lg border border-teal-900/20 bg-linear-to-br from-teal-900 via-teal-950 to-slate-950 p-8 sm:p-14 text-center space-y-6 relative overflow-hidden shadow-xl text-white">
+          <div className="space-y-2 max-w-xl mx-auto">
+            <h2 className="text-3xl sm:text-5xl font-normal text-white font-heading">
+              Ready to Turn Social Links into a Trip?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Create your first trip in 30 seconds. Plan with friends, track expenses, and view everything on an interactive map.
             </p>
-            <Link href="/itinerary" className="feature-link">
-              Try Reroute Simulator <ArrowRight size={14} />
-            </Link>
           </div>
 
-          <div className="glass-card feature-box">
-            <div className="feature-icon emerald-bg">
-              <ShieldCheck size={24} />
-            </div>
-            <h3>Fair-Fare & Scam Shield</h3>
-            <p>
-              Auto-rickshaw meter rate calculator based on official state transport tariffs (₹12/km). 
-              Equipped with regional dialect phrases to eliminate tout exploitation at railway stations.
-            </p>
-            <Link href="/scam-shield" className="feature-link">
-              Open Fair-Price Lens <ArrowRight size={14} />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/trips/new" className="cursor-pointer w-full sm:w-auto">
+              <Button className="w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm px-6 py-3 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100">
+                Create Free Trip
+              </Button>
             </Link>
-          </div>
-
-          <div className="glass-card feature-box">
-            <div className="feature-icon cyan-bg">
-              <Languages size={24} />
-            </div>
-            <h3>Bhashini Voice Translator</h3>
-            <p>
-              Real-time voice and text translator across 10 Indian regional languages (Hindi, Tamil, Bengali, Telugu, Marathi) 
-              to negotiate with drivers and shopkeepers with natural audio playback.
-            </p>
-            <Link href="/translator" className="feature-link">
-              Launch Voice Concierge <ArrowRight size={14} />
+            <Link href="/auth" className="cursor-pointer w-full sm:w-auto">
+              <Button variant="outline" className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20 text-sm px-6 py-3 rounded-md cursor-pointer active:scale-[0.98] transition-all duration-100">
+                Switch Demo Persona
+              </Button>
             </Link>
           </div>
         </div>
