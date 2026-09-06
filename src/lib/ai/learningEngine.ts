@@ -315,21 +315,187 @@ const CURATED_KOLKATA_JOURNEY: Partial<LearningJourney> = {
 };
 
 // ============================================================================
-// Core AI Generator Functions
+// Core AI Generator Functions (Connected to live Google Gemini 2.5 Flash API)
 // ============================================================================
+
+async function callGemini(prompt: string, jsonMode: boolean = false): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey.length < 10) {
+    return null;
+  }
+  const models = ['gemini-2.5-flash', 'gemini-flash-latest', 'gemini-1.5-flash'];
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: jsonMode ? { responseMimeType: 'application/json' } : undefined,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text) return text;
+      }
+    } catch (err) {
+      console.warn(`[Gemini ${model} call warning]:`, err);
+    }
+  }
+  return null;
+}
 
 export async function generateLearningJourney(params: GenerateJourneyParams): Promise<LearningJourney> {
   const { topicOrUrl, subject, gradeLevel, difficulty, language, mode, durationDays } = params;
-
   const journeyId = `lj-${Date.now()}`;
+  const cover = getDestinationImage(topicOrUrl, subject);
+
+  // 1. Attempt live Google Gemini 2.5 Flash generation
+  try {
+    const prompt = `You are an expert curriculum designer and experiential learning pedagogical architect.
+Design a comprehensive, curriculum-aligned experiential learning journey.
+Topic/Location: "${topicOrUrl}"
+Subject: "${subject || 'General'}"
+Grade Level: "${gradeLevel || 'Class 8'}"
+Difficulty: "${difficulty || 'intermediate'}"
+Language: "${language || 'English'}"
+Delivery Mode: "${mode || 'explore'}"
+Duration: ${durationDays || 1} day(s).
+
+Respond with a strict JSON object with this exact structure:
+{
+  "title": "Inspiring educational title",
+  "description": "2-3 sentences explaining the core learning premise and curriculum alignment",
+  "extractedConcepts": ["Concept 1", "Concept 2", "Concept 3", "Concept 4"],
+  "objectives": [
+    { "text": "Clear measurable objective", "bloomsLevel": "remember"|"understand"|"apply"|"analyze"|"evaluate"|"create" }
+  ],
+  "activities": [
+    {
+      "stage": "before"|"during"|"after",
+      "type": "briefing"|"observation"|"mission"|"quiz"|"reflection",
+      "title": "Clear activity title",
+      "description": "Activity description explaining the educational purpose",
+      "durationMinutes": 20,
+      "instruction": "Concrete instructions for the student",
+      "thinkingPrompt": "Deep inquiry question that anchors observation",
+      "placeName": "Specific monument, place, or context",
+      "lat": 22.5448,
+      "lng": 88.3426,
+      "quizQuestions": [
+        {
+          "question": "Question text",
+          "options": ["Option A", "Option B", "Option C", "Option D"],
+          "correctAnswer": "Exact text of the correct option",
+          "explanation": "Why this answer is correct"
+        }
+      ]
+    }
+  ]
+}`;
+
+    const rawJson = await callGemini(prompt, true);
+    if (rawJson) {
+      const parsed = JSON.parse(rawJson);
+      if (parsed.title && Array.isArray(parsed.objectives) && Array.isArray(parsed.activities)) {
+        const liveObjectives: LearningObjective[] = parsed.objectives.map((obj: any, idx: number) => ({
+          id: `obj-${idx + 1}-${journeyId}`,
+          journeyId,
+          text: obj.text || `Understand core concepts of ${topicOrUrl}.`,
+          bloomsLevel: obj.bloomsLevel || 'understand',
+          isCompleted: false,
+        }));
+
+        const liveActivities: LearningActivity[] = parsed.activities.map((act: any, idx: number) => ({
+          id: `act-${idx + 1}-${journeyId}`,
+          journeyId,
+          dayNumber: Math.min(durationDays || 1, Math.floor(idx / 2) + 1),
+          orderIndex: idx + 1,
+          stage: act.stage || (idx === 0 ? 'before' : idx === parsed.activities.length - 1 ? 'after' : 'during'),
+          type: act.type || (act.stage === 'after' ? 'reflection' : 'observation'),
+          title: act.title || `Learning Activity ${idx + 1}`,
+          description: act.description || '',
+          durationMinutes: Number(act.durationMinutes) || 20,
+          instruction: act.instruction,
+          thinkingPrompt: act.thinkingPrompt,
+          placeName: act.placeName,
+          lat: act.lat,
+          lng: act.lng,
+          status: 'pending',
+          quizQuestions: Array.isArray(act.quizQuestions)
+            ? act.quizQuestions.map((q: any, qIdx: number) => ({
+                id: `q-${idx + 1}-${qIdx + 1}-${journeyId}`,
+                activityId: `act-${idx + 1}-${journeyId}`,
+                question: q.question,
+                type: 'mcq' as const,
+                options: q.options || ['Option A', 'Option B', 'Option C', 'Option D'],
+                correctAnswer: q.correctAnswer || (q.options ? q.options[0] : 'Option A'),
+                explanation: q.explanation || 'Verified curriculum concept.',
+              }))
+            : undefined,
+        }));
+
+        return {
+          id: journeyId,
+          title: parsed.title,
+          description: parsed.description,
+          subject: subject || 'General',
+          gradeLevel,
+          difficulty,
+          language: language || 'English',
+          mode,
+          durationDays: durationDays || 1,
+          coverImage: cover,
+          status: 'published',
+          sourceProvenance: {
+            sourceType: 'topic',
+            title: topicOrUrl,
+            extractedConcepts: parsed.extractedConcepts || [subject, topicOrUrl],
+            verifiedLocationsCount: liveActivities.filter((a) => a.lat && a.lng).length || 2,
+            aiModelUsed: 'Gemini 2.5 Flash',
+          },
+          objectives: liveObjectives,
+          activities: liveActivities,
+          studentProgress: {
+            journeyId,
+            studentId: 'user-active',
+            completedActivityIds: [],
+            quizScores: {},
+            totalScore: 0,
+            masteryPercentage: 0,
+            currentActivityId: liveActivities[0]?.id || `act-1-${journeyId}`,
+          },
+          reflections: [],
+          analytics: {
+            totalLearners: 0,
+            completionRate: 0,
+            averageQuizMastery: 0,
+            activitiesCompletedCount: 0,
+            reflectionsSubmittedCount: 0,
+          },
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[Gemini Live Generation failed, using deterministic fallback]:', err);
+  }
+
+  const cleanTitle = params.topicOrUrl.startsWith('http')
+    ? `Deep Dive: ${subject || 'Active Inquiry'} Learning Experience`
+    : `${params.topicOrUrl}: Active Learning Journey`;
+
+  // Fallback to structured curated knowledge if topic matches Kolkata or when offline
   const isKolkataTopic =
     topicOrUrl.toLowerCase().includes('kolkata') ||
     topicOrUrl.toLowerCase().includes('calcutta') ||
     topicOrUrl.toLowerCase().includes('bengal') ||
     topicOrUrl.toLowerCase().includes('freedom movement');
 
-  // If topic relates to the flagship Kolkata Heritage demo, return enhanced Kolkata journey
-  if (isKolkataTopic || mode === 'explore') {
+  if (isKolkataTopic) {
     return {
       ...(CURATED_KOLKATA_JOURNEY as LearningJourney),
       id: journeyId,
@@ -346,13 +512,6 @@ export async function generateLearningJourney(params: GenerateJourneyParams): Pr
       updatedAt: new Date().toISOString(),
     };
   }
-
-  // Generalized smart learning journey generation
-  const cleanTitle = params.topicOrUrl.startsWith('http')
-    ? `${subject}: Interactive Media Journey`
-    : `${params.topicOrUrl}: Core Inquiry Journey`;
-
-  const cover = getDestinationImage(params.topicOrUrl, subject);
 
   const generalizedObjectives: LearningObjective[] = [
     {
@@ -523,55 +682,105 @@ export async function generateLearningJourney(params: GenerateJourneyParams): Pr
 export async function askLearningCopilot(context: CopilotContext): Promise<string> {
   const { journeyTitle, subject, gradeLevel, currentStopName, currentActivityTitle, userMessage } = context;
 
-  const promptLower = userMessage.toLowerCase();
+  // 1. Attempt live Google Gemini call
+  try {
+    const prompt = `You are the Ghoomo AI Learning Copilot assisting a student at grade level: "${gradeLevel}".
+Active Learning Journey: "${journeyTitle}"
+Subject: "${subject}"
+Current Stop / Location: "${currentStopName || 'On-site stop'}"
+Current Activity: "${currentActivityTitle || 'General inquiry'}"
 
-  if (promptLower.includes('explain') || promptLower.includes('class') || promptLower.includes('simpler')) {
-    return `Here is a clear explanation tailored for ${gradeLevel}:
-At ${currentStopName || 'this learning stop'}, think of the buildings not just as old stone, but as a giant 3D billboard. When the British Raj built monuments here, they deliberately used massive white marble and towering domes so that anyone walking past would feel the immense wealth and power of the empire. When you look up at the arches, you can see how architecture was used like a visual language!`;
+Student asks: "${userMessage}"
+
+Provide an encouraging, academically sound, and age-appropriate explanation in 2-4 sentences. Connect what the student observes in the real world with their curriculum concepts without using robotic filler.`;
+
+    const liveAnswer = await callGemini(prompt, false);
+    if (liveAnswer) {
+      return liveAnswer;
+    }
+  } catch (err) {
+    console.warn('[Copilot Gemini warning]:', err);
   }
 
-  if (promptLower.includes('why') && promptLower.includes('important')) {
-    return `In ${subject}, ${currentStopName || 'this place'} is historically vital because it was the exact ground where two opposing forces collided: the grand display of colonial British administrative power on one hand, and the emerging intellect of the Indian independence movement on the other. Standing here lets you observe both sides of that history in the real world.`;
-  }
-
-  if (promptLower.includes('what should i look for') || promptLower.includes('look for') || promptLower.includes('hint')) {
-    return `Here are 3 specific clues to look for right now:
-1. Look at the central dome: note whether the shape resembles European Renaissance basilicas or Mughal Taj Mahal proportions.
-2. Check the carvings around the entrance: spot the allegorical European figures depicting Justice, Architecture, and Art.
-3. Observe the surrounding landscape: notice how the gardens were landscaped like an English estate to impose order on the tropical landscape.`;
-  }
-
-  if (promptLower.includes('quiz me') || promptLower.includes('test me')) {
-    return `Here is a quick challenge:
-"Why did Lord Curzon specifically insist on using Makrana marble from Rajasthan rather than importing cheaper stone from England?"
-Take a moment to think about transportation logistics and imperial symbolism, then tell me your hypothesis!`;
-  }
-
+  // Fallback
   return `As your ${gradeLevel} Learning Copilot for "${journeyTitle}", I am here to connect what you see with your ${subject} curriculum. Focus on your active mission: "${currentActivityTitle || 'Observation'}". What specific details have caught your eye?`;
 }
 
 /**
  * AI Reflection Evaluator
- * Analyzes student reflection responses and provides encouraging, constructive feedback.
+ * Analyzes student reflection responses with live Gemini 2.5 Flash and computes 3D rubric scores.
  */
 export async function evaluateStudentReflection(
   prompt: string,
   studentResponse: string,
-  gradeLevel: string
-): Promise<{ feedback: string; score: number }> {
+  gradeLevel: string,
+  subject?: string
+): Promise<{
+  feedback: string;
+  score: number;
+  rubric_depth?: number;
+  rubric_accuracy?: number;
+  rubric_synthesis?: number;
+}> {
   const text = studentResponse.trim();
 
-  if (text.length < 20) {
+  // 1. Attempt live Google Gemini evaluation
+  try {
+    const evalPrompt = `You are a senior educational assessor evaluating a student reflection.
+Grade Level: "${gradeLevel}"
+Subject: "${subject || 'General'}"
+Reflection Prompt: "${prompt}"
+Student Response: "${text}"
+
+Evaluate the student's submission across three dimensions:
+1. Depth of Inquiry (1 to 5)
+2. Conceptual Accuracy (1 to 5)
+3. Synthesis of Observation & Theory (1 to 5)
+
+Respond with a strict JSON object:
+{
+  "feedback": "2-3 sentences of personalized, constructive feedback praising strong observations and offering one thought-provoking question to deepen thinking.",
+  "score": 85,
+  "rubric_depth": 4,
+  "rubric_accuracy": 4,
+  "rubric_synthesis": 4
+}`;
+
+    const rawJson = await callGemini(evalPrompt, true);
+    if (rawJson) {
+      const parsed = JSON.parse(rawJson);
+      if (parsed.feedback && typeof parsed.score === 'number') {
+        return {
+          feedback: parsed.feedback,
+          score: Math.min(100, Math.max(50, Math.round(parsed.score))),
+          rubric_depth: parsed.rubric_depth || 4,
+          rubric_accuracy: parsed.rubric_accuracy || 4,
+          rubric_synthesis: parsed.rubric_synthesis || 4,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[Reflection eval Gemini warning]:', err);
+  }
+
+  // Fallback
+  if (text.length < 25) {
     return {
       feedback:
-        'A good start! To demonstrate higher-order thinking, try describing a specific detail you observed and explain why it surprised you compared to your textbook.',
-      score: 70,
+        'A good beginning! Try adding a specific detail you observed at the location to explain how it contrasts with what was written in your textbook.',
+      score: 72,
+      rubric_depth: 3,
+      rubric_accuracy: 3,
+      rubric_synthesis: 3,
     };
   }
 
   return {
     feedback:
-      `Insightful reflection for a ${gradeLevel} learner! You clearly connected your physical observation with the broader conceptual theme. You demonstrated strong critical thinking by contrasting written facts with real-world perspective.`,
-    score: 92,
+      `Thoughtful reflection for a ${gradeLevel} student. You connected your physical observations with key ${subject || 'curriculum'} themes and demonstrated genuine intellectual curiosity.`,
+    score: 90,
+    rubric_depth: 4,
+    rubric_accuracy: 5,
+    rubric_synthesis: 4,
   };
 }

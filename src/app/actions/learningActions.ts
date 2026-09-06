@@ -48,11 +48,27 @@ export async function askLearningCopilotAction(
 export async function evaluateReflectionAction(
   prompt: string,
   studentResponse: string,
-  gradeLevel: string
-): Promise<{ success: boolean; feedback?: string; score?: number; error?: string }> {
+  gradeLevel: string,
+  subject?: string
+): Promise<{
+  success: boolean;
+  feedback?: string;
+  score?: number;
+  rubric_depth?: number;
+  rubric_accuracy?: number;
+  rubric_synthesis?: number;
+  error?: string;
+}> {
   try {
-    const evaluation = await evaluateStudentReflection(prompt, studentResponse, gradeLevel);
-    return { success: true, feedback: evaluation.feedback, score: evaluation.score };
+    const evaluation = await evaluateStudentReflection(prompt, studentResponse, gradeLevel, subject);
+    return {
+      success: true,
+      feedback: evaluation.feedback,
+      score: evaluation.score,
+      rubric_depth: evaluation.rubric_depth,
+      rubric_accuracy: evaluation.rubric_accuracy,
+      rubric_synthesis: evaluation.rubric_synthesis,
+    };
   } catch (err: unknown) {
     console.error('[evaluateReflectionAction] Error:', err);
     return {

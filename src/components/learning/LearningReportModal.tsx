@@ -184,7 +184,7 @@ export default function LearningReportModal({ isOpen, onClose, journey }: Learni
                 Model: {journey.sourceProvenance.aiModelUsed || "Gemini 1.5 Flash"} •
                 Verified Locations: {journey.sourceProvenance.verifiedLocationsCount || 4}
               </div>
-              <div>Generated via Ghoomo Smart Learning Journeys for SIH 2026 Problem Statement 26207.</div>
+              <div>Generated via Ghoomo Smart Experiential Learning Engine.</div>
             </div>
           )}
         </div>

@@ -66,6 +66,8 @@ export interface LearningActivity {
   durationMinutes: number;
   placeId?: string;
   placeName?: string;
+  lat?: number;
+  lng?: number;
   coordinates?: {
     lat: number;
     lng: number;
@@ -152,8 +154,9 @@ export interface LearningJourney {
   sourceProvenance?: SourceProvenance;
   objectives: LearningObjective[];
   activities: LearningActivity[];
-  squad: LearningSquadMember[];
-  progress: StudentProgress;
+  squad?: LearningSquadMember[];
+  progress?: StudentProgress;
+  studentProgress?: any;
   reflections: StudentReflection[];
   analytics?: TeacherAnalytics;
   createdAt: string;

@@ -921,7 +921,7 @@ export default function LearningJourneyWorkspacePage({
                     <div className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
                       Learning Squad (Class 8B)
                     </div>
-                    {journey.squad.map((member) => (
+                    {journey.squad?.map((member) => (
                       <div key={member.id} className="flex items-center justify-between py-1.5 border-b border-slate-100">
                         <div className="flex items-center gap-2">
                           <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-[10px]">

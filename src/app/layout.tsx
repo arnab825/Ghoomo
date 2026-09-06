@@ -7,7 +7,7 @@ import "@/styles/index.css";
 export const metadata: Metadata = {
   title: "Ghoomo | AI-Powered Smart Learning Journeys",
   description:
-    "Turn digital content, curriculum topics, and real-world places into personalized experiential learning journeys. SIH 2026 Problem Statement 26207 (Smart Education).",
+    "Turn digital content, curriculum topics, and real-world places into personalized experiential learning journeys.",
 };
 
 export default function RootLayout({

@@ -450,12 +450,22 @@ export const learningService = {
     }
 
     // Update progress stats
-    if (status === 'completed' && !journey.progress.completedActivityIds.includes(activityId)) {
-      journey.progress.completedActivityIds.push(activityId);
+    const progress = journey.progress || {
+      journeyId: journey.id,
+      userId: 'user-active',
+      completedActivityIds: [],
+      quizScores: {},
+      totalScore: 0,
+      masteryPercentage: 0,
+    };
+    journey.progress = progress;
+
+    if (status === 'completed' && !progress.completedActivityIds.includes(activityId)) {
+      progress.completedActivityIds.push(activityId);
       const totalActivities = journey.activities.length;
-      journey.progress.masteryPercentage = Math.min(
+      progress.masteryPercentage = Math.min(
         100,
-        Math.round((journey.progress.completedActivityIds.length / totalActivities) * 100)
+        Math.round((progress.completedActivityIds.length / totalActivities) * 100)
       );
     }
 
@@ -483,12 +493,22 @@ export const learningService = {
     question.selectedAnswer = selectedAnswer;
     const isCorrect = String(selectedAnswer).trim().toLowerCase() === String(question.correctAnswer).trim().toLowerCase();
 
-    journey.progress.quizScores[questionId] = isCorrect ? 1 : 0;
-    const totalAnswered = Object.keys(journey.progress.quizScores).length;
-    const correctCount = Object.values(journey.progress.quizScores).filter((s) => s === 1).length;
+    const progress = journey.progress || {
+      journeyId: journey.id,
+      userId: 'user-active',
+      completedActivityIds: [],
+      quizScores: {},
+      totalScore: 0,
+      masteryPercentage: 0,
+    };
+    journey.progress = progress;
+
+    progress.quizScores[questionId] = isCorrect ? 1 : 0;
+    const totalAnswered = Object.keys(progress.quizScores).length;
+    const correctCount = Object.values(progress.quizScores).filter((s) => s === 1).length;
 
     if (totalAnswered > 0) {
-      journey.progress.totalScore = Math.round((correctCount / totalAnswered) * 100);
+      progress.totalScore = Math.round((correctCount / totalAnswered) * 100);
     }
 
     journey.updatedAt = new Date().toISOString();
