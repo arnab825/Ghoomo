@@ -50,7 +50,7 @@ export default function TeacherDashboardPage() {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAuthorized || authLoading) return;
     let isMounted = true;
 
     async function loadData() {
@@ -75,7 +75,7 @@ export default function TeacherDashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user, isAuthorized, authLoading]);
 
   if (authLoading || !isAuthorized) {
     return (

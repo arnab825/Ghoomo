@@ -45,7 +45,7 @@ function AssignmentsManager() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAuthorized || authLoading) return;
     let isMounted = true;
 
     async function load() {
@@ -76,7 +76,7 @@ function AssignmentsManager() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user, isAuthorized, authLoading]);
 
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();

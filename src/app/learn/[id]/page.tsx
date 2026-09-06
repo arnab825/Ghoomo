@@ -316,22 +316,20 @@ export default function LearningJourneyWorkspacePage({
               <button
                 type="button"
                 onClick={() => setActiveView("learner")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  activeView === "learner"
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${activeView === "learner"
                     ? "bg-white text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 shadow-2xs font-bold"
                     : "text-slate-500 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 Learner View
               </button>
               <button
                 type="button"
                 onClick={() => setActiveView("teacher")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  activeView === "teacher"
+                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${activeView === "teacher"
                     ? "bg-white text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 shadow-2xs font-bold"
                     : "text-slate-500 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 Teacher View
               </button>
@@ -364,11 +362,10 @@ export default function LearningJourneyWorkspacePage({
                 <button
                   type="button"
                   onClick={() => setSelectedDayFilter(null)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    selectedDayFilter === null
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${selectedDayFilter === null
                       ? "bg-indigo-600 text-white shadow-xs"
                       : "bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                  }`}
+                    }`}
                 >
                   All Days ({journey.activities.length})
                 </button>
@@ -380,11 +377,10 @@ export default function LearningJourneyWorkspacePage({
                       key={dayNum}
                       type="button"
                       onClick={() => setSelectedDayFilter(dayNum)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                        selectedDayFilter === dayNum
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${selectedDayFilter === dayNum
                           ? "bg-indigo-600 text-white shadow-xs"
                           : "bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 dark:border-slate-800 hover:border-slate-300"
-                      }`}
+                        }`}
                     >
                       Day {dayNum} ({count})
                     </button>
@@ -446,24 +442,22 @@ export default function LearningJourneyWorkspacePage({
                   return (
                     <div
                       key={act.id}
-                      className={`rounded-2xl border bg-white dark:bg-slate-900 p-5 space-y-3.5 transition-all shadow-2xs ${
-                        isDone
+                      className={`rounded-2xl border bg-white dark:bg-slate-900 p-5 space-y-3.5 transition-all shadow-2xs ${isDone
                           ? "border-emerald-200/80 dark:border-emerald-950/60"
                           : "border-slate-200/90 dark:border-slate-800"
-                      }`}
+                        }`}
                     >
                       {/* Activity Stage Badge + Title */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
                             <span
-                              className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                                act.stage === "before"
+                              className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${act.stage === "before"
                                   ? "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
                                   : act.stage === "during"
-                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                                  : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                              }`}
+                                    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                    : "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                                }`}
                             >
                               Stage: {act.stage}
                             </span>
@@ -570,13 +564,12 @@ export default function LearningJourneyWorkspacePage({
                                       key={opt}
                                       type="button"
                                       onClick={() => handleQuizChoice(act.id, q.id, opt)}
-                                      className={`p-2.5 rounded-lg border text-left text-xs font-medium transition-all cursor-pointer ${
-                                        isSelected
+                                      className={`p-2.5 rounded-lg border text-left text-xs font-medium transition-all cursor-pointer ${isSelected
                                           ? isCorrect
                                             ? "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold"
                                             : "border-rose-500 bg-rose-50 text-rose-900 font-bold"
                                           : "border-slate-200 bg-white hover:border-indigo-300 text-slate-700"
-                                      }`}
+                                        }`}
                                     >
                                       {opt}
                                     </button>
@@ -733,44 +726,40 @@ export default function LearningJourneyWorkspacePage({
                 <button
                   type="button"
                   onClick={() => setSelectedRightTab("map")}
-                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                    selectedRightTab === "map"
+                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${selectedRightTab === "map"
                       ? "bg-white text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 shadow-2xs font-bold"
                       : "text-slate-500 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   Field Map
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedRightTab("copilot")}
-                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                    selectedRightTab === "copilot"
+                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${selectedRightTab === "copilot"
                       ? "bg-white text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 shadow-2xs font-bold"
                       : "text-slate-500 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   AI Copilot
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedRightTab("squad")}
-                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                    selectedRightTab === "squad"
+                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${selectedRightTab === "squad"
                       ? "bg-white text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 shadow-2xs font-bold"
                       : "text-slate-500 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   Squad & Poll
                 </button>
                 <button
                   type="button"
                   onClick={() => setSelectedRightTab("objectives")}
-                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${
-                    selectedRightTab === "objectives"
+                  className={`flex-1 py-1.5 rounded-lg text-center transition-all cursor-pointer ${selectedRightTab === "objectives"
                       ? "bg-white text-indigo-700 dark:bg-slate-800 dark:text-indigo-300 shadow-2xs font-bold"
                       : "text-slate-500 hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   Objectives
                 </button>
@@ -813,11 +802,10 @@ export default function LearningJourneyWorkspacePage({
                     {copilotMessages.map((msg, i) => (
                       <div
                         key={i}
-                        className={`p-2.5 rounded-xl ${
-                          msg.role === "assistant"
+                        className={`p-2.5 rounded-xl ${msg.role === "assistant"
                             ? "bg-indigo-50/70 text-indigo-950 dark:bg-indigo-950/40 dark:text-indigo-200 border border-indigo-100"
                             : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white ml-6"
-                        }`}
+                          }`}
                       >
                         <p className="leading-relaxed">{msg.text}</p>
                       </div>
@@ -898,9 +886,8 @@ export default function LearningJourneyWorkspacePage({
                           <div
                             key={idx}
                             onClick={() => handlePollVote(idx)}
-                            className={`p-2 rounded-lg border text-left transition-all cursor-pointer relative overflow-hidden ${
-                              isChosen ? "border-indigo-600 bg-white font-bold" : "border-slate-200 bg-white/70"
-                            }`}
+                            className={`p-2 rounded-lg border text-left transition-all cursor-pointer relative overflow-hidden ${isChosen ? "border-indigo-600 bg-white font-bold" : "border-slate-200 bg-white/70"
+                              }`}
                           >
                             <div className="flex justify-between relative z-10">
                               <span>{opt}</span>

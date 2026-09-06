@@ -1,5 +1,12 @@
 import { supabase } from '@/lib/supabase/client';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidUuid(id: unknown): boolean {
+  if (typeof id !== 'string' || !id) return false;
+  return UUID_REGEX.test(id);
+}
+
 export interface DbLearningObjective {
   id: string;
   journey_id: string;
@@ -113,6 +120,10 @@ export interface DbReflection {
  * Fetch all journeys created by a teacher with count of objectives and assignments
  */
 export async function getTeacherJourneys(teacherId: string): Promise<DbLearningJourney[]> {
+  if (!isValidUuid(teacherId)) {
+    return [];
+  }
+
   const { data: journeys, error } = await supabase
     .from('learning_journeys')
     .select(`
@@ -125,7 +136,7 @@ export async function getTeacherJourneys(teacherId: string): Promise<DbLearningJ
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching teacher journeys:', error);
+    console.error('Error fetching teacher journeys:', error?.message || error);
     return [];
   }
 
@@ -370,7 +381,11 @@ export async function assignJourneyToStudent(
  * Get all assignments created by a teacher with student details
  */
 export async function getTeacherAssignments(teacherId: string): Promise<DbAssignment[]> {
-  const { data, error } = await supabase
+  if (!isValidUuid(teacherId)) {
+    return [];
+  }
+
+  const { data: assignments, error } = await supabase
     .from('teacher_assignments')
     .select(`
       id,
@@ -380,18 +395,36 @@ export async function getTeacherAssignments(teacherId: string): Promise<DbAssign
       due_date,
       status,
       created_at,
-      profiles!teacher_assignments_student_id_fkey (id, full_name, email, avatar_url),
       learning_journeys (id, title, subject, grade_level, cover_image)
     `)
     .eq('teacher_id', teacherId)
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching teacher assignments:', error);
+    console.error('Error fetching teacher assignments:', error?.message || error);
     return [];
   }
 
-  return (data || []).map((row: any) => ({
+  if (!assignments || assignments.length === 0) {
+    return [];
+  }
+
+  // Fetch student profiles separately to avoid PostgREST foreign key cache mismatch
+  const studentIds = Array.from(new Set(assignments.map((row: any) => row.student_id).filter(Boolean)));
+  const profilesMap = new Map<string, any>();
+
+  if (studentIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, avatar_url')
+      .in('id', studentIds);
+
+    if (profiles) {
+      profiles.forEach((p: any) => profilesMap.set(p.id, p));
+    }
+  }
+
+  return assignments.map((row: any) => ({
     id: row.id,
     journey_id: row.journey_id,
     teacher_id: row.teacher_id,
@@ -399,7 +432,12 @@ export async function getTeacherAssignments(teacherId: string): Promise<DbAssign
     due_date: row.due_date,
     status: row.status,
     created_at: row.created_at,
-    student: row.profiles,
+    student: profilesMap.get(row.student_id) || {
+      id: row.student_id,
+      full_name: 'Student',
+      email: '',
+      avatar_url: '',
+    },
     journey: row.learning_journeys,
   }));
 }
@@ -433,6 +471,15 @@ export async function getTeacherDashboardStats(teacherId: string): Promise<{
     response?: string;
   }>;
 }> {
+  if (!isValidUuid(teacherId)) {
+    return {
+      totalJourneys: 0,
+      totalAssignments: 0,
+      completedAssignments: 0,
+      completionRate: 0,
+      recentSubmissions: [],
+    };
+  }
   // 1. Total Journeys
   const { count: journeysCount } = await supabase
     .from('learning_journeys')
@@ -453,18 +500,32 @@ export async function getTeacherDashboardStats(teacherId: string): Promise<{
   const { data: recentProgress } = await supabase
     .from('student_progress')
     .select(`
+      user_id,
       score,
       completed_at,
       response,
-      profiles (full_name),
       learning_journeys!inner (title, creator_id)
     `)
     .eq('learning_journeys.creator_id', teacherId)
     .order('completed_at', { ascending: false })
     .limit(5);
 
+  const progressUserIds = Array.from(new Set((recentProgress || []).map((p: any) => p.user_id).filter(Boolean)));
+  const progressProfilesMap = new Map<string, string>();
+
+  if (progressUserIds.length > 0) {
+    const { data: progressProfiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', progressUserIds);
+
+    if (progressProfiles) {
+      progressProfiles.forEach((p: any) => progressProfilesMap.set(p.id, p.full_name));
+    }
+  }
+
   const recent = (recentProgress || []).map((p: any) => ({
-    student_name: p.profiles?.full_name || 'Student',
+    student_name: progressProfilesMap.get(p.user_id) || 'Student',
     journey_title: p.learning_journeys?.title || 'Journey',
     score: Number(p.score) || 100,
     completed_at: p.completed_at,
@@ -498,6 +559,10 @@ export async function getStudentAssignedJourneys(studentId: string): Promise<
     progressPercentage: number;
   }>
 > {
+  if (!isValidUuid(studentId)) {
+    return [];
+  }
+
   // 1. Fetch assignments
   const { data: assignments, error } = await supabase
     .from('teacher_assignments')
@@ -515,7 +580,7 @@ export async function getStudentAssignedJourneys(studentId: string): Promise<
     .order('created_at', { ascending: false });
 
   if (error || !assignments) {
-    console.error('Error fetching student assigned journeys:', error);
+    console.error('Error fetching student assigned journeys:', error?.message || error);
     return [];
   }
 

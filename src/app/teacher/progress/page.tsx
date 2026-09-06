@@ -30,7 +30,7 @@ export default function TeacherProgressPage() {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isAuthorized || authLoading) return;
     let isMounted = true;
 
     async function load() {
@@ -56,7 +56,7 @@ export default function TeacherProgressPage() {
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user, isAuthorized, authLoading]);
 
   const filtered = assignments.filter((a) => {
     if (selectedJourneyFilter === 'all') return true;

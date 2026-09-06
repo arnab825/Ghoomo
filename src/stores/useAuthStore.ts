@@ -71,11 +71,18 @@ interface AuthState {
     email: string,
     pass?: string
   ) => Promise<{ success: boolean; error?: string; role?: UserRole }>;
+  signInWithGoogle: (
+    role?: UserRole,
+    redirect?: string
+  ) => Promise<{ success: boolean; error?: string; redirected?: boolean }>;
   logout: () => Promise<void>;
-  refreshProfile: () => Promise<UserProfile | null>;
+  refreshProfile: (overrideRole?: UserRole) => Promise<UserProfile | null>;
   clearError: () => void;
 
-  // Legacy helper methods
+  updateProfileName: (newName: string) => Promise<{ success: boolean; error?: string }>;
+  updateRole: (newRole: UserRole) => Promise<{ success: boolean; error?: string }>;
+  changePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+  deleteAccount: () => Promise<{ success: boolean; error?: string }>;
   updateUsername: (newUsername: string) => { success: boolean; error?: string };
   deductCredits: (amount: number) => { success: boolean; remaining: number };
   addCredits: (amount: number) => void;
@@ -90,6 +97,157 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   error: null,
 
   clearError: () => set({ error: null }),
+
+  updateRole: async (newRole: UserRole) => {
+    try {
+      const active = get().user || get().currentUser;
+      if (active?.id) {
+        // 1. Update Supabase auth user metadata
+        try {
+          await supabase.auth.updateUser({
+            data: { role: newRole },
+          });
+        } catch (e) {
+          console.warn('Auth user metadata role update error:', e);
+        }
+
+        // 2. Update public.profiles table
+        try {
+          await supabase
+            .from('profiles')
+            .upsert(
+              {
+                id: active.id,
+                role: newRole,
+                email: active.email,
+                full_name: active.fullName || active.name,
+              },
+              { onConflict: 'id' }
+            );
+        } catch (e) {
+          console.warn('Profiles table role update error:', e);
+        }
+      }
+
+      const updated = {
+        ...get().currentUser,
+        role: newRole,
+      };
+      set({
+        currentUser: updated,
+        user: get().user ? { ...get().user!, role: newRole } : null,
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to update role.' };
+    }
+  },
+
+  updateProfileName: async (newName: string) => {
+    const clean = newName.trim();
+    if (!clean) return { success: false, error: 'Name cannot be empty.' };
+
+    try {
+      const active = get().user || get().currentUser;
+      if (active?.id) {
+        // Update Supabase auth user metadata
+        try {
+          await supabase.auth.updateUser({
+            data: { full_name: clean },
+          });
+        } catch (e) {
+          console.warn('Auth user metadata update warning:', e);
+        }
+
+        // Update public.profiles if exists
+        try {
+          await supabase
+            .from('profiles')
+            .update({ full_name: clean })
+            .eq('id', active.id);
+        } catch (e) {
+          console.warn('Profiles table update warning:', e);
+        }
+      }
+
+      const updated = {
+        ...get().currentUser,
+        fullName: clean,
+        name: clean,
+      };
+      set({
+        currentUser: updated,
+        user: get().user ? { ...get().user!, fullName: clean, name: clean } : null,
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to update name.' };
+    }
+  },
+
+  changePassword: async (newPassword: string) => {
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: 'Password must be at least 6 characters long.' };
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err.message || 'Failed to change password.' };
+    }
+  },
+
+  deleteAccount: async () => {
+    set({ isLoading: true });
+    try {
+      const active = get().user || get().currentUser;
+      if (active?.id) {
+        try {
+          await supabase.from('profiles').delete().eq('id', active.id);
+        } catch (e) {
+          console.warn('Profile record deletion warning:', e);
+        }
+
+        // Clear role and metadata in Auth so subsequent signups do not inherit old role
+        try {
+          await supabase.auth.updateUser({
+            data: { role: null, full_name: null },
+          });
+        } catch (e) {
+          console.warn('Metadata reset warning:', e);
+        }
+      }
+
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.warn('Sign out warning:', e);
+      }
+
+      set({
+        user: null,
+        currentUser: INITIAL_USER,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      });
+
+      return { success: true };
+    } catch (err: any) {
+      set({ isLoading: false });
+      return { success: false, error: err.message || 'Failed to delete account.' };
+    }
+  },
 
   updateUsername: (newUsername: string) => {
     const validation = validateUsername(newUsername);
@@ -333,6 +491,67 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
 
   /**
+   * Google OAuth sign in
+   */
+  signInWithGoogle: async (role: UserRole = 'student', redirect: string = '') => {
+    set({ isLoading: true, error: null });
+    try {
+      const { isSupabaseConfigured } = await import('@/lib/supabase/client');
+      if (!isSupabaseConfigured()) {
+        const demoGoogleUser: UserProfile = {
+          id: `google-user-${Date.now()}`,
+          name: role === 'teacher' ? 'Prof. Google Demo' : 'Alex Rivera',
+          fullName: role === 'teacher' ? 'Prof. Google Demo' : 'Alex Rivera',
+          username: role === 'teacher' ? 'prof_google' : 'alex_rivera',
+          email: role === 'teacher' ? 'educator@example.com' : 'alex.rivera@gmail.com',
+          role,
+          avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80',
+          credits: 12,
+        };
+        set({
+          user: demoGoogleUser,
+          currentUser: demoGoogleUser,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+        return { success: true, redirected: false };
+      }
+
+      const callbackUrl = new URL(`${window.location.origin}/auth/callback`);
+      if (redirect) callbackUrl.searchParams.set('redirect', redirect);
+      if (role) callbackUrl.searchParams.set('role', role);
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: callbackUrl.toString(),
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        set({ isLoading: false, error: error.message });
+        return { success: false, error: error.message };
+      }
+
+      if (data?.url) {
+        window.location.href = data.url;
+        return { success: true, redirected: true };
+      }
+
+      return { success: true, redirected: true };
+    } catch (err: any) {
+      const msg = err.message || 'Failed to initialize Google Sign In.';
+      set({ isLoading: false, error: msg });
+      return { success: false, error: msg };
+    }
+  },
+
+  /**
    * Real Supabase sign out
    */
   logout: async () => {
@@ -355,7 +574,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   /**
    * Refreshes the active profile from Supabase
    */
-  refreshProfile: async () => {
+  refreshProfile: async (overrideRole?: UserRole) => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -363,7 +582,21 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({ user: null, currentUser: INITIAL_USER, isAuthenticated: false });
       return null;
     }
-    const profile = await fetchOrCreateProfile(session.user);
+
+    if (overrideRole) {
+      try {
+        await supabase.auth.updateUser({
+          data: { role: overrideRole },
+        });
+      } catch (e) {
+        console.warn('Update user metadata role error:', e);
+      }
+    }
+
+    const profile = await fetchOrCreateProfile(
+      session.user,
+      overrideRole ? { role: overrideRole } : undefined
+    );
     if (profile) {
       set({ user: profile, currentUser: profile, isAuthenticated: true });
     }
@@ -388,9 +621,14 @@ async function fetchOrCreateProfile(
   const metaName =
     overrideMeta?.fullName ||
     authUser.user_metadata?.full_name ||
+    authUser.user_metadata?.name ||
     email.split('@')[0] ||
     'Learner';
   const defaultAvatar = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=160&q=80';
+  const userAvatar =
+    authUser.user_metadata?.avatar_url ||
+    authUser.user_metadata?.picture ||
+    defaultAvatar;
 
   // 1. Attempt to fetch existing profile
   const { data: profile, error } = await supabase
@@ -400,14 +638,31 @@ async function fetchOrCreateProfile(
     .single();
 
   if (!error && profile) {
+    let effectiveRole = (profile.role as UserRole) || metaRole;
+    if (overrideMeta?.role && overrideMeta.role !== profile.role) {
+      effectiveRole = overrideMeta.role;
+      try {
+        await supabase
+          .from('profiles')
+          .update({ role: overrideMeta.role })
+          .eq('id', userId);
+      } catch (e) {
+        console.warn('Profiles update role error:', e);
+      }
+    }
+
+    const finalAvatar = (profile.avatar_url && !profile.avatar_url.includes('unsplash.com/photo-1535713875002')) 
+      ? profile.avatar_url 
+      : (userAvatar !== defaultAvatar ? userAvatar : profile.avatar_url || defaultAvatar);
+
     return {
       id: profile.id,
       email: profile.email || email,
       fullName: profile.full_name || metaName,
       name: profile.full_name || metaName,
       username: profile.email ? profile.email.split('@')[0] : 'user',
-      role: (profile.role as UserRole) || metaRole,
-      avatarUrl: profile.avatar_url || defaultAvatar,
+      role: effectiveRole,
+      avatarUrl: finalAvatar,
       credits: profile.credits ?? 9,
       createdAt: profile.created_at,
     };
@@ -419,6 +674,7 @@ async function fetchOrCreateProfile(
     email,
     full_name: metaName,
     role: metaRole,
+    avatar_url: userAvatar,
     credits: 9,
   };
 
@@ -437,7 +693,7 @@ async function fetchOrCreateProfile(
     name: finalRecord.full_name,
     username: finalRecord.email ? finalRecord.email.split('@')[0] : 'user',
     role: finalRecord.role,
-    avatarUrl: finalRecord.avatar_url || defaultAvatar,
+    avatarUrl: finalRecord.avatar_url || userAvatar,
     credits: finalRecord.credits ?? 9,
     createdAt: finalRecord.created_at,
   };

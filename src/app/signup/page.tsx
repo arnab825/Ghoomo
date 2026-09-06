@@ -3,21 +3,24 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { UserPlus, Mail, Lock, User, GraduationCap, BookOpen, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, GraduationCap, BookOpen, AlertCircle, ArrowRight, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore, UserRole } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/button';
 import GhoomoLogo from '@/components/shared/GhoomoLogo';
+import GoogleIcon from '@/components/shared/GoogleIcon';
 
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '';
 
-  const { signUp, isLoading, error, clearError } = useAuthStore();
+  const { signUp, signInWithGoogle, isLoading, error, clearError } = useAuthStore();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,6 +50,36 @@ function SignupForm() {
       router.push('/teacher/dashboard');
     } else {
       router.push('/student/dashboard');
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setFormError(null);
+    clearError();
+    setIsGoogleLoading(true);
+
+    try {
+      const res = await signInWithGoogle(role, redirect);
+      if (!res.success) {
+        setFormError(res.error || 'Google sign-up failed. Please try again.');
+        setIsGoogleLoading(false);
+        return;
+      }
+
+      if (res.redirected) {
+        return;
+      }
+
+      if (redirect) {
+        router.push(redirect);
+      } else if (role === 'teacher') {
+        router.push('/teacher/dashboard');
+      } else {
+        router.push('/student/dashboard');
+      }
+    } catch (err: any) {
+      setFormError(err.message || 'An error occurred during Google sign-up.');
+      setIsGoogleLoading(false);
     }
   };
 
@@ -82,7 +115,7 @@ function SignupForm() {
               <button
                 type="button"
                 onClick={() => setRole('student')}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`p-3.5 rounded-xl border text-left transition-all enabled:cursor-pointer ${
                   role === 'student'
                     ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/50 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20 shadow-xs'
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50'
@@ -100,7 +133,7 @@ function SignupForm() {
               <button
                 type="button"
                 onClick={() => setRole('teacher')}
-                className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`p-3.5 rounded-xl border text-left transition-all enabled:cursor-pointer ${
                   role === 'teacher'
                     ? 'border-emerald-600 bg-emerald-50/70 dark:bg-emerald-950/50 text-emerald-950 dark:text-emerald-200 ring-2 ring-emerald-500/20 shadow-xs'
                     : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-600 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/50'
@@ -129,7 +162,7 @@ function SignupForm() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="e.g. Ananya Sen or Prof. Sharma"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all"
               />
             </div>
           </div>
@@ -146,7 +179,7 @@ function SignupForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@school.edu"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all"
               />
             </div>
           </div>
@@ -158,21 +191,30 @@ function SignupForm() {
             <div className="relative">
               <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="At least 6 characters"
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-saffron-500 transition-all"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors focus:outline-none enabled:cursor-pointer"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
             </div>
           </div>
 
           <Button
             type="submit"
-            disabled={isLoading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/25 flex items-center justify-center gap-2 cursor-pointer transition-all"
+            disabled={isLoading || isGoogleLoading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/25 flex items-center justify-center gap-2 enabled:cursor-pointer disabled:cursor-not-allowed transition-all"
           >
             {isLoading ? (
               <>
@@ -188,14 +230,55 @@ function SignupForm() {
           </Button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
-          Already have an account?{' '}
+        {/* Divider */}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+          </div>
+          <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+            <span className="bg-white dark:bg-slate-900 px-3 text-slate-400 dark:text-slate-500 font-medium">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        {/* Continue with Google */}
+        <button
+          type="button"
+          onClick={handleGoogleSignUp}
+          disabled={isGoogleLoading || isLoading}
+          className="w-full py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950/70 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-xs font-semibold text-slate-700 dark:text-slate-200 shadow-xs flex items-center justify-center gap-2.5 transition-all enabled:cursor-pointer disabled:cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-saffron-500"
+        >
+          {isGoogleLoading ? (
+            <>
+              <Loader2 size={16} className="animate-spin text-slate-500" />
+              <span>Connecting to Google...</span>
+            </>
+          ) : (
+            <>
+              <GoogleIcon size={18} />
+              <span>Continue with Google as {role === 'teacher' ? 'Teacher' : 'Student'}</span>
+            </>
+          )}
+        </button>
+
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3 text-xs text-slate-500 dark:text-slate-400">
+          <div>
+            Already have an account?{' '}
+            <Link
+              href={`/login${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
+              className="font-semibold text-saffron-500 dark:text-saffron-400 hover:underline inline-flex items-center gap-1"
+            >
+              <span>Sign In</span>
+              <ArrowRight size={12} />
+            </Link>
+          </div>
+          <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
           <Link
-            href={`/login${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
-            className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+            href="/forgot-password"
+            className="text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:underline transition-colors"
           >
-            <span>Sign In</span>
-            <ArrowRight size={12} />
+            Forgot Password?
           </Link>
         </div>
       </div>

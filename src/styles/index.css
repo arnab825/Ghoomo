@@ -14,6 +14,10 @@
   --color-indigo-700: #1d4ed8;
   --color-violet-600: #4f46e5;
   --color-amber-600: #d97706;
+  --color-saffron-400: #ffaa55;
+  --color-saffron-500: #ff9933;
+  --color-saffron-600: #ff5e36;
+  --color-saffron-700: #e04b24;
 }
 
 :root {
