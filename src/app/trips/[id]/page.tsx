@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import React, { use, useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import InteractiveMap from '@/components/map/InteractiveMap';
-import UrlImportModal from '@/components/social-import/UrlImportModal';
-import AddPlaceModal from '@/components/places/AddPlaceModal';
-import CollaborationModal from '@/components/collaboration/CollaborationModal';
-import BudgetAndChecklist from '@/components/budget-checklist/BudgetAndChecklist';
-import { Button } from '@/components/ui/button';
+import React, { use, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import InteractiveMap from "@/components/map/InteractiveMap";
+import UrlImportModal from "@/components/social-import/UrlImportModal";
+import AddPlaceModal from "@/components/places/AddPlaceModal";
+import CollaborationModal from "@/components/collaboration/CollaborationModal";
+import BudgetAndChecklist from "@/components/budget-checklist/BudgetAndChecklist";
+import LivePollWidget from "@/components/collaboration/LivePollWidget";
+import { Button } from "@/components/ui/button";
 import {
   Compass,
   MapPin,
@@ -23,6 +24,7 @@ import {
   ExternalLink,
   ShieldCheck,
   Clock,
+  Vote,
   Shuffle,
   ChevronRight,
   Layers,
@@ -31,11 +33,19 @@ import {
   AlertTriangle,
   CheckCircle2,
   Zap,
-  RefreshCw
-} from 'lucide-react';
-import { Place, TimeSlot, GhoomoTrip, ItineraryDay, ItineraryItem, TripSource, Collaborator } from '@/lib/types/ghoomo';
-import ProgressiveLoading from '@/components/shared/ProgressiveLoading';
-import { AITier, ValidationSummary } from '@/app/actions/aiActions';
+  RefreshCw,
+} from "lucide-react";
+import {
+  Place,
+  TimeSlot,
+  GhoomoTrip,
+  ItineraryDay,
+  ItineraryItem,
+  TripSource,
+  Collaborator,
+} from "@/lib/types/ghoomo";
+import ProgressiveLoading from "@/components/shared/ProgressiveLoading";
+import { AITier, ValidationSummary } from "@/app/actions/aiActions";
 import {
   useTrip,
   useAutoGenerateItineraryMutation,
@@ -43,20 +53,48 @@ import {
   useUpdatePlaceConfidenceMutation,
   useMovePlaceToDayMutation,
   useDeleteTripMutation,
-} from '@/hooks/useTripQueries';
-import { useUIStore } from '@/stores/useUIStore';
-import { TripWorkspaceSkeleton } from '@/components/shared/skeletons/TripWorkspaceSkeleton';
-import { ErrorBoundary } from '@/components/shared/ErrorBoundary';
+} from "@/hooks/useTripQueries";
+import { useUIStore } from "@/stores/useUIStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { TripWorkspaceSkeleton } from "@/components/shared/skeletons/TripWorkspaceSkeleton";
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 
-const DAY_COLOR_CLASSES: Record<number, { text: string; bg: string; border: string }> = {
-  1: { text: 'text-teal-700 dark:text-teal-300', bg: 'bg-teal-50 dark:bg-teal-950/40', border: 'border-teal-200 dark:border-teal-800' },
-  2: { text: 'text-emerald-700 dark:text-emerald-300', bg: 'bg-emerald-50 dark:bg-emerald-950/40', border: 'border-emerald-200 dark:border-emerald-800' },
-  3: { text: 'text-cyan-700 dark:text-cyan-300', bg: 'bg-cyan-50 dark:bg-cyan-950/40', border: 'border-cyan-200 dark:border-cyan-800' },
-  4: { text: 'text-purple-700 dark:text-purple-300', bg: 'bg-purple-50 dark:bg-purple-950/40', border: 'border-purple-200 dark:border-purple-800' },
-  5: { text: 'text-orange-700 dark:text-orange-300', bg: 'bg-orange-50 dark:bg-orange-950/40', border: 'border-orange-200 dark:border-orange-800' },
+const DAY_COLOR_CLASSES: Record<
+  number,
+  { text: string; bg: string; border: string }
+> = {
+  1: {
+    text: "text-teal-700 dark:text-teal-300",
+    bg: "bg-teal-50 dark:bg-teal-950/40",
+    border: "border-teal-200 dark:border-teal-800",
+  },
+  2: {
+    text: "text-emerald-700 dark:text-emerald-300",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40",
+    border: "border-emerald-200 dark:border-emerald-800",
+  },
+  3: {
+    text: "text-cyan-700 dark:text-cyan-300",
+    bg: "bg-cyan-50 dark:bg-cyan-950/40",
+    border: "border-cyan-200 dark:border-cyan-800",
+  },
+  4: {
+    text: "text-purple-700 dark:text-purple-300",
+    bg: "bg-purple-50 dark:bg-purple-950/40",
+    border: "border-purple-200 dark:border-purple-800",
+  },
+  5: {
+    text: "text-orange-700 dark:text-orange-300",
+    bg: "bg-orange-50 dark:bg-orange-950/40",
+    border: "border-orange-200 dark:border-orange-800",
+  },
 };
 
-export default function TripWorkspacePage({ params }: { params: Promise<{ id: string }> }) {
+export default function TripWorkspacePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const resolvedParams = use(params);
   const tripId = resolvedParams.id;
@@ -88,7 +126,8 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
   } = useUIStore();
 
   const [aiTierUsed, setAiTierUsed] = useState<AITier | null>(null);
-  const [validationSummary, setValidationSummary] = useState<ValidationSummary | null>(null);
+  const [validationSummary, setValidationSummary] =
+    useState<ValidationSummary | null>(null);
 
   // Loading Skeleton State
   if (isLoading) {
@@ -103,12 +142,12 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
           <AlertTriangle size={28} />
         </div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white font-heading">
-          {isError ? 'Unable to Load Trip' : 'Trip Not Found'}
+          {isError ? "Unable to Load Trip" : "Trip Not Found"}
         </h2>
         <p className="text-xs text-slate-500">
           {error instanceof Error
             ? error.message
-            : 'This trip workspace does not exist or has been removed from the server.'}
+            : "This trip workspace does not exist or has been removed from the server."}
         </p>
         <div className="flex items-center justify-center gap-2.5 pt-2">
           <Button
@@ -132,29 +171,45 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
     );
   }
 
+  const { currentUser, deductCredits } = useAuthStore();
+  const [creditAlert, setCreditAlert] = useState<string | null>(null);
+
   const handleSelectPlace = (placeId: string) => {
     setSelectedPlaceId(placeId);
   };
 
   const handleDeleteTrip = async () => {
-    if (confirm('Are you sure you want to permanently delete this trip?')) {
+    if (confirm("Are you sure you want to permanently delete this trip?")) {
       await deleteTripMutation.mutateAsync(tripId);
-      router.push('/trips');
+      router.push("/trips");
     }
   };
 
   const handleAutoGroupWithAI = async () => {
     if (!trip) return;
+    if ((currentUser.credits ?? 9) < 3) {
+      setCreditAlert(
+        "You have fewer than 3 credits remaining. Please upgrade or top up credits to generate a full smart itinerary.",
+      );
+      return;
+    }
+
     try {
+      setCreditAlert(null);
       const res = await autoGroupMutation.mutateAsync({
         destination: trip.destinationRegion,
         durationDays: trip.durationDays,
         places: trip.places,
       });
+
+      // Deduct 3 credits locally in store
+      deductCredits(3);
+
       setAiTierUsed(res.tierUsed);
       setValidationSummary(res.validation);
-    } catch (err) {
-      console.error('[AI Fallback] Action error:', err);
+    } catch (err: any) {
+      console.error("[AI Fallback] Action error:", err);
+      setCreditAlert(err.message || "AI generation failed.");
     }
   };
 
@@ -187,11 +242,12 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1">
-                  <Calendar size={12} /> {trip.durationDays} Days ({trip.places.length} places)
+                  <Calendar size={12} /> {trip.durationDays} Days (
+                  {trip.places.length} places)
                 </span>
                 <span>•</span>
                 <span className="text-emerald-600 font-semibold font-mono">
-                  Budget ₹{trip.budgetTotal.toLocaleString('en-IN')}
+                  Budget ₹{trip.budgetTotal.toLocaleString("en-IN")}
                 </span>
               </div>
             </div>
@@ -206,21 +262,28 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
               className="flex items-center gap-2 p-1.5 pr-3 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/70 transition-all duration-100 cursor-pointer active:scale-[0.98]"
             >
               <div className="flex -space-x-2">
-                {trip.collaborators.slice(0, 3).map((c: Collaborator, i: number) => (
-                  <div
-                    key={c.id}
-                    className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-slate-700 overflow-hidden"
-                  >
-                    {c.avatarUrl ? (
-                      <img src={c.avatarUrl} alt={c.name} className="h-full w-full object-cover" />
-                    ) : (
-                      c.name.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                ))}
+                {trip.collaborators
+                  .slice(0, 3)
+                  .map((c: Collaborator, i: number) => (
+                    <div
+                      key={c.id}
+                      className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-slate-700 overflow-hidden"
+                    >
+                      {c.avatarUrl ? (
+                        <img
+                          src={c.avatarUrl}
+                          alt={c.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        c.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                  ))}
               </div>
               <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                {trip.collaborators.length} {trip.collaborators.length === 1 ? 'member' : 'members'}
+                {trip.collaborators.length}{" "}
+                {trip.collaborators.length === 1 ? "member" : "members"}
               </span>
             </button>
 
@@ -249,10 +312,20 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
               onClick={handleAutoGroupWithAI}
               disabled={autoGroupMutation.isPending}
               size="sm"
-              className="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100"
+              className="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100 flex items-center gap-1.5"
             >
-              <Shuffle size={13} className={`mr-1.5 text-white ${autoGroupMutation.isPending ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline">{autoGroupMutation.isPending ? 'Building route...' : 'Best route for your trip'}</span>
+              <Shuffle
+                size={13}
+                className={`text-white ${autoGroupMutation.isPending ? "animate-spin" : ""}`}
+              />
+              <span className="hidden sm:inline">
+                {autoGroupMutation.isPending
+                  ? "Building route..."
+                  : "Best route for your trip"}
+              </span>
+              <span className="text-[10px] font-mono bg-teal-800/60 px-1.5 py-0.2 rounded-xs">
+                3 credits
+              </span>
             </Button>
 
             {/* Share / Collab Modal */}
@@ -277,6 +350,33 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
             </Button>
           </div>
         </div>
+
+        {/* Credit Alert Banner */}
+        {creditAlert && (
+          <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900 flex items-center justify-between dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+              <span>{creditAlert}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link href="/pricing">
+                <Button
+                  size="sm"
+                  className="bg-orange-500 hover:bg-orange-600 text-white text-[11px] font-semibold h-7 px-2.5 rounded-md cursor-pointer shadow-xs active:scale-[0.98]"
+                >
+                  Get Credits
+                </Button>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setCreditAlert(null)}
+                className="text-amber-700 hover:text-amber-950 p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* 2. MAIN WORKSPACE (SPLIT VIEW: CONTROLS + MAP-FIRST) */}
@@ -286,42 +386,55 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
           {/* Tabs Navigation */}
           <div className="flex p-1 rounded-md bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:border-slate-800">
             <button
-              onClick={() => setActiveTab('itinerary')}
+              onClick={() => setActiveTab("itinerary")}
               className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === 'itinerary'
-                  ? 'bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                activeTab === "itinerary"
+                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               Daily Itinerary
             </button>
             <button
-              onClick={() => setActiveTab('places')}
+              onClick={() => setActiveTab("places")}
               className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === 'places'
-                  ? 'bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                activeTab === "places"
+                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               Places & Sources ({trip.places.length})
             </button>
             <button
-              onClick={() => setActiveTab('budget')}
+              onClick={() => setActiveTab("budget")}
               className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === 'budget'
-                  ? 'bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                activeTab === "budget"
+                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
               }`}
             >
               Budget & Tasks
             </button>
+            <button
+              onClick={() => setActiveTab("polls")}
+              className={`flex-1 py-1.5 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                activeTab === "polls"
+                  ? "bg-white text-teal-800 shadow-xs dark:bg-teal-600 dark:text-white font-bold"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+              }`}
+            >
+              Live Polls
+            </button>
           </div>
 
           {/* TAB 1: DAILY ITINERARY */}
-          {activeTab === 'itinerary' && (
+          {activeTab === "itinerary" && (
             <div className="tab-fade-enter space-y-4">
               {/* Progressive Loading State during AI generation */}
-              <ProgressiveLoading isLoading={autoGroupMutation.isPending} tierHint={aiTierUsed || undefined} />
+              <ProgressiveLoading
+                isLoading={autoGroupMutation.isPending}
+                tierHint={aiTierUsed || undefined}
+              />
 
               {/* AI Tier & Validation Alert Banner */}
               {aiTierUsed && !autoGroupMutation.isPending && (
@@ -331,11 +444,11 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                       <Zap size={13} className="text-teal-600" />
                       <span>Best route for your trip:</span>
                       <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/60 dark:text-teal-300">
-                        {aiTierUsed === 'tier1_gemini'
-                          ? 'Tier 1: Gemini 1.5 Flash'
-                          : aiTierUsed === 'tier2_groq'
-                          ? 'Tier 2: Groq Llama 3.1 70B'
-                          : 'Tier 3: Rule Clustering'}
+                        {aiTierUsed === "tier1_gemini"
+                          ? "Tier 1: Gemini 1.5 Flash"
+                          : aiTierUsed === "tier2_groq"
+                            ? "Tier 2: Groq Llama 3.1 70B"
+                            : "Tier 3: Rule Clustering"}
                       </span>
                     </div>
 
@@ -347,7 +460,10 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
-                          <CheckCircle2 size={11} className="text-emerald-600" />
+                          <CheckCircle2
+                            size={11}
+                            className="text-emerald-600"
+                          />
                           <span>Pace Validated</span>
                         </span>
                       )}
@@ -361,31 +477,46 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                   </div>
 
                   {/* Travel Alerts (>2h consecutive transit) */}
-                  {validationSummary && validationSummary.consecutiveTravelAlerts && validationSummary.consecutiveTravelAlerts.length > 0 && (
-                    <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
-                      <div className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
-                        <Clock size={12} className="text-amber-600" />
-                        <span>Transit Time Exceeds Ideal 2 Hours:</span>
-                      </div>
-                      {validationSummary.consecutiveTravelAlerts.map((alert, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 pl-3 border-l-2 border-amber-400">
-                          <span>{alert}</span>
+                  {validationSummary &&
+                    validationSummary.consecutiveTravelAlerts &&
+                    validationSummary.consecutiveTravelAlerts.length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                        <div className="text-[11px] font-semibold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                          <Clock size={12} className="text-amber-600" />
+                          <span>Transit Time Exceeds Ideal 2 Hours:</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        {validationSummary.consecutiveTravelAlerts.map(
+                          (alert, i) => (
+                            <div
+                              key={i}
+                              className="flex items-start gap-1.5 text-[11px] text-amber-700 dark:text-amber-300 pl-3 border-l-2 border-amber-400"
+                            >
+                              <span>{alert}</span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    )}
 
                   {/* Warnings (e.g. >8 places capped or high pace) */}
-                  {validationSummary && validationSummary.warnings && validationSummary.warnings.length > 0 && (
-                    <div className="space-y-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60">
-                      {validationSummary.warnings.map((warn, i) => (
-                        <div key={i} className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-300">
-                          <AlertTriangle size={12} className="shrink-0 mt-0.5 text-amber-500" />
-                          <span>{warn}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {validationSummary &&
+                    validationSummary.warnings &&
+                    validationSummary.warnings.length > 0 && (
+                      <div className="space-y-1 pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                        {validationSummary.warnings.map((warn, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-1.5 text-[11px] text-slate-600 dark:text-slate-300"
+                          >
+                            <AlertTriangle
+                              size={12}
+                              className="shrink-0 mt-0.5 text-amber-500"
+                            />
+                            <span>{warn}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                 </div>
               )}
 
@@ -395,27 +526,29 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                   onClick={() => setSelectedDayFilter(null)}
                   className={`px-3 py-1.5 rounded-md whitespace-nowrap font-medium transition-all duration-100 cursor-pointer active:scale-[0.98] ${
                     selectedDayFilter === null
-                      ? 'bg-slate-900 text-white font-semibold shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400'
+                      ? "bg-slate-900 text-white font-semibold shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400"
                   }`}
                 >
                   All Days
                 </button>
                 {trip.days.map((day: ItineraryDay) => {
                   const style = DAY_COLOR_CLASSES[day.dayNumber] || {
-                    text: 'text-teal-700',
-                    bg: 'bg-teal-50',
-                    border: 'border-teal-200',
+                    text: "text-teal-700",
+                    bg: "bg-teal-50",
+                    border: "border-teal-200",
                   };
                   const isSelected = selectedDayFilter === day.dayNumber;
                   return (
                     <button
                       key={day.id}
-                      onClick={() => setSelectedDayFilter(isSelected ? null : day.dayNumber)}
+                      onClick={() =>
+                        setSelectedDayFilter(isSelected ? null : day.dayNumber)
+                      }
                       className={`px-3 py-1.5 rounded-md whitespace-nowrap font-medium transition-all duration-100 cursor-pointer border active:scale-[0.98] ${
                         isSelected
                           ? `${style.bg} ${style.text} ${style.border} font-bold shadow-xs`
-                          : 'text-slate-600 hover:text-slate-900 bg-white border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400'
+                          : "text-slate-600 hover:text-slate-900 bg-white border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400"
                       }`}
                     >
                       Day {day.dayNumber} ({day.items.length})
@@ -427,12 +560,16 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
               {/* Day Cards List */}
               <div className="space-y-4">
                 {trip.days
-                  .filter((day: ItineraryDay) => selectedDayFilter === null || day.dayNumber === selectedDayFilter)
+                  .filter(
+                    (day: ItineraryDay) =>
+                      selectedDayFilter === null ||
+                      day.dayNumber === selectedDayFilter,
+                  )
                   .map((day: ItineraryDay) => {
                     const style = DAY_COLOR_CLASSES[day.dayNumber] || {
-                      text: 'text-teal-700',
-                      bg: 'bg-teal-50',
-                      border: 'border-teal-200',
+                      text: "text-teal-700",
+                      bg: "bg-teal-50",
+                      border: "border-teal-200",
                     };
 
                     return (
@@ -449,10 +586,12 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                               D{day.dayNumber}
                             </span>
                             <div>
-                              <h3 className="text-sm font-bold text-slate-900 dark:text-white">{day.theme}</h3>
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                {day.theme}
+                              </h3>
                               <p className="text-[10px] text-slate-500 dark:text-slate-400">
                                 {day.items.length === 0
-                                  ? 'No places scheduled yet'
+                                  ? "No places scheduled yet"
                                   : `${day.items.length} locations • Clustered by proximity`}
                               </p>
                             </div>
@@ -471,96 +610,113 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                         {/* Items in this Day */}
                         {day.items.length === 0 ? (
                           <div className="text-center py-6 text-xs text-slate-400">
-                            Click &quot;Best route for your trip&quot; or import a reel to populate Day {day.dayNumber}.
+                            Click &quot;Best route for your trip&quot; or import
+                            a reel to populate Day {day.dayNumber}.
                           </div>
                         ) : (
                           <div className="space-y-2.5">
-                            {day.items.map((item: ItineraryItem, idx: number) => {
-                              const place = item.place || trip.places.find((p: Place) => p.id === item.placeId);
-                              if (!place) return null;
-                              const isSelected = selectedPlaceId === place.id;
+                            {day.items.map(
+                              (item: ItineraryItem, idx: number) => {
+                                const place =
+                                  item.place ||
+                                  trip.places.find(
+                                    (p: Place) => p.id === item.placeId,
+                                  );
+                                if (!place) return null;
+                                const isSelected = selectedPlaceId === place.id;
 
-                              return (
-                                <div
-                                  key={item.id}
-                                  onClick={() => handleSelectPlace(place.id)}
-                                  className={`p-3 rounded-md border transition-all duration-100 cursor-pointer active:scale-[0.99] ${
-                                    isSelected
-                                      ? 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30'
-                                      : 'border-slate-200 bg-slate-50/70 hover:bg-slate-100 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60'
-                                  }`}
-                                >
-                                  <div className="flex gap-3">
-                                    {place.imageUrl && (
-                                      <img
-                                        src={place.imageUrl}
-                                        alt={place.name}
-                                        className="h-16 w-16 rounded-md object-cover shrink-0"
-                                      />
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center justify-between gap-1">
-                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                          {idx + 1}. {place.name}
-                                        </div>
-                                        <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
-                                          {Math.round(place.confidence * 100)}% • How sure we are
-                                        </span>
-                                      </div>
-
-                                      <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                        {place.city} • <span className="capitalize">{item.timeSlot}</span> ({item.durationMinutes}m)
-                                      </div>
-
-                                      {place.notes && (
-                                        <div className="text-[10px] text-slate-500 line-clamp-1 mt-1">
-                                          {place.notes}
-                                        </div>
+                                return (
+                                  <div
+                                    key={item.id}
+                                    onClick={() => handleSelectPlace(place.id)}
+                                    className={`p-3 rounded-md border transition-all duration-100 cursor-pointer active:scale-[0.99] ${
+                                      isSelected
+                                        ? "border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30"
+                                        : "border-slate-200 bg-slate-50/70 hover:bg-slate-100 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60"
+                                    }`}
+                                  >
+                                    <div className="flex gap-3">
+                                      {place.imageUrl && (
+                                        <img
+                                          src={place.imageUrl}
+                                          alt={place.name}
+                                          className="h-16 w-16 rounded-md object-cover shrink-0"
+                                        />
                                       )}
-
-                                      {/* Quick Move Day Dropdown */}
-                                      <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/60 text-[10px]">
-                                        <div className="flex items-center gap-1 text-slate-500">
-                                          <span>Move:</span>
-                                          {trip.days.map((d: ItineraryDay) => (
-                                            <button
-                                              key={d.dayNumber}
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                movePlaceMutation.mutate({
-                                                  placeId: place.id,
-                                                  dayNumber: d.dayNumber,
-                                                  timeSlot: item.timeSlot,
-                                                });
-                                              }}
-                                              className={`px-1.5 py-0.5 rounded-md text-[10px] cursor-pointer active:scale-[0.98] transition-all duration-100 ${
-                                                d.dayNumber === day.dayNumber
-                                                  ? 'bg-teal-600 text-white font-bold'
-                                                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-900 dark:text-slate-300'
-                                              }`}
-                                            >
-                                              D{d.dayNumber}
-                                            </button>
-                                          ))}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                            {idx + 1}. {place.name}
+                                          </div>
+                                          <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20">
+                                            {Math.round(place.confidence * 100)}
+                                            % • How sure we are
+                                          </span>
                                         </div>
 
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            deletePlaceMutation.mutate(place.id);
-                                          }}
-                                          className="text-slate-400 hover:text-red-600 p-1 cursor-pointer active:scale-[0.98] transition-all duration-100"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
+                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                          {place.city} •{" "}
+                                          <span className="capitalize">
+                                            {item.timeSlot}
+                                          </span>{" "}
+                                          ({item.durationMinutes}m)
+                                        </div>
+
+                                        {place.notes && (
+                                          <div className="text-[10px] text-slate-500 line-clamp-1 mt-1">
+                                            {place.notes}
+                                          </div>
+                                        )}
+
+                                        {/* Quick Move Day Dropdown */}
+                                        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/60 text-[10px]">
+                                          <div className="flex items-center gap-1 text-slate-500">
+                                            <span>Move:</span>
+                                            {trip.days.map(
+                                              (d: ItineraryDay) => (
+                                                <button
+                                                  key={d.dayNumber}
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    movePlaceMutation.mutate({
+                                                      placeId: place.id,
+                                                      dayNumber: d.dayNumber,
+                                                      timeSlot: item.timeSlot,
+                                                    });
+                                                  }}
+                                                  className={`px-1.5 py-0.5 rounded-md text-[10px] cursor-pointer active:scale-[0.98] transition-all duration-100 ${
+                                                    d.dayNumber ===
+                                                    day.dayNumber
+                                                      ? "bg-teal-600 text-white font-bold"
+                                                      : "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-900 dark:text-slate-300"
+                                                  }`}
+                                                >
+                                                  D{d.dayNumber}
+                                                </button>
+                                              ),
+                                            )}
+                                          </div>
+
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              deletePlaceMutation.mutate(
+                                                place.id,
+                                              );
+                                            }}
+                                            className="text-slate-400 hover:text-red-600 p-1 cursor-pointer active:scale-[0.98] transition-all duration-100"
+                                          >
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                              );
-                            })}
+                                );
+                              },
+                            )}
                           </div>
                         )}
                       </div>
@@ -571,14 +727,16 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
           )}
 
           {/* TAB 2: PLACES & SOCIAL SOURCES RADAR */}
-          {activeTab === 'places' && (
+          {activeTab === "places" && (
             <div className="tab-fade-enter space-y-4">
               {/* Ingested Social Sources Showcase */}
               {trip.sources.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                     <LinkIcon size={12} className="text-teal-600" />
-                    <span>Add from Reel, Short, or blog ({trip.sources.length})</span>
+                    <span>
+                      Add from Reel, Short, or blog ({trip.sources.length})
+                    </span>
                   </div>
                   <div className="space-y-2">
                     {trip.sources.map((src: TripSource) => (
@@ -592,9 +750,14 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                           className="h-12 w-12 rounded-md object-cover shrink-0"
                         />
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">{src.title}</div>
+                          <div className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                            {src.title}
+                          </div>
                           <div className="text-[11px] text-slate-500">
-                            By {src.author} on <span className="uppercase text-orange-600 font-medium">{src.platform}</span>
+                            By {src.author} on{" "}
+                            <span className="uppercase text-orange-600 font-medium">
+                              {src.platform}
+                            </span>
                           </div>
                           <a
                             href={src.url}
@@ -616,7 +779,9 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <span>Detected Places & How sure we are</span>
-                  <span className="text-[10px] text-slate-500">Tap to zoom on map</span>
+                  <span className="text-[10px] text-slate-500">
+                    Tap to zoom on map
+                  </span>
                 </div>
 
                 <div className="space-y-2">
@@ -628,8 +793,8 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                         onClick={() => handleSelectPlace(place.id)}
                         className={`card-micro p-3 rounded-md border text-xs space-y-2 cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                           isSelected
-                            ? 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30'
-                            : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/50'
+                            ? "border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30"
+                            : "border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/50"
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -640,11 +805,12 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                           <span
                             className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
                               place.confidence > 0.85
-                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                : 'bg-amber-50 text-amber-700 border border-amber-200'
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border border-amber-200"
                             }`}
                           >
-                            {Math.round(place.confidence * 100)}% • How sure we are
+                            {Math.round(place.confidence * 100)}% • How sure we
+                            are
                           </span>
                         </div>
 
@@ -654,7 +820,9 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
 
                         {/* Confidence Adjustment Slider */}
                         <div className="flex items-center gap-2 pt-1">
-                          <span className="text-[10px] text-slate-500 font-medium">How sure we are:</span>
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            How sure we are:
+                          </span>
                           <input
                             type="range"
                             min="0.1"
@@ -680,7 +848,7 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
           )}
 
           {/* TAB 3: BUDGET & CHECKLIST */}
-          {activeTab === 'budget' && (
+          {activeTab === "budget" && (
             <div className="tab-fade-enter">
               <BudgetAndChecklist
                 tripId={tripId}
@@ -688,6 +856,13 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                 budgetItems={trip.budgetItems}
                 checklistItems={trip.checklistItems}
               />
+            </div>
+          )}
+
+          {/* TAB 4: LIVE POLLS */}
+          {activeTab === "polls" && (
+            <div className="tab-fade-enter">
+              <LivePollWidget tripId={tripId} />
             </div>
           )}
         </div>
@@ -713,16 +888,22 @@ export default function TripWorkspacePage({ params }: { params: Promise<{ id: st
                 Day Routes Legend
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#0d9488]" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">Day 1</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-teal-600" />
+                <span className="text-slate-600 dark:text-slate-300 font-medium">
+                  Day 1
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#0f766e]" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">Day 2</span>
+                <span className="text-slate-600 dark:text-slate-300 font-medium">
+                  Day 2
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#14b8a6]" />
-                <span className="text-slate-600 dark:text-slate-300 font-medium">Day 3</span>
+                <span className="text-slate-600 dark:text-slate-300 font-medium">
+                  Day 3
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full bg-slate-400" />

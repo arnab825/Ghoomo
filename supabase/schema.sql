@@ -9,10 +9,13 @@ create table if not exists public.profiles (
   id uuid references auth.users on delete cascade primary key,
   email text not null,
   full_name text,
+  username text unique,
+  credits int default 9 check (credits >= 0),
   avatar_url text,
   travel_style text default 'solo',
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  constraint username_format check (username ~ '^[a-z0-9_]{3,20}$')
 );
 
 -- 2. TRIPS
@@ -148,6 +151,49 @@ create index if not exists idx_places_reference_city on public.places_reference 
 -- 2. Geospatial index on (lat, lng)
 create index if not exists idx_places_reference_geo on public.places_reference (lat, lng);
 
+-- 11. POLLS (Live Polling for Places, Budget Approvals, Task Assignments)
+create table if not exists public.polls (
+  id uuid default uuid_generate_v4() primary key,
+  trip_id uuid references public.trips on delete cascade not null,
+  created_by uuid references auth.users on delete set null,
+  creator_name text,
+  type text not null check (type in ('place', 'budget', 'task')),
+  target_id text not null,
+  title text not null,
+  options jsonb not null default '["Yes", "No", "Maybe"]'::jsonb,
+  status text default 'open' check (status in ('open', 'closed')),
+  closes_at timestamptz default (now() + interval '24 hours'),
+  created_at timestamptz default now()
+);
+
+-- 12. VOTES (User Votes in Polls)
+create table if not exists public.votes (
+  id uuid default uuid_generate_v4() primary key,
+  poll_id uuid references public.polls on delete cascade not null,
+  user_id text not null,
+  username text not null,
+  avatar_url text,
+  vote_option text not null,
+  created_at timestamptz default now(),
+  constraint unique_user_vote_per_poll unique (poll_id, user_id)
+);
+
+-- 13. TRANSACTIONS (Razorpay Payment & Credit Top-Up History)
+create table if not exists public.transactions (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references auth.users on delete cascade,
+  order_id text not null unique,
+  payment_id text unique,
+  plan_id text not null check (plan_id in ('starter', 'explorer', 'unlimited')),
+  amount numeric not null,
+  credits_added int not null,
+  currency text default 'INR',
+  status text default 'created' check (status in ('created', 'captured', 'failed')),
+  signature text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
 -- =========================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- =========================================================================
@@ -162,6 +208,9 @@ alter table public.collaboration_invites enable row level security;
 alter table public.budget_items enable row level security;
 alter table public.checklist_items enable row level security;
 alter table public.places_reference enable row level security;
+alter table public.polls enable row level security;
+alter table public.votes enable row level security;
+alter table public.transactions enable row level security;
 
 -- Permissive demo policies (hackathon friendly with user_id check fallback)
 create policy "Allow all authenticated/anon read trips" on public.trips for select using (true);
@@ -179,3 +228,11 @@ create policy "Allow all checklist" on public.checklist_items for all using (tru
 create policy "Allow profiles" on public.profiles for all using (true);
 create policy "Allow all read places_reference" on public.places_reference for select using (true);
 create policy "Allow admin insert places_reference" on public.places_reference for insert with check (true);
+create policy "Allow all polls" on public.polls for all using (true);
+create policy "Allow all votes" on public.votes for all using (true);
+create policy "Allow all transactions" on public.transactions for all using (true);
+
+-- Enable Supabase Realtime for collaborative polls & votes
+alter publication supabase_realtime add table public.polls;
+alter publication supabase_realtime add table public.votes;
+

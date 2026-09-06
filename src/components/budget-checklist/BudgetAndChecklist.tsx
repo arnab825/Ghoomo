@@ -195,7 +195,7 @@ export default function BudgetAndChecklist({
           </form>
 
           {/* Expense Items List */}
-          <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+          <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
             {budgetItems.length === 0 ? (
               <div className="text-center py-6 text-xs text-slate-400">
                 No budget items yet. Add estimated costs above.
@@ -206,7 +206,7 @@ export default function BudgetAndChecklist({
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-white text-xs hover:border-slate-300 transition-colors dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-slate-700"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-lg border border-slate-200 bg-white text-xs hover:border-slate-300 transition-colors dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-slate-700 gap-2"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="p-1.5 rounded-md bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
@@ -214,13 +214,15 @@ export default function BudgetAndChecklist({
                       </div>
                       <div className="min-w-0 truncate">
                         <div className="font-medium text-slate-900 truncate dark:text-white">{item.description}</div>
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider dark:text-slate-400">
-                          {item.category}
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 uppercase tracking-wider dark:text-slate-400">
+                          <span>{item.category}</span>
+                          <span>•</span>
+                          <span className="font-mono text-slate-400">₹{item.amount.toLocaleString('en-IN')}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                       <button
                         type="button"
                         onClick={() => toggleBudgetItemPaid(tripId, item.id)}
@@ -236,8 +238,14 @@ export default function BudgetAndChecklist({
                         ₹{item.amount.toLocaleString('en-IN')}
                       </span>
                       <button
-                        onClick={() => deleteBudgetItem(tripId, item.id)}
-                        className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          if (confirm(`Remove expense "${item.description}"?`)) {
+                            deleteBudgetItem(tripId, item.id);
+                          }
+                        }}
+                        className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer p-1"
+                        title="Delete expense"
                       >
                         <Trash2 size={13} />
                       </button>

@@ -22,171 +22,28 @@ import { extractLocationsFromUrlAction } from '@/app/actions/aiActions';
 const STORAGE_KEY = 'ghoomo_trips_data_v2';
 
 // ----------------------------------------------------------------------------
-// Seed Trip Generator for instant demo-readiness
+// Initial Trips: 100% Dynamic - Clean Slate (No mock data)
 // ----------------------------------------------------------------------------
 export function getInitialSeedTrips(): GhoomoTrip[] {
-  const jaipurSample = SAMPLE_VIRAL_REELS[0];
-  const tripId = 'trip-jaipur-demo-01';
-
-  const sourceId = 'src-jaipur-01';
-  const initialSource: TripSource = {
-    id: sourceId,
-    tripId,
-    url: jaipurSample.url,
-    platform: jaipurSample.platform,
-    title: jaipurSample.title,
-    author: jaipurSample.author,
-    thumbnailUrl: jaipurSample.thumbnailUrl,
-    createdAt: new Date().toISOString(),
-  };
-
-  const initialPlaces: Place[] = jaipurSample.places.map((p, idx) => ({
-    ...p,
-    id: `place-jp-${idx + 1}`,
-    tripId,
-    sourceId,
-    assignedDay: idx < 3 ? 1 : 2,
-    timeSlot: idx === 0 ? 'morning' : idx === 1 ? 'afternoon' : 'evening',
-    createdAt: new Date().toISOString(),
-  }));
-
-  const initialDays: ItineraryDay[] = [
-    {
-      id: `day-1-${tripId}`,
-      tripId,
-      dayNumber: 1,
-      theme: 'Day 1: Amber Heritage & Stepwells',
-      items: [
-        {
-          id: `item-1-1`,
-          dayId: `day-1-${tripId}`,
-          placeId: initialPlaces[0].id,
-          orderIndex: 0,
-          timeSlot: 'morning',
-          durationMinutes: 90,
-          notes: 'Early morning lighting at geometric stepwell',
-          place: initialPlaces[0],
-        },
-        {
-          id: `item-1-2`,
-          dayId: `day-1-${tripId}`,
-          placeId: initialPlaces[1].id,
-          orderIndex: 1,
-          timeSlot: 'afternoon',
-          durationMinutes: 120,
-          notes: 'Golden hour sunset over pink city battlements',
-          place: initialPlaces[1],
-        },
-        {
-          id: `item-1-3`,
-          dayId: `day-1-${tripId}`,
-          placeId: initialPlaces[2].id,
-          orderIndex: 2,
-          timeSlot: 'evening',
-          durationMinutes: 60,
-          notes: 'Heritage rooftop tea overlooking water palace',
-          place: initialPlaces[2],
-        },
-      ],
-    },
-    {
-      id: `day-2-${tripId}`,
-      tripId,
-      dayNumber: 2,
-      theme: 'Day 2: Royal Palaces & Traditional Bazaars',
-      items: [
-        {
-          id: `item-2-1`,
-          dayId: `day-2-${tripId}`,
-          placeId: initialPlaces[3]?.id || 'place-jp-4',
-          orderIndex: 0,
-          timeSlot: 'morning',
-          durationMinutes: 90,
-          notes: 'Iconic honeycomb facade photography spot',
-          place: initialPlaces[3],
-        },
-        {
-          id: `item-2-2`,
-          dayId: `day-2-${tripId}`,
-          placeId: initialPlaces[4]?.id || 'place-jp-5',
-          orderIndex: 1,
-          timeSlot: 'afternoon',
-          durationMinutes: 120,
-          notes: 'Rajasthani thali & blue pottery shopping in walled city',
-          place: initialPlaces[4],
-        },
-      ],
-    },
-  ];
-
-  const defaultTrip: GhoomoTrip = {
-    id: tripId,
-    title: 'Jaipur Heritage & Rooftop Cafes',
-    destinationRegion: 'Jaipur, Rajasthan',
-    startDate: new Date(Date.now() + 86400000 * 7).toISOString().split('T')[0],
-    durationDays: 3,
-    coverImage: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1200&q=80',
-    budgetTotal: 25000,
-    travelStyle: 'friends',
-    status: 'planned',
-    collaborators: [
-      {
-        id: 'user-demo-01',
-        name: 'Aarav Sharma',
-        email: 'aarav@ghoomo.in',
-        role: 'editor',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-        status: 'accepted',
-      },
-      {
-        id: 'user-demo-02',
-        name: 'Rohan Gupta',
-        email: 'rohan@ghoomo.in',
-        role: 'editor',
-        avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-        status: 'accepted',
-      },
-    ],
-    sources: [initialSource],
-    places: initialPlaces,
-    days: initialDays,
-    budgetItems: [
-      { id: 'b-1', tripId, category: 'stay', description: 'Heritage Haveli Stay (3 nights)', amount: 12000, isPaid: true },
-      { id: 'b-2', tripId, category: 'transport', description: 'Private AC Cab (Amber Fort roundtrip)', amount: 4500, isPaid: false },
-      { id: 'b-3', tripId, category: 'food', description: 'Chokhi Dhani Dinner Experience', amount: 3200, isPaid: false },
-      { id: 'b-4', tripId, category: 'activity', description: 'Stepwell & Nahargarh entry passes', amount: 1500, isPaid: true },
-    ],
-    checklistItems: [
-      { id: 'c-1', tripId, title: 'Book Nahargarh sunset entry ticket in advance', category: 'booking', isCompleted: true },
-      { id: 'c-2', tripId, title: 'Carry sunscreen and polarized sunglasses for fort walks', category: 'packing', isCompleted: true },
-      { id: 'c-3', tripId, title: 'Confirm local auto contact for night ride back from Jal Mahal', category: 'documents', isCompleted: false },
-      { id: 'c-4', tripId, title: 'Cash currency for Johari Bazaar artisans', category: 'other', isCompleted: false },
-    ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  return [defaultTrip];
+  return [];
 }
 
 // ----------------------------------------------------------------------------
-// Local Storage Persistence Helpers
+// Local Storage / Supabase Persistence Helpers
 // ----------------------------------------------------------------------------
 function loadLocalTrips(): GhoomoTrip[] {
   if (typeof window === 'undefined') {
-    return getInitialSeedTrips();
+    return [];
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const seed = getInitialSeedTrips();
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(seed));
-      return seed;
+      return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : getInitialSeedTrips();
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return getInitialSeedTrips();
+    return [];
   }
 }
 

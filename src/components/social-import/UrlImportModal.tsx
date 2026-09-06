@@ -11,6 +11,7 @@ import { TripSource, Place } from '@/lib/types/ghoomo';
 import { validateTravelUrl } from '@/lib/validation/urlValidator';
 import { useQueryClient } from '@tanstack/react-query';
 import { TRIP_KEYS } from '@/hooks/useTripQueries';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 interface UrlImportModalProps {
   tripId: string;
@@ -21,6 +22,7 @@ interface UrlImportModalProps {
 export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportModalProps) {
   const queryClient = useQueryClient();
   const { trips, setTripItinerary } = useGhoomoStore();
+  const { currentUser, deductCredits } = useAuthStore();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +38,12 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
       return;
     }
 
+    // Check credits before proceeding
+    if ((currentUser.credits ?? 9) < 1) {
+      setError('You have 0 credits remaining. Please top up your credits on the Pricing page to extract more travel spots.');
+      return;
+    }
+
     // 1. Client-side URL Validation Guardrail
     const validation = validateTravelUrl(importUrl.trim());
     if (!validation.isValid) {
@@ -48,12 +56,19 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
     setValidationWarnings([]);
 
     try {
-      // Call the 3-Tier AI Fallback Server Action
-      const response = await extractLocationsFromUrlAction({ url: importUrl.trim(), tripId });
+      // Call the 3-Tier AI Fallback Server Action with userId
+      const response = await extractLocationsFromUrlAction({
+        url: importUrl.trim(),
+        tripId,
+        userId: currentUser.id,
+      });
 
       if (!response.success) {
         throw new Error(response.error || 'Unable to extract locations');
       }
+
+      // Deduct 1 credit locally in auth store
+      deductCredits(1);
 
       setLastTierUsed(response.tierUsed);
       if (response.validation?.warnings?.length > 0) {
@@ -142,7 +157,12 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
         {/* URL Input Box */}
         <div className="space-y-3">
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Social Post or Reel URL</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">Social Post or Reel URL</label>
+              <span className="text-[11px] font-semibold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-2 py-0.5 rounded-sm border border-teal-200 dark:border-teal-800">
+                This will use 1 credit
+              </span>
+            </div>
             <div className="flex gap-2">
               <input
                 type="url"
@@ -159,7 +179,7 @@ export default function UrlImportModal({ tripId, isOpen, onClose }: UrlImportMod
                 disabled={isLoading || !url}
                 className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs px-4 py-2.5 rounded-md cursor-pointer active:scale-[0.98] transition-all duration-100 shadow-xs"
               >
-                <span>Extract</span>
+                <span>Extract Places</span>
                 <ArrowRight size={14} className="ml-1" />
               </Button>
             </div>

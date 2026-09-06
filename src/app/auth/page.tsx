@@ -1,15 +1,24 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { Compass, CheckCircle2, ShieldCheck, ArrowRight, UserCheck, Sparkles, Mail, Lock } from 'lucide-react';
-import { useAuthStore, DEMO_PERSONAS } from '@/stores/useAuthStore';
-import { Button } from '@/components/ui/button';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Compass,
+  CheckCircle2,
+  ShieldCheck,
+  ArrowRight,
+  UserCheck,
+  Sparkles,
+  Mail,
+  Lock,
+} from "lucide-react";
+import { useAuthStore, DEMO_PERSONAS } from "@/stores/useAuthStore";
+import { Button } from "@/components/ui/button";
 
 export default function AuthPage() {
   const router = useRouter();
   const { currentUser, switchPersona, login, isAuthenticated } = useAuthStore();
-  const [emailInput, setEmailInput] = useState('');
+  const [emailInput, setEmailInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleCustomLogin = (e: React.FormEvent) => {
@@ -19,13 +28,13 @@ export default function AuthPage() {
     setTimeout(() => {
       login(emailInput);
       setIsSubmitting(false);
-      router.push('/trips');
+      router.push("/trips");
     }, 400);
   };
 
   const handlePersonaSelect = (id: string) => {
     switchPersona(id);
-    router.push('/trips');
+    router.push("/trips");
   };
 
   return (
@@ -40,7 +49,8 @@ export default function AuthPage() {
             Welcome to <span className="text-teal-600">Ghoomo</span>
           </h1>
           <p className="text-xs text-slate-400">
-            Social-to-itinerary travel studio for discovering & planning trips across India.
+            Social-to-itinerary travel studio for discovering & planning trips
+            across India.
           </p>
         </div>
 
@@ -58,16 +68,17 @@ export default function AuthPage() {
 
           <div className="grid grid-cols-1 gap-2.5">
             {DEMO_PERSONAS.map((persona) => {
-              const isActive = currentUser?.id === persona.id && isAuthenticated;
+              const isActive =
+                currentUser?.id === persona.id && isAuthenticated;
               return (
                 <button
                   key={persona.id}
                   onClick={() => handlePersonaSelect(persona.id)}
                   type="button"
-                  className={`card-micro flex items-center justify-between p-3 rounded-md border text-left transition-all duration-200 enabled:cursor-pointer disabled:cursor-not-allowed active:scale-[0.98] ${
+                  className={`card-micro flex items-center justify-between p-3 rounded-md border text-left transition-all duration-200 enabled:cursor-pointer active:scale-[0.98] ${
                     isActive
-                      ? 'border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30 dark:bg-teal-950/40'
-                      : 'border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/60'
+                      ? "border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30 dark:bg-teal-950/40"
+                      : "border-slate-200 bg-slate-50/70 hover:border-slate-300 hover:bg-white dark:border-slate-800 dark:bg-slate-950/60"
                   }`}
                 >
                   <div className="flex items-center gap-3">
@@ -85,7 +96,9 @@ export default function AuthPage() {
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400">{persona.title} • {persona.email}</div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {persona.title} • {persona.email}
+                      </div>
                     </div>
                   </div>
                   <ArrowRight size={15} className="text-slate-400" />
@@ -103,9 +116,14 @@ export default function AuthPage() {
 
           <form onSubmit={handleCustomLogin} className="space-y-3">
             <div className="space-y-1.5">
-              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">Email Address</label>
+              <label className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                Email Address
+              </label>
               <div className="relative">
-                <Mail size={15} className="absolute left-3 top-3 text-slate-400" />
+                <Mail
+                  size={15}
+                  className="absolute left-3 top-3 text-slate-400"
+                />
                 <input
                   type="email"
                   value={emailInput}
@@ -118,9 +136,9 @@ export default function AuthPage() {
             <Button
               type="submit"
               disabled={isSubmitting || !emailInput}
-              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2.5 rounded-md enabled:cursor-pointer disabled:cursor-not-allowed active:scale-[0.98] transition-all duration-100"
+              className="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs py-2.5 rounded-md enabled:cursor-pointer active:scale-[0.98] transition-all duration-100"
             >
-              {isSubmitting ? 'Signing in...' : 'Sign In to Workspace'}
+              {isSubmitting ? "Signing in..." : "Sign In to Workspace"}
             </Button>
           </form>
 

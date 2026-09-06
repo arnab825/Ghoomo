@@ -26,8 +26,12 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "Home", icon: Compass },
     { href: "/trips", label: "My Trips", icon: FolderHeart },
+    { href: "/pricing", label: "Pricing", icon: Sparkles },
     { href: "/trips/new", label: "Create Trip", icon: Plus },
   ];
+
+  const credits = currentUser?.credits ?? 9;
+  const isLowCredits = credits < 5;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/85">
@@ -71,11 +75,29 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right Section: Persona Switcher & New Trip CTA */}
+        {/* Right Section: Credits, Username Persona, and Actions */}
         <div className="hidden sm:flex items-center gap-2.5">
-          {/* Active Demo Persona Badge */}
+          {/* Credit Counter Pill */}
           <Link
-            href="/auth"
+            href="/pricing"
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold border transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+              isLowCredits
+                ? 'bg-amber-50 border-amber-200 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/60 dark:border-amber-800 dark:text-amber-300'
+                : 'bg-teal-50 border-teal-200 text-teal-800 hover:bg-teal-100 dark:bg-teal-950/60 dark:border-teal-800 dark:text-teal-300'
+            }`}
+          >
+            <Sparkles size={13} className={isLowCredits ? 'text-amber-600' : 'text-teal-600'} />
+            <span className="font-mono">{credits} credits</span>
+            {isLowCredits && (
+              <span className="text-[10px] font-bold uppercase bg-amber-200 text-amber-900 px-1 rounded-xs dark:bg-amber-900 dark:text-amber-200">
+                Low
+              </span>
+            )}
+          </Link>
+
+          {/* User Persona & Username */}
+          <Link
+            href="/profile"
             className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 transition-all duration-100 cursor-pointer active:scale-[0.98]"
           >
             {currentUser?.avatarUrl ? (
@@ -87,13 +109,28 @@ export default function Navbar() {
             ) : (
               <UserCheck size={14} className="text-teal-600" />
             )}
-            <span className="font-medium text-slate-800 dark:text-slate-200">
-              {currentUser?.name || "Guest"}
-            </span>
-            <span className="text-[10px] uppercase font-bold text-teal-700 bg-teal-50 border border-teal-200 px-1.5 py-0.2 rounded-sm dark:bg-teal-950/80 dark:text-teal-300 dark:border-teal-800">
-              Demo
-            </span>
+            <div className="flex flex-col text-left">
+              <span className="font-medium text-slate-800 dark:text-slate-200 leading-tight">
+                {currentUser?.name || "Traveler"}
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                @{currentUser?.username || "traveler_8472"}
+              </span>
+            </div>
           </Link>
+
+          {/* Upgrade Button if credits < 5 */}
+          {isLowCredits && (
+            <Link href="/pricing">
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-orange-300 text-orange-600 hover:bg-orange-50 text-xs font-semibold py-1.5 px-2.5 rounded-md cursor-pointer shadow-xs active:scale-[0.98] dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950/40"
+              >
+                Top up
+              </Button>
+            </Link>
+          )}
 
           <Link href="/trips/new">
             <Button

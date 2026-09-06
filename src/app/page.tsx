@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Compass,
   Sparkles,
@@ -16,38 +16,42 @@ import {
   Share2,
   DollarSign,
   CheckSquare,
-  Play
-} from 'lucide-react';
-import { SAMPLE_VIRAL_REELS } from '@/features/social-import/sampleReels';
-import { useGhoomoStore } from '@/stores/useGhoomoStore';
-import { Button } from '@/components/ui/button';
+  Play,
+} from "lucide-react";
+import { SAMPLE_VIRAL_REELS } from "@/features/social-import/sampleReels";
+import { useGhoomoStore } from "@/stores/useGhoomoStore";
+import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
   const router = useRouter();
   const { createTrip } = useGhoomoStore();
-  const [pastedUrl, setPastedUrl] = useState('');
+  const [pastedUrl, setPastedUrl] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleQuickExtract = async (urlToUse?: string) => {
     const url = urlToUse || pastedUrl;
-    if (!url || url.trim() === '') {
-      router.push('/trips/new');
+    if (!url || url.trim() === "") {
+      router.push("/trips/new");
       return;
     }
 
     setIsProcessing(true);
     try {
       // Find matching sample or default destination
-      const matched = SAMPLE_VIRAL_REELS.find((s) => url.includes(s.id) || url === s.url);
-      const destination = matched ? matched.destination : 'India Expedition';
-      const title = matched ? matched.title.slice(0, 40) : 'Discovered Social Reel Itinerary';
+      const matched = SAMPLE_VIRAL_REELS.find(
+        (s) => url.includes(s.id) || url === s.url,
+      );
+      const destination = matched ? matched.destination : "India Expedition";
+      const title = matched
+        ? matched.title.slice(0, 40)
+        : "Discovered Social Reel Itinerary";
 
       const newTripId = await createTrip({
         title,
         destinationRegion: destination,
         durationDays: 3,
         budgetTotal: 15000,
-        travelStyle: 'friends',
+        travelStyle: "friends",
         initialSocialUrl: url,
       });
 
@@ -82,21 +86,25 @@ export default function HomePage() {
           </h1>
 
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto leading-relaxed">
-            Paste any Instagram Reel, TikTok, YouTube Short, or travel blog. Ghoomo extracts verified Indian places,
-            pins them on Light Matter maps, and auto-generates smart day-wise routes.
+            Paste any Instagram Reel, TikTok, YouTube Short, or travel blog.
+            Ghoomo extracts verified Indian places, pins them on Light Matter
+            maps, and auto-generates smart day-wise routes.
           </p>
 
           {/* Core Feature: Interactive Social URL Input Box */}
           <div className="max-w-2xl mx-auto rounded-lg border border-slate-200 bg-white p-2 sm:p-2.5 shadow-md dark:border-slate-800 dark:bg-slate-900/90 ring-1 ring-slate-950/5">
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <LinkIcon size={18} className="absolute left-3.5 top-3.5 text-slate-400" />
+                <LinkIcon
+                  size={18}
+                  className="absolute left-3.5 top-3.5 text-slate-400"
+                />
                 <input
                   type="url"
                   value={pastedUrl}
                   onChange={(e) => setPastedUrl(e.target.value)}
                   placeholder="Paste Instagram Reel, TikTok, YouTube Short, or blog..."
-                  className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
+                  className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-md text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-600 dark:bg-slate-950 dark:border-slate-800 dark:text-white"
                 />
               </div>
 
@@ -128,7 +136,7 @@ export default function HomePage() {
                     onClick={() => handleQuickExtract(sample.url)}
                     className="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:text-slate-900 hover:border-teal-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all duration-100 cursor-pointer active:scale-[0.98]"
                   >
-                    {sample.destination.split(',')[0]}
+                    {sample.destination.split(",")[0]}
                   </button>
                 ))}
               </div>
@@ -152,32 +160,32 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
             {[
               {
-                step: '01',
-                title: 'Add from Reel, Short, or blog',
-                desc: 'Drop in any TikTok, Instagram Reel, YouTube short, or travel blog. No manual typing needed.',
+                step: "01",
+                title: "Add from Reel, Short, or blog",
+                desc: "Drop in any TikTok, Instagram Reel, YouTube short, or travel blog. No manual typing needed.",
                 icon: LinkIcon,
-                color: 'text-orange-500 bg-orange-50 dark:bg-slate-800',
+                color: "text-orange-500 bg-orange-50 dark:bg-slate-800",
               },
               {
-                step: '02',
-                title: 'Extract Locations',
-                desc: 'Verified coordinates with Indian reference datasets and how sure we are match scores.',
+                step: "02",
+                title: "Extract Locations",
+                desc: "Verified coordinates with Indian reference datasets and how sure we are match scores.",
                 icon: MapPin,
-                color: 'text-teal-600 bg-teal-50 dark:bg-slate-800',
+                color: "text-teal-600 bg-teal-50 dark:bg-slate-800",
               },
               {
-                step: '03',
-                title: 'Smart trip plan',
-                desc: 'Best route for your trip grouped into days without zigzagging across India traffic.',
+                step: "03",
+                title: "Smart trip plan",
+                desc: "Best route for your trip grouped into days without zigzagging across India traffic.",
                 icon: Compass,
-                color: 'text-emerald-600 bg-emerald-50 dark:bg-slate-800',
+                color: "text-emerald-600 bg-emerald-50 dark:bg-slate-800",
               },
               {
-                step: '04',
-                title: 'Plan with friends',
-                desc: 'Invite friends via shareable link to vote on stops, split estimated budget, and check packing lists.',
+                step: "04",
+                title: "Plan with friends",
+                desc: "Invite friends via shareable link to vote on stops, split estimated budget, and check packing lists.",
                 icon: Users,
-                color: 'text-cyan-600 bg-cyan-50 dark:bg-slate-800',
+                color: "text-cyan-600 bg-cyan-50 dark:bg-slate-800",
               },
             ].map((card) => {
               const Icon = card.icon;
@@ -186,12 +194,20 @@ export default function HomePage() {
                   key={card.step}
                   className="card-micro rounded-lg border border-slate-200 bg-white p-6 space-y-3 relative hover:border-teal-600/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 dark:border-slate-800 dark:bg-slate-900/50 shadow-xs"
                 >
-                  <span className="text-xs font-mono font-bold text-slate-400 block">{card.step}</span>
-                  <div className={`h-10 w-10 rounded-md flex items-center justify-center ${card.color}`}>
+                  <span className="text-xs font-mono font-bold text-slate-400 block">
+                    {card.step}
+                  </span>
+                  <div
+                    className={`h-10 w-10 rounded-md flex items-center justify-center ${card.color}`}
+                  >
                     <Icon size={20} />
                   </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{card.title}</h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">{card.desc}</p>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    {card.title}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    {card.desc}
+                  </p>
                 </div>
               );
             })}
@@ -212,7 +228,11 @@ export default function HomePage() {
               </h2>
             </div>
             <Link href="/trips" className="cursor-pointer">
-              <Button variant="ghost" size="sm" className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300 rounded-md active:scale-[0.98] cursor-pointer">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-slate-600 hover:text-slate-900 dark:text-slate-300 rounded-md active:scale-[0.98] cursor-pointer"
+              >
                 View All Workspaces <ArrowRight size={13} className="ml-1" />
               </Button>
             </Link>
@@ -250,7 +270,9 @@ export default function HomePage() {
                   </div>
                   <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <span>{sample.places.length} places</span>
-                    <span className="text-emerald-600 font-semibold">Ready to map</span>
+                    <span className="text-emerald-600 font-semibold">
+                      Ready to map
+                    </span>
                   </div>
                 </div>
               </div>
@@ -267,7 +289,8 @@ export default function HomePage() {
               Ready to Turn Social Links into a Trip?
             </h2>
             <p className="text-xs sm:text-sm text-slate-300">
-              Create your first trip in 30 seconds. Plan with friends, track expenses, and view everything on an interactive map.
+              Create your first trip in 30 seconds. Plan with friends, track
+              expenses, and view everything on an interactive map.
             </p>
           </div>
 
@@ -278,7 +301,10 @@ export default function HomePage() {
               </Button>
             </Link>
             <Link href="/auth" className="cursor-pointer w-full sm:w-auto">
-              <Button variant="outline" className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20 text-sm px-6 py-3 rounded-md cursor-pointer active:scale-[0.98] transition-all duration-100">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto border-white/30 bg-white/10 text-white hover:bg-white/20 text-sm px-6 py-3 rounded-md cursor-pointer active:scale-[0.98] transition-all duration-100"
+              >
                 Switch Demo Persona
               </Button>
             </Link>

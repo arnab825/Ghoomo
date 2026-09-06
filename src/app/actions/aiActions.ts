@@ -9,6 +9,7 @@ import { sanitizePromptText, sanitizePlaceName } from '@/lib/validation/sanitize
 import { checkItineraryRateLimit } from '@/lib/security/rateLimiter';
 import { tier1CircuitBreaker } from '@/lib/security/circuitBreaker';
 import { safeLog } from '@/lib/security/logger';
+import { deductUserCredits, CREDIT_COSTS } from '@/lib/services/creditService';
 
 // ============================================================================
 // Types & Interfaces
@@ -37,6 +38,7 @@ export interface AIResponse<T> {
 
 export interface GenerateItineraryInput {
   tripId: string;
+  userId?: string;
   destination: string;
   durationDays: number;
   places: Place[];
@@ -46,6 +48,7 @@ export interface GenerateItineraryInput {
 
 export interface ExtractLocationsInput {
   url: string;
+  userId?: string;
   tripId?: string;
 }
 
@@ -310,6 +313,29 @@ export async function generateItineraryAction(
     };
   }
 
+  // 1b. Credit System Check (Cost: 3 Credits for Full Itinerary Generation)
+  const activeUserId = input.userId || 'user-traveler-8472';
+  const creditCheck = await deductUserCredits(activeUserId, CREDIT_COSTS.ITINERARY_GENERATION);
+  if (!creditCheck.success) {
+    safeLog('warn', 'Credits', `User ${activeUserId} has insufficient credits for itinerary generation.`);
+    return {
+      success: false,
+      data: { days: [], updatedPlaces: places },
+      tierUsed: 'tier3_rule_based',
+      durationMs: Date.now() - startTime,
+      validation: {
+        warnings: ['Insufficient credits (3 credits required).'],
+        maxPlacesPerDay: 0,
+        flaggedForReview: true,
+        consecutiveTravelAlerts: [],
+        totalDistanceKm: 0,
+        isGeographicallyGrouped: false,
+      },
+      error: 'INSUFFICIENT_CREDITS',
+      message: 'You need 3 credits to generate a smart trip plan. Please upgrade your plan or top up credits.',
+    };
+  }
+
   // 2. Input Sanitization Guardrail
   const cleanDestination = sanitizePromptText(destination || 'India', 100);
   const cleanPlaces = places.map((p) => ({
@@ -519,6 +545,38 @@ export async function extractLocationsFromUrlAction(
     };
   }
 
+  // 1b. Credit System Check (Cost: 1 Credit for Location Extraction)
+  const activeUserId = input.userId || 'user-traveler-8472';
+  const creditCheck = await deductUserCredits(activeUserId, CREDIT_COSTS.LOCATION_EXTRACTION);
+  if (!creditCheck.success) {
+    safeLog('warn', 'Credits', `User ${activeUserId} has insufficient credits for URL extraction.`);
+    return {
+      success: false,
+      data: {
+        source: {
+          url,
+          platform: 'instagram',
+          title: 'Insufficient Credits',
+          author: 'Unknown',
+          thumbnailUrl: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80',
+        },
+        places: [],
+      },
+      tierUsed: 'tier3_rule_based',
+      durationMs: Date.now() - startTime,
+      validation: {
+        warnings: ['Insufficient credits (1 credit required).'],
+        maxPlacesPerDay: 0,
+        flaggedForReview: true,
+        consecutiveTravelAlerts: [],
+        totalDistanceKm: 0,
+        isGeographicallyGrouped: false,
+      },
+      error: 'INSUFFICIENT_CREDITS',
+      message: 'You need 1 credit to extract places from a travel link. Please upgrade your plan or top up credits.',
+    };
+  }
+
   const safeUrl = sanitizePromptText(url, 500);
 
   // --------------------------------------------------------------------------
@@ -656,8 +714,40 @@ export async function enrichPlaceAction(input: {
   name: string;
   city?: string;
   state?: string;
+  userId?: string;
 }): Promise<AIResponse<Omit<Place, 'id' | 'tripId' | 'createdAt'>>> {
   const startTime = Date.now();
+
+  const activeUserId = input.userId || 'user-traveler-8472';
+  const creditCheck = await deductUserCredits(activeUserId, CREDIT_COSTS.PLACE_ENRICHMENT);
+  if (!creditCheck.success) {
+    safeLog('warn', 'Credits', `User ${activeUserId} has insufficient credits for place enrichment.`);
+    return {
+      success: false,
+      data: {
+        name: input.name,
+        city: input.city || 'India',
+        state: input.state || 'India',
+        lat: 20.5937,
+        lng: 78.9629,
+        category: 'attraction',
+        confidence: 0.5,
+      },
+      tierUsed: 'tier3_rule_based',
+      durationMs: Date.now() - startTime,
+      validation: {
+        warnings: ['Insufficient credits (1 credit required).'],
+        maxPlacesPerDay: 1,
+        flaggedForReview: true,
+        consecutiveTravelAlerts: [],
+        totalDistanceKm: 0,
+        isGeographicallyGrouped: true,
+      },
+      error: 'INSUFFICIENT_CREDITS',
+      message: 'You need 1 credit to enrich a place. Please upgrade your plan or top up credits.',
+    };
+  }
+
   const enriched = enrichPlace(input);
 
   return {

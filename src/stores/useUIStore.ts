@@ -14,7 +14,7 @@
 
 import { create } from 'zustand';
 
-export type WorkspaceTab = 'itinerary' | 'places' | 'budget';
+export type WorkspaceTab = 'itinerary' | 'places' | 'budget' | 'polls';
 
 interface UIState {
   // Modal visibility
