@@ -66,6 +66,18 @@ export function useDeleteTripMutation() {
   });
 }
 
+export function useDeleteAllTripsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => tripService.deleteAllTrips(),
+    onSuccess: () => {
+      queryClient.setQueryData(TRIP_KEYS.all, []);
+      queryClient.invalidateQueries({ queryKey: TRIP_KEYS.all });
+    },
+  });
+}
+
 export function useImportSocialUrlMutation(tripId: string) {
   const queryClient = useQueryClient();
 

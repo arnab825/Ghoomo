@@ -18,6 +18,7 @@ import {
 import { extractLocationsFromSocialUrl } from '@/features/social-import/extractors';
 import { extractLocationsFromUrlAction } from '@/app/actions/aiActions';
 import { generateProximityItinerary } from '@/features/itinerary/clustering';
+import { getDestinationImage, sanitizeImageUrl } from '@/lib/utils/destinationImages';
 
 const STORAGE_KEY = 'ghoomo_trips_data_v2';
 
@@ -63,9 +64,19 @@ function loadLocalTrips(): GhoomoTrip[] {
       // Ignore legacy parse errors
     }
 
-    // Ensure all trips with places have populated day items via proximity clustering
+    // Ensure all trips with places have populated day items and valid cover images
     let modified = false;
     for (const trip of trips) {
+      if (
+        !trip.coverImage ||
+        trip.coverImage.includes('cdninstagram.com') ||
+        trip.coverImage.includes('fbcdn.net') ||
+        trip.coverImage.includes('maxresdefault.jpg')
+      ) {
+        trip.coverImage = sanitizeImageUrl(trip.coverImage, trip.destinationRegion, trip.title);
+        modified = true;
+      }
+
       if (
         trip.places &&
         trip.places.length > 0 &&
@@ -236,7 +247,7 @@ export const tripService = {
       destinationRegion: data.destinationRegion,
       startDate: data.startDate || new Date().toISOString().split('T')[0],
       durationDays: data.durationDays,
-      coverImage: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1200&q=80',
+      coverImage: getDestinationImage(data.destinationRegion, data.title),
       budgetTotal: data.budgetTotal || 20000,
       travelStyle: data.travelStyle || 'friends',
       status: 'draft',
@@ -316,7 +327,7 @@ export const tripService = {
       newTrip.sources = [source];
       newTrip.places = places;
       if (places[0]?.imageUrl) {
-        newTrip.coverImage = places[0].imageUrl;
+        newTrip.coverImage = sanitizeImageUrl(places[0].imageUrl, newTrip.destinationRegion, newTrip.title);
       }
 
       if (places[0]?.city && (!newTrip.destinationRegion || newTrip.destinationRegion === 'India Expedition')) {
@@ -327,7 +338,7 @@ export const tripService = {
         newTrip.title = extracted.source.title.slice(0, 50);
       }
       if (extracted.source?.thumbnailUrl) {
-        newTrip.coverImage = extracted.source.thumbnailUrl;
+        newTrip.coverImage = sanitizeImageUrl(extracted.source.thumbnailUrl, newTrip.destinationRegion, newTrip.title);
       }
 
       // Auto-cluster places into days so day items are populated immediately
@@ -350,6 +361,17 @@ export const tripService = {
     saveLocalTrips(trips);
     if (typeof window !== 'undefined') {
       fetch(`/api/trips/${encodeURIComponent(tripId)}`, { method: 'DELETE' }).catch(() => {});
+    }
+  },
+
+  async deleteAllTrips(): Promise<void> {
+    saveLocalTrips([]);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem('ghoomo-trips-storage');
+        fetch('/api/trips', { method: 'DELETE' }).catch(() => {});
+      } catch {}
     }
   },
 
@@ -448,7 +470,7 @@ export const tripService = {
       }
 
       if (newSource.thumbnailUrl) {
-        trip.coverImage = newSource.thumbnailUrl;
+        trip.coverImage = sanitizeImageUrl(newSource.thumbnailUrl, trip.destinationRegion, trip.title);
       }
     }
 

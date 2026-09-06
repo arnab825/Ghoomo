@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-heading: 'Instrument Serif', Georgia, serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -48,6 +50,111 @@
   --container-max: 1240px;
   --transition-fast: 0.1s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark {
+  --bg-primary: #080c14;
+  --bg-secondary: #0f172a;
+  --bg-card: #0f172a;
+  --bg-card-hover: #1e293b;
+  --border-subtle: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+}
+
+@keyframes gradientFlow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-text {
+  background-size: 200% auto;
+  animation: gradientFlow 5s ease-in-out infinite;
+}
+
+@keyframes kenBurnsSlow {
+  0% {
+    transform: scale(1.02) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.08) translate(-12px, -8px);
+  }
+  100% {
+    transform: scale(1.02) translate(0, 0);
+  }
+}
+
+.animate-ken-burns {
+  animation: kenBurnsSlow 35s ease-in-out infinite alternate;
+}
+
+@keyframes topoWave {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-10px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-topo-wave {
+  animation: topoWave 14s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift1 {
+  0%, 100% {
+    opacity: 0.65;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.12) translate(30px, -25px);
+  }
+}
+
+.animate-aurora-1 {
+  animation: auroraDrift1 14s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift2 {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.16) translate(-35px, 20px);
+  }
+}
+
+.animate-aurora-2 {
+  animation: auroraDrift2 18s ease-in-out infinite alternate;
+}
+
+@keyframes auroraDrift3 {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.95) translate(0, 0);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1) translate(25px, 30px);
+  }
+}
+
+.animate-aurora-3 {
+  animation: auroraDrift3 16s ease-in-out infinite alternate;
 }
 
 /* Micro-Interactions */
@@ -156,6 +263,15 @@
   animation: borderGlow 4s ease-in-out infinite;
 }
 
+@keyframes toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
 /* Minimal Teal Slider Track & Thumb */
 input[type="range"].slider-teal {
   -webkit-appearance: none;
@@ -231,10 +347,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(circle at 50% -20%, rgba(255, 153, 51, 0.12) 0%, transparent 60%),
-              radial-gradient(circle at 90% 40%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-              var(--bg-primary);
-  background-attachment: fixed;
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   line-height: 1.6;
 }
@@ -243,7 +356,7 @@ body {
   width: 100%;
   max-width: var(--container-max);
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding-inline: 1.5rem;
 }
 
 .glass-panel {

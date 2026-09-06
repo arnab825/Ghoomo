@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useBudgetItemMutations, useChecklistItemMutations } from '@/hooks/useTripQueries';
 import { BudgetItem, ChecklistItem, BudgetCategory, ChecklistCategory } from '@/lib/types/ghoomo';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/shared/ToastContext';
 import {
   DollarSign,
   CheckSquare,
@@ -44,6 +45,7 @@ export default function BudgetAndChecklist({
 }: BudgetAndChecklistProps) {
   const budgetMutations = useBudgetItemMutations(tripId);
   const checklistMutations = useChecklistItemMutations(tripId);
+  const { toast, confirmModal } = useToast();
 
   const [activeTab, setActiveTab] = useState<'budget' | 'checklist'>('budget');
 
@@ -234,9 +236,16 @@ export default function BudgetAndChecklist({
                       <button
                         type="button"
                         onClick={() => {
-                          if (confirm(`Remove expense "${item.description}"?`)) {
-                            budgetMutations.remove.mutateAsync(item.id);
-                          }
+                          confirmModal({
+                            title: 'Remove Expense',
+                            message: `Are you sure you want to remove "${item.description}" (₹${item.amount.toLocaleString('en-IN')})?`,
+                            confirmText: 'Remove',
+                            variant: 'danger',
+                            onConfirm: async () => {
+                              await budgetMutations.remove.mutateAsync(item.id);
+                              toast.success(`Removed expense "${item.description}"`);
+                            },
+                          });
                         }}
                         className="text-slate-400 hover:text-red-600 transition-colors cursor-pointer p-1"
                         title="Delete expense"

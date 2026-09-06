@@ -113,3 +113,9 @@ export async function deleteServerTrip(id: string): Promise<boolean> {
   await fs.writeFile(TRIPS_FILE_PATH, JSON.stringify(filtered, null, 2), 'utf-8');
   return true;
 }
+
+export async function deleteAllServerTrips(): Promise<boolean> {
+  await ensureFileExists();
+  await fs.writeFile(TRIPS_FILE_PATH, '[]', 'utf-8');
+  return true;
+}

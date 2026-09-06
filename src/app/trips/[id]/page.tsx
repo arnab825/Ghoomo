@@ -66,6 +66,8 @@ import { useUIStore } from "@/stores/useUIStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { TripWorkspaceSkeleton } from "@/components/shared/skeletons/TripWorkspaceSkeleton";
 import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
+import { useToast } from "@/components/shared/ToastContext";
+import { getDestinationImage, sanitizeImageUrl } from "@/lib/utils/destinationImages";
 
 const DAY_COLOR_CLASSES: Record<
   number,
@@ -200,9 +202,12 @@ export default function TripWorkspacePage({
     );
   }
 
+  const { toast, confirmModal } = useToast();
+
   const handleCopyTranscript = (sourceId: string, text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedSourceId(sourceId);
+    toast.info("Transcript copied to clipboard");
     setTimeout(() => setCopiedSourceId(null), 2000);
   };
 
@@ -210,11 +215,18 @@ export default function TripWorkspacePage({
     setSelectedPlaceId(placeId);
   };
 
-  const handleDeleteTrip = async () => {
-    if (confirm("Are you sure you want to permanently delete this trip?")) {
-      await deleteTripMutation.mutateAsync(tripId);
-      router.push("/trips");
-    }
+  const handleDeleteTrip = () => {
+    confirmModal({
+      title: "Delete Trip Workspace",
+      message: `Are you sure you want to delete "${trip.title}"? All itinerary days, mapped places, and checklists will be permanently cleared.`,
+      confirmText: "Delete Trip",
+      variant: "danger",
+      onConfirm: async () => {
+        await deleteTripMutation.mutateAsync(tripId);
+        toast.success(`"${trip.title}" deleted successfully.`);
+        router.push("/trips");
+      },
+    });
   };
 
   const handleAutoGroupWithAI = async () => {
@@ -248,37 +260,37 @@ export default function TripWorkspacePage({
   return (
     <div className="flex-1 flex flex-col min-h-[calc(100vh-72px)] bg-[#fafafa] dark:bg-[#0a0e17] text-slate-900 dark:text-slate-100">
       {/* 1. TOP CONTROL BAR */}
-      <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md px-4 sm:px-6 py-3 sticky top-16 z-30 dark:border-slate-800 dark:bg-slate-950/80 shadow-xs">
-        <div className="container mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+      <header className="border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 sm:px-6 py-3 sticky top-16 z-30 dark:border-slate-800 dark:bg-slate-950/90 transition-colors shadow-2xs">
+        <div className="w-full flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Left: Back + Title + Meta */}
           <div className="flex items-center gap-3">
             <Link
               href="/trips"
-              className="p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800 transition-all cursor-pointer active:scale-95 shrink-0"
+              title="Return to Trips"
             >
               <ArrowLeft size={18} />
             </Link>
 
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white font-heading truncate max-w-md">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight truncate max-w-md">
                   {trip.title}
                 </h1>
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded-full bg-teal-600/10 text-teal-700 border border-teal-600/20 dark:bg-teal-950/50 dark:text-teal-300">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200/80 dark:bg-orange-950/50 dark:text-orange-300 dark:border-orange-800/80">
                   {trip.travelStyle}
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                <span className="flex items-center gap-1 text-teal-700 dark:text-teal-400 font-medium">
-                  <MapPin size={12} /> {trip.destinationRegion}
+              <div className="flex items-center gap-2.5 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                  <MapPin size={12} className="text-orange-500 shrink-0" /> {trip.destinationRegion}
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Calendar size={12} /> {trip.durationDays} Days (
-                  {trip.places.length} places)
+                <span className="text-slate-300 dark:text-slate-700">•</span>
+                <span className="flex items-center gap-1 font-medium text-slate-700 dark:text-slate-300">
+                  <Calendar size={12} className="text-orange-500 shrink-0" /> {trip.durationDays} Days ({trip.places.length} places)
                 </span>
-                <span>•</span>
-                <span className="text-emerald-600 font-semibold font-mono">
+                <span className="text-slate-300 dark:text-slate-700">•</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold font-mono">
                   Budget ₹{trip.budgetTotal.toLocaleString("en-IN")}
                 </span>
               </div>
@@ -291,15 +303,15 @@ export default function TripWorkspacePage({
             <button
               onClick={() => setCollabModalOpen(true)}
               title="Plan with friends"
-              className="flex items-center gap-2 p-1.5 pr-3 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/70 transition-all duration-100 cursor-pointer active:scale-[0.98]"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200/80 bg-slate-50 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900/70 transition-all cursor-pointer active:scale-95 text-xs"
             >
-              <div className="flex -space-x-2">
+              <div className="flex -space-x-1.5">
                 {trip.collaborators
                   .slice(0, 3)
-                  .map((c: Collaborator, i: number) => (
+                  .map((c: Collaborator) => (
                     <div
                       key={c.id}
-                      className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-slate-700 overflow-hidden"
+                      className="h-6 w-6 rounded-full bg-slate-200 border-2 border-white dark:border-slate-950 flex items-center justify-center text-[10px] font-bold text-slate-700 overflow-hidden shadow-2xs"
                     >
                       {c.avatarUrl ? (
                         <img
@@ -313,51 +325,20 @@ export default function TripWorkspacePage({
                     </div>
                   ))}
               </div>
-              <span className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+              <span className="text-slate-700 dark:text-slate-300 font-medium">
                 {trip.collaborators.length}{" "}
                 {trip.collaborators.length === 1 ? "member" : "members"}
               </span>
             </button>
 
-            {/* Import Social Reel CTA */}
-            <Button
-              onClick={() => setImportModalOpen(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-semibold text-xs py-2 px-3.5 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100"
-            >
-              <LinkIcon size={14} className="mr-1.5" />
-              <span>Add from Reel, Short, or blog</span>
-            </Button>
-
             {/* Add Manual Place */}
             <Button
               onClick={() => setAddPlaceModalOpen(true)}
-              variant="outline"
               size="sm"
-              className="bg-white border border-teal-600 text-teal-600 hover:bg-teal-50 text-xs px-3 py-2 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100 dark:bg-slate-900 dark:border-teal-500 dark:text-teal-400 dark:hover:bg-slate-800"
+              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold px-3.5 py-1.5 rounded-xl cursor-pointer shadow-xs active:scale-95 transition-all flex items-center gap-1.5"
             >
-              <Plus size={14} className="mr-1 text-teal-600" />
+              <Plus size={14} />
               <span>Add Place</span>
-            </Button>
-
-            {/* Auto-Cluster Itinerary via 3-Tier AI Fallback */}
-            <Button
-              onClick={handleAutoGroupWithAI}
-              disabled={autoGroupMutation.isPending}
-              size="sm"
-              className="bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs px-3 py-2 rounded-md cursor-pointer shadow-xs active:scale-[0.98] transition-all duration-100 flex items-center gap-1.5"
-            >
-              <Shuffle
-                size={13}
-                className={`text-white ${autoGroupMutation.isPending ? "animate-spin" : ""}`}
-              />
-              <span className="hidden sm:inline">
-                {autoGroupMutation.isPending
-                  ? "Building route..."
-                  : "Best route for your trip"}
-              </span>
-              <span className="text-[10px] font-mono bg-teal-800/60 px-1.5 py-0.2 rounded-xs">
-                3 credits
-              </span>
             </Button>
 
             {/* Share / Collab Modal */}
@@ -366,7 +347,7 @@ export default function TripWorkspacePage({
               variant="ghost"
               size="sm"
               title="Plan with friends"
-              className="text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white cursor-pointer px-2 rounded-md active:scale-[0.98]"
+              className="h-9 w-9 p-0 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800 cursor-pointer active:scale-95"
             >
               <Share2 size={16} />
             </Button>
@@ -376,7 +357,8 @@ export default function TripWorkspacePage({
               onClick={handleDeleteTrip}
               variant="ghost"
               size="sm"
-              className="text-slate-400 hover:text-red-600 cursor-pointer px-2 rounded-md active:scale-[0.98]"
+              title="Delete trip"
+              className="h-9 w-9 p-0 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer active:scale-95"
             >
               <Trash2 size={16} />
             </Button>
@@ -414,69 +396,29 @@ export default function TripWorkspacePage({
       {/* 2. MAIN WORKSPACE (SPLIT VIEW: CONTROLS + MAP-FIRST) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 overflow-hidden">
         {/* LEFT COLUMN: ITINERARY, PLACES & BUDGET (5 COLUMNS) */}
-        <div className="lg:col-span-5 border-r border-slate-200 bg-white dark:border-slate-800/80 dark:bg-slate-950/50 p-4 sm:p-5 overflow-y-auto max-h-[calc(100vh-130px)] space-y-4">
-          {/* Tabs Navigation */}
-          <div className="flex p-1 rounded-md bg-slate-100 border border-slate-200 dark:bg-slate-900 dark:border-slate-800 overflow-x-auto gap-1">
-            <button
-              onClick={() => setActiveTab("itinerary")}
-              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === "itinerary"
-                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              Plan
-            </button>
-            <button
-              onClick={() => setActiveTab("places")}
-              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === "places"
-                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              Places ({trip.places.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("budget")}
-              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === "budget"
-                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              Budget
-            </button>
-            <button
-              onClick={() => setActiveTab("chat")}
-              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === "chat"
-                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              Chat & AI
-            </button>
-            <button
-              onClick={() => setActiveTab("polls")}
-              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === "polls"
-                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              Polls
-            </button>
-            <button
-              onClick={() => setActiveTab("friends")}
-              className={`flex-1 min-w-[70px] py-1.5 px-2 rounded-md text-xs font-semibold transition-all duration-100 cursor-pointer active:scale-[0.98] ${
-                activeTab === "friends"
-                  ? "bg-white text-saffron-600 shadow-xs dark:bg-saffron-600 dark:text-white font-bold"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              }`}
-            >
-              Friends
-            </button>
+        <div className="lg:col-span-5 border-r border-slate-200/80 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40 p-4 sm:p-5 overflow-y-auto max-h-[calc(100vh-125px)] space-y-4">
+          {/* Tabs Navigation (Modern Segmented Control) */}
+          <div className="flex p-1 rounded-xl bg-slate-200/60 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 gap-1 overflow-x-auto select-none">
+            {[
+              { key: "itinerary", label: "Plan" },
+              { key: "places", label: `Places (${trip.places.length})` },
+              { key: "budget", label: "Budget" },
+              { key: "chat", label: "Chat & AI" },
+              { key: "polls", label: "Polls" },
+              { key: "friends", label: "Friends" },
+            ].map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key as any)}
+                className={`flex-1 min-w-[65px] py-1.5 px-2 rounded-lg text-xs font-semibold transition-all duration-150 cursor-pointer active:scale-95 ${
+                  activeTab === t.key
+                    ? "bg-white text-orange-600 shadow-xs dark:bg-slate-800 dark:text-orange-400"
+                    : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
 
           {/* TAB 1: DAILY ITINERARY */}
@@ -490,12 +432,12 @@ export default function TripWorkspacePage({
 
               {/* AI Tier & Validation Alert Banner */}
               {aiTierUsed && !autoGroupMutation.isPending && (
-                <div className="p-3.5 rounded-lg border border-slate-200 bg-slate-50 space-y-2.5 dark:border-slate-800 dark:bg-slate-900/60 text-xs animate-in fade-in">
+                <div className="p-3.5 rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-slate-900/60 space-y-2.5 text-xs shadow-xs animate-in fade-in">
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
-                      <Zap size={13} className="text-teal-600" />
+                      <Zap size={13} className="text-orange-500" />
                       <span>Best route for your trip:</span>
-                      <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/60 dark:text-teal-300">
+                      <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold bg-orange-50 text-orange-700 border border-orange-200/80 dark:bg-orange-950/60 dark:text-orange-300">
                         {aiTierUsed === "tier1_gemini"
                           ? "Tier 1: Gemini 1.5 Flash"
                           : aiTierUsed === "tier2_groq"
@@ -512,10 +454,7 @@ export default function TripWorkspacePage({
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800">
-                          <CheckCircle2
-                            size={11}
-                            className="text-emerald-600"
-                          />
+                          <CheckCircle2 size={11} className="text-emerald-600" />
                           <span>Pace Validated</span>
                         </span>
                       )}
@@ -576,20 +515,15 @@ export default function TripWorkspacePage({
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
                 <button
                   onClick={() => setSelectedDayFilter(null)}
-                  className={`px-3 py-1.5 rounded-md whitespace-nowrap font-medium transition-all duration-100 cursor-pointer active:scale-[0.98] ${
+                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-semibold transition-all cursor-pointer active:scale-95 ${
                     selectedDayFilter === null
-                      ? "bg-slate-900 text-white font-semibold shadow-xs"
-                      : "text-slate-600 hover:text-slate-900 bg-white border border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400"
+                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+                      : "text-slate-600 hover:text-slate-900 bg-white border border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400"
                   }`}
                 >
                   All Days
                 </button>
                 {trip.days.map((day: ItineraryDay) => {
-                  const style = DAY_COLOR_CLASSES[day.dayNumber] || {
-                    text: "text-teal-700",
-                    bg: "bg-teal-50",
-                    border: "border-teal-200",
-                  };
                   const isSelected = selectedDayFilter === day.dayNumber;
                   return (
                     <button
@@ -597,10 +531,10 @@ export default function TripWorkspacePage({
                       onClick={() =>
                         setSelectedDayFilter(isSelected ? null : day.dayNumber)
                       }
-                      className={`px-3 py-1.5 rounded-md whitespace-nowrap font-medium transition-all duration-100 cursor-pointer border active:scale-[0.98] ${
+                      className={`px-3 py-1.5 rounded-lg whitespace-nowrap text-xs font-semibold transition-all cursor-pointer border active:scale-95 ${
                         isSelected
-                          ? `${style.bg} ${style.text} ${style.border} font-bold shadow-xs`
-                          : "text-slate-600 hover:text-slate-900 bg-white border-slate-200 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-400"
+                          ? "bg-orange-500 text-white border-orange-500 shadow-xs"
+                          : "text-slate-600 hover:text-slate-900 bg-white border-slate-200/80 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 hover:border-slate-300"
                       }`}
                     >
                       Day {day.dayNumber} ({day.items.length})
@@ -618,57 +552,54 @@ export default function TripWorkspacePage({
                       day.dayNumber === selectedDayFilter,
                   )
                   .map((day: ItineraryDay) => {
-                    const style = getDayColorClasses(day.dayNumber);
                     const isDayFocused = selectedDayFilter === day.dayNumber;
 
                     return (
                       <div
                         key={day.id}
-                        className={`card-micro rounded-lg border p-4 space-y-3 shadow-xs transition-all duration-200 dark:bg-slate-900/60 ${
+                        className={`rounded-2xl border transition-all duration-200 overflow-hidden ${
                           isDayFocused
-                            ? "border-teal-600/80 bg-teal-50/20 ring-1 ring-teal-500/20 dark:border-teal-800"
-                            : "border-slate-200 bg-white hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800"
+                            ? "border-orange-500/70 bg-white dark:bg-slate-900 ring-2 ring-orange-500/20 shadow-md"
+                            : "border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900/80 shadow-[0_1px_3px_rgba(0,0,0,0.03)]"
                         }`}
                       >
-                        {/* Day Header with Direct Map Focus */}
+                        {/* Day Header */}
                         <div
                           onClick={() =>
                             setSelectedDayFilter(isDayFocused ? null : day.dayNumber)
                           }
-                          className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800 cursor-pointer group"
+                          className="flex items-center justify-between p-4 bg-slate-50/70 dark:bg-slate-900/90 border-b border-slate-100 dark:border-slate-800/80 cursor-pointer group hover:bg-orange-50/30 transition-colors"
                         >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`h-7 w-7 rounded-md flex items-center justify-center text-xs font-bold ${style.bg} ${style.text} border ${style.border}`}
-                            >
+                          <div className="flex items-center gap-3">
+                            <span className="h-8 w-8 rounded-xl flex items-center justify-center text-xs font-bold bg-orange-500/10 text-orange-600 border border-orange-500/20 dark:bg-orange-950/60 dark:text-orange-400">
                               D{day.dayNumber}
                             </span>
                             <div>
-                              <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-teal-600 transition-colors">
-                                {day.theme}
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-orange-600 transition-colors">
+                                Day {day.dayNumber}: {day.theme}
                               </h3>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                                 {day.items.length === 0
                                   ? "No places scheduled yet"
-                                  : `${day.items.length} locations • Clustered by proximity`}
+                                  : `${day.items.length} ${day.items.length === 1 ? "location" : "locations"} • Clustered by proximity`}
                               </p>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedDayFilter(isDayFocused ? null : day.dayNumber);
                               }}
-                              className={`text-[10px] px-2 py-1 rounded-md border flex items-center gap-1 font-medium transition-colors cursor-pointer ${
+                              className={`text-xs px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 font-semibold transition-all cursor-pointer active:scale-95 ${
                                 isDayFocused
-                                  ? "bg-teal-600 text-white border-teal-600"
-                                  : "bg-slate-50 hover:bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                                  ? "bg-orange-500 text-white border-orange-500 shadow-xs"
+                                  : "bg-white hover:bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                               }`}
                               title="Focus this day on the map"
                             >
-                              <Compass size={11} />
+                              <Compass size={12} />
                               <span>{isDayFocused ? "Focused" : "Focus Map"}</span>
                             </button>
 
@@ -679,148 +610,151 @@ export default function TripWorkspacePage({
                               }}
                               size="sm"
                               variant="ghost"
-                              className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white p-1 rounded-md active:scale-[0.98]"
+                              className="text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-white h-7 px-2.5 rounded-lg active:scale-95"
                             >
-                              <Plus size={13} className="mr-0.5" /> Place
+                              <Plus size={13} className="mr-1" /> Place
                             </Button>
                           </div>
                         </div>
 
                         {/* Items in this Day */}
                         {day.items.length === 0 ? (
-                          <div className="text-center py-6 text-xs text-slate-400">
-                            Click &quot;Best route for your trip&quot; or import
-                            a reel to populate Day {day.dayNumber}.
+                          <div className="text-center py-8 text-xs text-slate-400">
+                            Click &quot;Best route for your trip&quot; or import a reel to populate Day {day.dayNumber}.
                           </div>
                         ) : (
-                          <div className="space-y-2.5">
-                            {day.items.map(
-                              (item: ItineraryItem, idx: number) => {
-                                const place =
-                                  item.place ||
-                                  trip.places.find(
-                                    (p: Place) => p.id === item.placeId,
-                                  );
-                                if (!place) return null;
-                                const isSelected = selectedPlaceId === place.id;
+                          <div className="p-3.5 space-y-3">
+                            {day.items.map((item: ItineraryItem, idx: number) => {
+                              const place =
+                                item.place ||
+                                trip.places.find((p: Place) => p.id === item.placeId);
+                              if (!place) return null;
+                              const isSelected = selectedPlaceId === place.id;
 
-                                return (
-                                  <div
-                                    key={item.id}
-                                    onClick={() => handleSelectPlace(place.id)}
-                                    className={`p-3 rounded-md border transition-all duration-100 cursor-pointer active:scale-[0.99] ${
-                                      isSelected
-                                        ? "border-teal-600 bg-teal-50/70 ring-1 ring-teal-600/30"
-                                        : "border-slate-200 bg-slate-50/70 hover:bg-slate-100 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950/60"
-                                    }`}
-                                  >
-                                    <div className="flex gap-3">
-                                      {place.imageUrl && (
-                                        <img
-                                          src={place.imageUrl}
-                                          alt={place.name}
-                                          className="h-16 w-16 rounded-md object-cover shrink-0"
-                                        />
-                                      )}
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center justify-between gap-1">
-                                          <div className="flex items-center gap-1.5 truncate">
-                                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                              {idx + 1}. {place.name}
-                                            </span>
-                                            {place.sourceType === 'creator' || place.provenance?.startsWith('creator_') || item.sourceType === 'creator' ? (
-                                              <span className="text-[10px] font-semibold text-saffron-600 bg-saffron-50 dark:bg-saffron-950/60 px-1.5 py-0.2 rounded border border-saffron-200 dark:border-saffron-800 shrink-0">
-                                                🎬 Creator
-                                              </span>
-                                            ) : (
-                                              <span className="text-[10px] font-semibold text-violet-600 bg-violet-50 dark:bg-violet-950/60 px-1.5 py-0.2 rounded border border-violet-200 dark:border-violet-800 shrink-0">
-                                                ✨ AI Added
-                                              </span>
-                                            )}
-                                          </div>
-                                          <span className="text-[10px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-500/20 shrink-0">
-                                            {Math.round((place.confidence || 0.9) * 100)}%
+                              return (
+                                <div
+                                  key={item.id}
+                                  onClick={() => handleSelectPlace(place.id)}
+                                  className={`p-3.5 rounded-xl border transition-all duration-150 cursor-pointer active:scale-[0.99] ${
+                                    isSelected
+                                      ? "border-orange-500 bg-orange-50/30 ring-1 ring-orange-500/30 shadow-xs dark:bg-orange-950/20 dark:border-orange-600"
+                                      : "border-slate-200/70 bg-white hover:border-slate-300 hover:shadow-xs dark:border-slate-800 dark:bg-slate-900/60 dark:hover:border-slate-700"
+                                  }`}
+                                >
+                                  <div className="flex gap-3.5">
+                                    {place.imageUrl && (
+                                      <img
+                                        src={sanitizeImageUrl(place.imageUrl, place.city || trip.destinationRegion, place.name)}
+                                        alt={place.name}
+                                        referrerPolicy="no-referrer"
+                                        onError={(e) => {
+                                          const target = e.currentTarget;
+                                          target.onerror = null;
+                                          target.src = getDestinationImage(place.city || trip.destinationRegion, place.name);
+                                        }}
+                                        className="h-16 w-16 rounded-lg object-cover shrink-0 border border-slate-100 dark:border-slate-800"
+                                      />
+                                    )}
+                                    <div className="flex-1 min-w-0 space-y-1.5">
+                                      {/* Header: Title + Badge + Score */}
+                                      <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2 truncate">
+                                          <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                            {idx + 1}. {place.name}
                                           </span>
-                                        </div>
-
-                                        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                          <span>{place.city}</span>
-                                          <span>•</span>
-                                          <span className="capitalize">{item.timeSlot}</span>
-                                          <span>({item.durationMinutes}m)</span>
-                                          {item.startTime && item.endTime && (
-                                            <span className="font-mono text-[10px] text-slate-600 dark:text-slate-300 bg-slate-200/60 dark:bg-slate-800 px-1.5 py-0.2 rounded">
-                                              ⏰ {item.startTime}–{item.endTime}
+                                          {place.sourceType === "creator" ||
+                                          place.provenance?.startsWith("creator_") ||
+                                          item.sourceType === "creator" ? (
+                                            <span className="text-[10px] font-semibold text-orange-700 bg-orange-50 dark:bg-orange-950/60 dark:text-orange-300 px-2 py-0.5 rounded-md border border-orange-200/60 dark:border-orange-800/60 shrink-0">
+                                              🎬 Creator
+                                            </span>
+                                          ) : (
+                                            <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 dark:bg-indigo-950/60 dark:text-indigo-300 px-2 py-0.5 rounded-md border border-indigo-200/60 dark:border-indigo-800/60 shrink-0">
+                                              ✨ AI Added
                                             </span>
                                           )}
-                                          {item.travelMinutesFromPrevious !== undefined && item.travelMinutesFromPrevious > 0 && (
-                                            <span className="text-[10px] text-teal-700 dark:text-teal-400">
+                                        </div>
+                                        <span className="text-[11px] font-mono font-semibold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-200/70 dark:border-emerald-500/20 shrink-0">
+                                          {Math.round((place.confidence || 0.9) * 100)}%
+                                        </span>
+                                      </div>
+
+                                      {/* Timing & Meta */}
+                                      <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500 dark:text-slate-400">
+                                        <span className="font-medium text-slate-700 dark:text-slate-300 capitalize">
+                                          {item.timeSlot} ({item.durationMinutes}m)
+                                        </span>
+                                        {item.startTime && item.endTime && (
+                                          <span className="font-mono text-[11px] text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+                                            ⏰ {item.startTime}–{item.endTime}
+                                          </span>
+                                        )}
+                                        {item.travelMinutesFromPrevious !== undefined &&
+                                          item.travelMinutesFromPrevious > 0 && (
+                                            <span className="text-[11px] font-medium text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 px-2 py-0.5 rounded-md border border-teal-200/60 dark:border-teal-800/60">
                                               🚗 {item.travelMinutesFromPrevious}m transit
                                             </span>
                                           )}
+                                      </div>
+
+                                      {/* Clean Modern Meal / Experience Recommendation */}
+                                      {item.mealSuggestion && (
+                                        <div className="text-xs text-amber-900 dark:text-amber-200 bg-amber-50/80 dark:bg-amber-950/40 px-3 py-1.5 rounded-lg border border-amber-200/70 dark:border-amber-900/50 leading-relaxed">
+                                          🍽️ <span className="font-semibold">Recommendation:</span> {item.mealSuggestion}
+                                        </div>
+                                      )}
+
+                                      {/* Notes */}
+                                      {place.notes && (
+                                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                                          {place.notes}
+                                        </p>
+                                      )}
+
+                                      {/* Action Row: Move Days + Delete */}
+                                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                                        <div className="flex items-center gap-1.5 text-slate-500">
+                                          <span className="text-[11px] font-medium">Move:</span>
+                                          {trip.days.map((d: ItineraryDay) => (
+                                            <button
+                                              key={d.dayNumber}
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                movePlaceMutation.mutate({
+                                                  placeId: place.id,
+                                                  dayNumber: d.dayNumber,
+                                                  timeSlot: item.timeSlot,
+                                                });
+                                              }}
+                                              className={`px-2 py-0.5 rounded-md text-xs font-semibold cursor-pointer active:scale-95 transition-all ${
+                                                d.dayNumber === day.dayNumber
+                                                  ? "bg-orange-500 text-white shadow-xs"
+                                                  : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                                              }`}
+                                            >
+                                              D{d.dayNumber}
+                                            </button>
+                                          ))}
                                         </div>
 
-                                        {item.mealSuggestion && (
-                                          <div className="text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50/70 dark:bg-amber-950/30 px-2 py-0.5 rounded mt-1 border border-amber-200/50 dark:border-amber-900/40">
-                                            🍽️ Recommendation: {item.mealSuggestion}
-                                          </div>
-                                        )}
-
-                                        {place.notes && (
-                                          <div className="text-[10px] text-slate-500 line-clamp-1 mt-1">
-                                            {place.notes}
-                                          </div>
-                                        )}
-
-                                        {/* Quick Move Day Dropdown */}
-                                        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-200/80 dark:border-slate-800/60 text-[10px]">
-                                          <div className="flex items-center gap-1 text-slate-500">
-                                            <span>Move:</span>
-                                            {trip.days.map(
-                                              (d: ItineraryDay) => (
-                                                <button
-                                                  key={d.dayNumber}
-                                                  type="button"
-                                                  onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    movePlaceMutation.mutate({
-                                                      placeId: place.id,
-                                                      dayNumber: d.dayNumber,
-                                                      timeSlot: item.timeSlot,
-                                                    });
-                                                  }}
-                                                  className={`px-1.5 py-0.5 rounded-md text-[10px] cursor-pointer active:scale-[0.98] transition-all duration-100 ${
-                                                    d.dayNumber ===
-                                                    day.dayNumber
-                                                      ? "bg-teal-600 text-white font-bold"
-                                                      : "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-900 dark:text-slate-300"
-                                                  }`}
-                                                >
-                                                  D{d.dayNumber}
-                                                </button>
-                                              ),
-                                            )}
-                                          </div>
-
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              deletePlaceMutation.mutate(
-                                                place.id,
-                                              );
-                                            }}
-                                            className="text-slate-400 hover:text-red-600 p-1 cursor-pointer active:scale-[0.98] transition-all duration-100"
-                                          >
-                                            <Trash2 size={12} />
-                                          </button>
-                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            deletePlaceMutation.mutate(place.id);
+                                          }}
+                                          title="Delete place"
+                                          className="text-slate-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 cursor-pointer active:scale-95 transition-all"
+                                        >
+                                          <Trash2 size={13} />
+                                        </button>
                                       </div>
                                     </div>
                                   </div>
-                                );
-                              },
-                            )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -873,8 +807,14 @@ export default function TripWorkspacePage({
                             className="flex items-center gap-3 cursor-pointer"
                           >
                             <img
-                              src={src.thumbnailUrl}
+                              src={sanitizeImageUrl(src.thumbnailUrl, trip.destinationRegion, src.title)}
                               alt={src.title}
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                target.onerror = null;
+                                target.src = getDestinationImage(trip.destinationRegion, src.title);
+                              }}
                               className="h-13 w-13 rounded-md object-cover shrink-0"
                             />
                             <div className="min-w-0 flex-1">
@@ -1158,8 +1098,8 @@ export default function TripWorkspacePage({
         </div>
 
         {/* RIGHT COLUMN: FLAGSHIP INTERACTIVE MAP (7 COLUMNS) */}
-        <div className="lg:col-span-7 h-125 lg:h-full relative p-4 flex flex-col isolate z-0">
-          <div className="flex-1 rounded-lg overflow-hidden shadow-xs border border-slate-200 bg-white relative isolate z-0 dark:border-slate-800 dark:bg-slate-950">
+        <div className="lg:col-span-7 h-[520px] lg:h-[calc(100vh-125px)] relative p-3 sm:p-4 flex flex-col isolate z-0">
+          <div className="flex-1 rounded-2xl overflow-hidden shadow-xs border border-slate-200/80 bg-white relative isolate z-0 dark:border-slate-800 dark:bg-slate-950">
             <ErrorBoundary
               fallbackTitle="Map Rendering Glitch"
               fallbackMessage="We couldn't initialize the map view. Your places and itinerary schedule remain fully accessible."

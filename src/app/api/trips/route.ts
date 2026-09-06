@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerTrips, saveServerTrip, saveMultipleServerTrips } from '@/lib/server/tripStore';
+import { getServerTrips, saveServerTrip, saveMultipleServerTrips, deleteAllServerTrips } from '@/lib/server/tripStore';
 
 export async function GET() {
   try {
@@ -29,6 +29,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: saved });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to save trip';
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE() {
+  try {
+    await deleteAllServerTrips();
+    return NextResponse.json({ success: true, message: 'All trips deleted' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to delete all trips';
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
