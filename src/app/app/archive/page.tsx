@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Archive,
@@ -16,71 +16,28 @@ import {
 import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/shared/EmptyState';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { supabase } from '@/lib/supabase/client';
-
-interface ArchivedGoal {
-  id: string;
-  title: string;
-  targetDomain: string;
-  dailyMinutes: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import {
+  useArchivedGoalsQuery,
+  useRestoreGoalMutation,
+  useDeleteGoalMutation,
+  RoadmapItem,
+} from '@/hooks/queries/useRoadmapsQuery';
 
 export default function ArchivePage() {
   const { user } = useAuthStore();
-  const [archivedGoals, setArchivedGoals] = useState<ArchivedGoal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [goalToDelete, setGoalToDelete] = useState<ArchivedGoal | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState<RoadmapItem | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const loadArchived = async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('learning_goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .in('status', ['abandoned', 'archived'])
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      setArchivedGoals(
-        (data || []).map((g) => ({
-          id: g.id,
-          title: g.title,
-          targetDomain: g.target_domain,
-          dailyMinutes: g.daily_minutes,
-          createdAt: g.created_at,
-          updatedAt: g.updated_at,
-        }))
-      );
-    } catch (err) {
-      console.error('Failed to load archived courses:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadArchived();
-  }, [user]);
+  // TanStack Query cached data — zero refresh on tab switch
+  const { data: archivedGoals = [], isLoading } = useArchivedGoalsQuery(user?.id);
+  const restoreMutation = useRestoreGoalMutation();
+  const deleteMutation = useDeleteGoalMutation();
 
   const handleRestore = async (goalId: string, title: string) => {
+    if (!user) return;
     try {
-      const { error } = await supabase
-        .from('learning_goals')
-        .update({ status: 'active', updated_at: new Date().toISOString() })
-        .eq('id', goalId)
-        .eq('user_id', user!.id);
-
-      if (error) throw error;
-
+      await restoreMutation.mutateAsync({ goalId, userId: user.id });
       setActionSuccess(`"${title}" has been restored to your active courses.`);
-      setArchivedGoals((prev) => prev.filter((g) => g.id !== goalId));
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err) {
       console.error('Failed to restore goal:', err);
@@ -89,31 +46,20 @@ export default function ArchivePage() {
 
   const handlePermanentDelete = async () => {
     if (!goalToDelete || !user) return;
-    setIsDeleting(true);
     try {
-      const { error } = await supabase
-        .from('learning_goals')
-        .delete()
-        .eq('id', goalToDelete.id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-
+      await deleteMutation.mutateAsync({ goalId: goalToDelete.id, userId: user.id });
       setActionSuccess(`"${goalToDelete.title}" was permanently deleted.`);
-      setArchivedGoals((prev) => prev.filter((g) => g.id !== goalToDelete.id));
       setGoalToDelete(null);
       setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err) {
-      console.error('Failed to permanently delete goal:', err);
-    } finally {
-      setIsDeleting(false);
+    } catch (err: any) {
+      console.error('Failed to permanently delete goal:', err?.message || err);
     }
   };
 
-  if (isLoading) {
+  if (isLoading && archivedGoals.length === 0) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 size={32} className="animate-spin text-indigo-600" />
+      <div className="min-h-55 flex flex-col items-center justify-center space-y-3">
+        <Loader2 size={32} className="animate-spin text-saffron-500" />
         <p className="text-xs font-semibold text-slate-500">
           Loading your archived courses...
         </p>
@@ -129,7 +75,7 @@ export default function ArchivePage() {
           <div className="flex items-center gap-2 mb-1">
             <Link
               href="/app/goals"
-              className="text-xs text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1"
+              className="text-xs text-slate-400 hover:text-saffron-500 flex items-center gap-1"
             >
               <ArrowLeft size={13} />
               <span>Back to My Courses</span>
@@ -198,9 +144,10 @@ export default function ArchivePage() {
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between gap-2">
                 <Button
                   onClick={() => handleRestore(g.id, g.title)}
+                  disabled={restoreMutation.isPending}
                   size="sm"
                   variant="outline"
-                  className="text-xs font-semibold h-8 px-3 rounded-xl hover:text-indigo-600 hover:border-indigo-200 dark:hover:border-indigo-800 flex items-center gap-1.5"
+                  className="text-xs font-semibold h-8 px-3 rounded-xl hover:text-saffron-500 hover:border-saffron-500 flex items-center gap-1.5"
                 >
                   <RotateCcw size={13} />
                   <span>Restore</span>
@@ -226,7 +173,7 @@ export default function ArchivePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm"
-            onClick={() => !isDeleting && setGoalToDelete(null)}
+            onClick={() => !deleteMutation.isPending && setGoalToDelete(null)}
           />
 
           <div className="relative w-full max-w-md rounded-3xl border border-red-200 dark:border-red-900/60 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-4 z-10 animate-in fade-in zoom-in-95 duration-150">
@@ -247,7 +194,7 @@ export default function ArchivePage() {
               <Button
                 variant="outline"
                 size="sm"
-                disabled={isDeleting}
+                disabled={deleteMutation.isPending}
                 onClick={() => setGoalToDelete(null)}
                 className="text-xs h-9 px-4 rounded-xl"
               >
@@ -255,11 +202,11 @@ export default function ArchivePage() {
               </Button>
               <Button
                 size="sm"
-                disabled={isDeleting}
+                disabled={deleteMutation.isPending}
                 onClick={handlePermanentDelete}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 shadow-sm"
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs h-9 px-4 rounded-xl flex items-center gap-1.5 shadow-xs"
               >
-                {isDeleting ? (
+                {deleteMutation.isPending ? (
                   <>
                     <Loader2 size={14} className="animate-spin" />
                     <span>Deleting...</span>

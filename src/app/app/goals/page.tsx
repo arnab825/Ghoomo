@@ -1,11 +1,10 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { useAuthStore } from '@/stores/useAuthStore';
-import { useUIStore } from '@/stores/useUIStore';
-import { supabase } from '@/lib/supabase/client';
-import { LearningGoal } from '@/lib/types/engine';
+import React, { useState } from "react";
+import Link from "next/link";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useUIStore } from "@/stores/useUIStore";
+import { useActiveGoalsQuery, useArchiveGoalMutation } from "@/hooks/queries/useRoadmapsQuery";
 import {
   Target,
   Plus,
@@ -15,79 +14,34 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import EmptyState from '@/components/shared/EmptyState';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import EmptyState from "@/components/shared/EmptyState";
 
 export default function GoalsPage() {
   const { user } = useAuthStore();
   const { setGoalWizardOpen } = useUIStore();
-  const [goals, setGoals] = useState<LearningGoal[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
-  const loadGoals = async () => {
-    if (!user) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('learning_goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .neq('status', 'abandoned')
-        .neq('status', 'archived')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setGoals(
-        (data || []).map((g) => ({
-          id: g.id,
-          userId: g.user_id,
-          title: g.title,
-          targetDomain: g.target_domain,
-          targetDate: g.target_date,
-          dailyMinutes: g.daily_minutes,
-          status: g.status,
-          createdAt: g.created_at,
-        }))
-      );
-    } catch (err) {
-      console.error('Failed to load goals:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadGoals();
-  }, [user]);
+  // TanStack Query cached data — zero refresh on tab switch
+  const { data: goals = [], isLoading } = useActiveGoalsQuery(user?.id);
+  const archiveMutation = useArchiveGoalMutation();
 
   const handleArchive = async (goalId: string, title: string) => {
+    if (!user) return;
     try {
-      const { error } = await supabase
-        .from('learning_goals')
-        .update({ status: 'abandoned', updated_at: new Date().toISOString() })
-        .eq('id', goalId)
-        .eq('user_id', user!.id);
-
-      if (error) {
-        console.error('Failed to archive course details:', error.message, error.details);
-        throw error;
-      }
-
+      await archiveMutation.mutateAsync({ goalId, userId: user.id });
       setActionSuccess(`"${title}" has been moved to your Archive.`);
-      setGoals((prev) => prev.filter((g) => g.id !== goalId));
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err: any) {
-      console.error('Failed to archive course:', err?.message || err);
+      console.error("Failed to archive roadmap:", err?.message || err);
     }
   };
 
-  if (isLoading) {
+  if (isLoading && goals.length === 0) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 size={32} className="animate-spin text-indigo-600" />
+      <div className="min-h-55 flex flex-col items-center justify-center space-y-3">
+        <Loader2 size={32} className="animate-spin text-saffron-500" />
         <p className="text-xs font-semibold text-slate-500">
           Loading your courses...
         </p>
@@ -122,7 +76,7 @@ export default function GoalsPage() {
           <Button
             onClick={() => setGoalWizardOpen(true)}
             size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1.5"
+            className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold text-xs h-9 px-4 rounded-xl shadow-xs flex items-center gap-1.5"
           >
             <Plus size={14} />
             <span>Create Course</span>
@@ -155,7 +109,7 @@ export default function GoalsPage() {
             >
               <div className="space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-2xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                  <span className="text-2xs font-bold uppercase tracking-wider text-saffron-500">
                     {g.targetDomain}
                   </span>
                   <span className="text-2xs font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800">
@@ -186,7 +140,7 @@ export default function GoalsPage() {
                 <Link href={`/app/course/${g.id}`} className="flex-1">
                   <Button
                     size="sm"
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-8 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-xs"
+                    className="w-full bg-saffron-500 hover:bg-saffron-600 text-white font-semibold text-xs h-8 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-xs"
                   >
                     <span>Continue</span>
                     <ArrowRight size={13} />
@@ -195,6 +149,7 @@ export default function GoalsPage() {
 
                 <Button
                   onClick={() => handleArchive(g.id, g.title)}
+                  disabled={archiveMutation.isPending}
                   size="sm"
                   variant="outline"
                   title="Archive course"

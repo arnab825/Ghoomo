@@ -1,130 +1,33 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/stores/useAuthStore';
-import { supabase } from '@/lib/supabase/client';
-import {
-  Concept,
-  ConceptPrerequisite,
-  LearnerConceptState,
-  LearningActivity,
-} from '@/lib/types/engine';
-import KnowledgeGraphMap from '@/components/learning/KnowledgeGraphMap';
-import { Loader2, Compass, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import EmptyState from '@/components/shared/EmptyState';
 import { useUIStore } from '@/stores/useUIStore';
+import { useLearningMapQuery } from '@/hooks/queries/useLearningMapQuery';
+import KnowledgeGraphMap from '@/components/learning/KnowledgeGraphMap';
+import { Loader2, Compass, CheckCircle2, Clock, AlertCircle, Archive, ChevronDown } from 'lucide-react';
+import EmptyState from '@/components/shared/EmptyState';
+import { Button } from '@/components/ui/button';
 
 export default function LearningMapPage() {
   const { user } = useAuthStore();
   const { setGoalWizardOpen } = useUIStore();
-  const [isLoading, setIsLoading] = useState(true);
-  const [concepts, setConcepts] = useState<Concept[]>([]);
-  const [prerequisites, setPrerequisites] = useState<ConceptPrerequisite[]>([]);
-  const [states, setStates] = useState<Map<string, LearnerConceptState>>(new Map());
-  const [activities, setActivities] = useState<LearningActivity[]>([]);
+  const [selectedGoalId, setSelectedGoalId] = useState<string>('ALL');
 
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
+  // TanStack Query cached data with keepPreviousData — zero refresh or redraw on tab switch
+  const { data, isLoading } = useLearningMapQuery(user?.id, selectedGoalId);
 
-    async function loadLearningMapData() {
-      setIsLoading(true);
-      try {
-        // 1. Fetch concepts
-        const { data: cData } = await supabase
-          .from('concepts')
-          .select('*')
-          .order('order_index', { ascending: true });
+  const activeGoals = data?.activeGoals || [];
+  const archivedCount = data?.archivedCount || 0;
+  const concepts = data?.concepts || [];
+  const prerequisites = data?.prerequisites || [];
+  const states = data?.states || new Map();
+  const activities = data?.activities || [];
 
-        // 2. Fetch prerequisites
-        const { data: pData } = await supabase
-          .from('concept_prerequisites')
-          .select('*');
-
-        // 3. Fetch learner states
-        const { data: sData } = await supabase
-          .from('learner_concept_state')
-          .select('*')
-          .eq('user_id', user!.id);
-
-        // 4. Fetch learning activities
-        const { data: aData } = await supabase
-          .from('learning_activities')
-          .select('*');
-
-        if (!isMounted) return;
-
-        const conceptList: Concept[] = (cData || []).map((c: any) => ({
-          id: c.id,
-          journeyId: c.journey_id,
-          name: c.name,
-          slug: c.slug,
-          description: c.description,
-          domain: c.domain,
-          difficulty: c.difficulty,
-          masteryThreshold: c.mastery_threshold,
-          orderIndex: c.order_index,
-          createdAt: c.created_at,
-        }));
-        setConcepts(conceptList);
-
-        const prereqList: ConceptPrerequisite[] = (pData || []).map((p: any) => ({
-          conceptId: p.concept_id,
-          prerequisiteConceptId: p.prerequisite_concept_id,
-          strength: p.strength || 1.0,
-        }));
-        setPrerequisites(prereqList);
-
-        const stateMap = new Map<string, LearnerConceptState>();
-        for (const s of sData || []) {
-          stateMap.set(s.concept_id, {
-            id: s.id,
-            userId: s.user_id,
-            conceptId: s.concept_id,
-            state: s.state,
-            score: Number(s.mastery_score) || 0,
-            confidence: Number(s.confidence_score) || 0,
-            evidenceCount: s.evidence_count || 0,
-            masterySource: s.mastery_source,
-            evidenceSummary: s.evidence_summary,
-            lastAssessedAt: s.last_assessed_at,
-            updatedAt: s.updated_at,
-          } as any);
-        }
-        setStates(stateMap);
-
-        const activityList: LearningActivity[] = (aData || []).map((a: any) => ({
-          id: a.id,
-          journeyId: a.journey_id,
-          conceptId: a.concept_id,
-          type: a.type,
-          title: a.title,
-          description: a.description,
-          instructions: a.instructions,
-          thinkingPrompt: a.thinking_prompt,
-          hints: a.hints || [],
-          durationMinutes: a.duration_minutes,
-          isRemediation: a.is_remediation,
-          orderIndex: a.order_index,
-          createdAt: a.created_at,
-        }));
-        setActivities(activityList);
-      } catch (err) {
-        console.error('Error loading Learning Map:', err);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    loadLearningMapData();
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
-
-  if (isLoading) {
+  if (isLoading && concepts.length === 0) {
     return (
-      <div className="min-h-[55vh] flex flex-col items-center justify-center space-y-3">
+      <div className="min-h-55 flex flex-col items-center justify-center space-y-3">
         <Loader2 size={32} className="animate-spin text-saffron-500" />
         <p className="text-xs font-semibold text-slate-500">
           Loading your learning map...
@@ -133,21 +36,40 @@ export default function LearningMapPage() {
     );
   }
 
-  if (concepts.length === 0) {
+  // If no active roadmaps or concepts exist
+  if (activeGoals.length === 0 || concepts.length === 0) {
     return (
       <div className="p-8 max-w-xl mx-auto">
         <EmptyState
           icon={<Compass size={32} className="text-saffron-500" />}
-          title="No Learning Map Yet"
-          description="Create your first learning journey to explore an interactive, personalized roadmap of topics."
+          title={archivedCount > 0 ? "All Courses Are Archived" : "No Active Learning Map Yet"}
+          description={
+            archivedCount > 0
+              ? "All of your roadmaps are currently in the archive. Restore a course from your archive or create a new roadmap to explore its connected concepts."
+              : "Create your first learning roadmap to explore an interactive visual graph of connected topics tailored to your background."
+          }
           actionLabel="Create Learning Goal"
           onAction={() => setGoalWizardOpen(true)}
         />
+        {archivedCount > 0 && (
+          <div className="mt-4 flex justify-center">
+            <Link href="/app/archive">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs font-semibold rounded-xl flex items-center gap-1.5 hover:border-saffron-500"
+              >
+                <Archive size={13} />
+                <span>Go to Archived Courses ({archivedCount})</span>
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
     );
   }
 
-  // Calculate quick stats
+  // Quick stats calculation
   let masteredCount = 0;
   let inProgressCount = 0;
   let reviewCount = 0;
@@ -161,7 +83,7 @@ export default function LearningMapPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
-      {/* Header & Quick Summary */}
+      {/* Header & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
@@ -172,8 +94,45 @@ export default function LearningMapPage() {
           </p>
         </div>
 
-        {/* Quick pill stats */}
-        <div className="flex items-center gap-2">
+        {/* Roadmap Selector & Stats */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Active Roadmap Selector if more than 1 active goal exists */}
+          {activeGoals.length > 1 && (
+            <div className="relative inline-block">
+              <select
+                value={selectedGoalId}
+                onChange={(e) => setSelectedGoalId(e.target.value)}
+                className="text-xs font-semibold py-1.5 pl-3 pr-8 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-saffron-500 cursor-pointer appearance-none"
+              >
+                <option value="ALL">All Active Roadmaps ({activeGoals.length})</option>
+                {activeGoals.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.title}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={14}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400"
+              />
+            </div>
+          )}
+
+          {/* Quick link to archive if user has archived courses */}
+          {archivedCount > 0 && (
+            <Link href="/app/archive">
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs font-semibold h-8 px-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center gap-1.5"
+              >
+                <Archive size={13} />
+                <span>Archive ({archivedCount})</span>
+              </Button>
+            </Link>
+          )}
+
+          {/* Quick pill stats */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
             <CheckCircle2 size={14} />
             <span>{masteredCount} Mastered</span>

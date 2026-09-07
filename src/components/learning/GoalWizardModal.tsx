@@ -232,6 +232,9 @@ export default function GoalWizardModal() {
       }
 
       // Close modal and navigate directly to navigation app
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ghoomo:roadmap-updated'));
+      }
       setGoalWizardOpen(false);
       setStep(1);
       setGoalTitle('');

@@ -39,13 +39,47 @@ interface AuthState {
   updateProfile: (updates: Partial<UserProfile>) => Promise<{ success: boolean; error?: string }>;
 }
 
+// Module-level singleton state for auth subscription to prevent redundant listener registrations
+let isAuthInitialized = false;
+let globalSubscription: { unsubscribe: () => void } | null = null;
+
+function areUserProfilesEqual(
+  existing: UserProfile | null,
+  next: {
+    id: string;
+    email: string;
+    fullName: string;
+    role: UserRole;
+    avatarUrl?: string | null;
+    preferredLanguage: string;
+    learningModality: string;
+  }
+): boolean {
+  if (!existing) return false;
+  return (
+    existing.id === next.id &&
+    existing.email === next.email &&
+    existing.fullName === next.fullName &&
+    existing.role === next.role &&
+    existing.avatarUrl === next.avatarUrl &&
+    existing.preferredLanguage === next.preferredLanguage &&
+    existing.learningModality === next.learningModality
+  );
+}
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true, // Start true so initial render doesn't prematurely trigger unauthenticated redirects
   error: null,
 
   initializeAuth: () => {
+    // If already initialized globally, do not recreate listener or re-run duplicate fetches
+    if (isAuthInitialized) {
+      return () => {};
+    }
+    isAuthInitialized = true;
+
     // 1. Fetch current session
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error || !session?.user) {
@@ -60,9 +94,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         .eq('id', session.user.id)
         .maybeSingle();
 
-      if (profile) {
-        set({
-          user: {
+      const candidateUser: UserProfile = profile
+        ? {
             id: profile.id,
             email: profile.email,
             fullName: profile.full_name,
@@ -71,14 +104,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             preferredLanguage: profile.preferred_language || 'English',
             learningModality: profile.learning_modality || 'mixed',
             createdAt: profile.created_at,
-          },
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      } else {
-        // Fallback profile if row pending creation
-        set({
-          user: {
+          }
+        : {
             id: session.user.id,
             email: session.user.email || '',
             fullName: session.user.user_metadata?.full_name || 'Learner',
@@ -86,45 +113,67 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             avatarUrl: null,
             preferredLanguage: 'English',
             learningModality: 'mixed',
-          },
+          };
+
+      const currentUser = get().user;
+      if (currentUser && areUserProfilesEqual(currentUser, candidateUser)) {
+        // Retain stable object reference to prevent triggering downstream useEffects
+        if (get().isLoading || !get().isAuthenticated) {
+          set({ isAuthenticated: true, isLoading: false });
+        }
+      } else {
+        set({
+          user: candidateUser,
           isAuthenticated: true,
           isLoading: false,
         });
       }
     });
 
-    // 2. Listen to auth changes
+    // 2. Listen to auth changes (single global listener)
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session?.user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        set({
-          user: {
-            id: session.user.id,
-            email: session.user.email || '',
-            fullName: profile?.full_name || session.user.user_metadata?.full_name || 'Learner',
-            role: (profile?.role as UserRole) || (session.user.user_metadata?.role as UserRole) || 'student',
-            avatarUrl: profile?.avatar_url || null,
-            preferredLanguage: profile?.preferred_language || 'English',
-            learningModality: profile?.learning_modality || 'mixed',
-            createdAt: profile?.created_at,
-          },
-          isAuthenticated: true,
-          isLoading: false,
-        });
+        const candidateUser: UserProfile = {
+          id: session.user.id,
+          email: session.user.email || '',
+          fullName: profile?.full_name || session.user.user_metadata?.full_name || 'Learner',
+          role: (profile?.role as UserRole) || (session.user.user_metadata?.role as UserRole) || 'student',
+          avatarUrl: profile?.avatar_url || null,
+          preferredLanguage: profile?.preferred_language || 'English',
+          learningModality: profile?.learning_modality || 'mixed',
+          createdAt: profile?.created_at,
+        };
+
+        const currentUser = get().user;
+        if (currentUser && areUserProfilesEqual(currentUser, candidateUser)) {
+          // Do not update object reference if unchanged — keeps component trees stable
+          if (get().isLoading || !get().isAuthenticated) {
+            set({ isAuthenticated: true, isLoading: false });
+          }
+        } else {
+          set({
+            user: candidateUser,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+        }
       } else if (event === 'SIGNED_OUT') {
         set({ user: null, isAuthenticated: false, isLoading: false });
       }
     });
 
+    globalSubscription = subscription;
+
     return () => {
-      subscription.unsubscribe();
+      // Keep global subscription alive across component unmounts
     };
   },
 

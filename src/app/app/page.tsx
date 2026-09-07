@@ -24,37 +24,19 @@ import { Button } from '@/components/ui/button';
 import EmptyState from '@/components/shared/EmptyState';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUIStore } from '@/stores/useUIStore';
-import { supabase } from '@/lib/supabase/client';
-
-interface GoalItem {
-  id: string;
-  title: string;
-  targetDomain: string;
-  dailyMinutes: number;
-  createdAt: string;
-  journeyId?: string;
-  conceptCount: number;
-  masteredCount: number;
-  firstActivityId?: string;
-}
-
-interface AttemptItem {
-  id: string;
-  activityTitle: string;
-  isCorrect: boolean;
-  score: number;
-  timeSpentSeconds: number;
-  createdAt: string;
-}
+import { useDashboardQuery } from '@/hooks/queries/useDashboardQuery';
 
 export default function AppDashboard() {
   const { user } = useAuthStore();
   const { setGoalWizardOpen } = useUIStore();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [goals, setGoals] = useState<GoalItem[]>([]);
-  const [recentAttempts, setRecentAttempts] = useState<AttemptItem[]>([]);
-  const [masteryStats, setMasteryStats] = useState({
+  // TanStack Query cached dashboard data with keepPreviousData — zero refresh on tab switch
+  const { data, isLoading } = useDashboardQuery(user?.id);
+
+  const goals = data?.goals || [];
+  const recentAttempts = data?.recentAttempts || [];
+  const currentPriorityActivity = data?.currentPriorityActivity || null;
+  const masteryStats = data?.masteryStats || {
     totalConcepts: 0,
     mastered: 0,
     inProgress: 0,
@@ -64,196 +46,12 @@ export default function AppDashboard() {
     accuracyRate: 100,
     totalAttemptsCount: 0,
     estimatedMinutesSaved: 0,
-  });
-  const [currentPriorityActivity, setCurrentPriorityActivity] = useState<{
-    id: string;
-    title: string;
-    conceptName: string;
-    courseTitle: string;
-  } | null>(null);
+  };
 
-  useEffect(() => {
-    if (!user) return;
-    let isMounted = true;
-
-    async function fetchDashboardAnalytics() {
-      setIsLoading(true);
-      try {
-        // 1. Fetch active goals for user
-        const { data: goalsData } = await supabase
-          .from('learning_goals')
-          .select('*')
-          .eq('user_id', user!.id)
-          .neq('status', 'abandoned')
-          .neq('status', 'archived')
-          .order('created_at', { ascending: false });
-
-        const activeGoals = goalsData || [];
-
-        if (activeGoals.length === 0) {
-          if (isMounted) {
-            setGoals([]);
-            setIsLoading(false);
-          }
-          return;
-        }
-
-        const goalIds = activeGoals.map((g) => g.id);
-
-        // 2. Fetch associated journeys
-        const { data: journeysData } = await supabase
-          .from('learning_journeys')
-          .select('*')
-          .in('goal_id', goalIds);
-
-        const journeys = journeysData || [];
-        const journeyIds = journeys.map((j) => j.id);
-
-        // 3. Fetch concepts and activities for these journeys
-        const { data: conceptsData } = await supabase
-          .from('concepts')
-          .select('*')
-          .in('journey_id', journeyIds);
-
-        const concepts = conceptsData || [];
-
-        const { data: activitiesData } = await supabase
-          .from('learning_activities')
-          .select('*')
-          .in('journey_id', journeyIds)
-          .order('order_index', { ascending: true });
-
-        const activities = activitiesData || [];
-
-        // 4. Fetch user's real learner concept state
-        const { data: statesData } = await supabase
-          .from('learner_concept_state')
-          .select('*')
-          .eq('user_id', user!.id);
-
-        const states = statesData || [];
-        const stateMap = new Map<string, string>();
-        for (const s of states) {
-          stateMap.set(s.concept_id, s.state);
-        }
-
-        // 5. Fetch user's recent question attempts
-        const { data: attemptsData } = await supabase
-          .from('attempts')
-          .select('*')
-          .eq('user_id', user!.id)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
-        const attempts = attemptsData || [];
-
-        // 6. Calculate stats
-        let totalMastered = 0;
-        let totalInProgress = 0;
-        let totalNeedsReview = 0;
-
-        for (const c of concepts) {
-          const st = stateMap.get(c.id);
-          if (st === 'MASTERED') totalMastered++;
-          else if (st === 'PROVISIONALLY_READY' || st === 'DEVELOPING') totalInProgress++;
-          else if (st === 'NEEDS_REVIEW') totalNeedsReview++;
-        }
-
-        const totalConcepts = concepts.length;
-        const totalNotStarted = Math.max(0, totalConcepts - (totalMastered + totalInProgress + totalNeedsReview));
-        const masteryRate = totalConcepts > 0 ? Math.round((totalMastered / totalConcepts) * 100) : 0;
-
-        const totalAttemptsCount = attempts.length;
-        const correctCount = attempts.filter((a) => a.is_correct).length;
-        const accuracyRate = totalAttemptsCount > 0 ? Math.round((correctCount / totalAttemptsCount) * 100) : 100;
-        const estimatedMinutesSaved = totalMastered * 15; // standard ~15m per mastered milestone
-
-        // 7. Assemble per-goal progress items
-        let nextPriority: any = null;
-
-        const assembledGoals: GoalItem[] = activeGoals.map((g) => {
-          const journey = journeys.find((j) => j.goal_id === g.id);
-          const journeyConcepts = journey ? concepts.filter((c) => c.journey_id === journey.id) : [];
-          const jMastered = journeyConcepts.filter((c) => stateMap.get(c.id) === 'MASTERED').length;
-
-          // Find first unmastered activity in this journey
-          let firstActId: string | undefined;
-          if (journey) {
-            const jActivities = activities.filter((a) => a.journey_id === journey.id);
-            const pendingAct = jActivities.find((a) => stateMap.get(a.concept_id) !== 'MASTERED') || jActivities[0];
-            if (pendingAct) {
-              firstActId = pendingAct.id;
-              if (!nextPriority) {
-                const cName = concepts.find((c) => c.id === pendingAct.concept_id)?.name || 'Next Lesson';
-                nextPriority = {
-                  id: pendingAct.id,
-                  title: pendingAct.title,
-                  conceptName: cName,
-                  courseTitle: g.title,
-                };
-              }
-            }
-          }
-
-          return {
-            id: g.id,
-            title: g.title,
-            targetDomain: g.target_domain,
-            dailyMinutes: g.daily_minutes,
-            createdAt: g.created_at,
-            journeyId: journey?.id,
-            conceptCount: journeyConcepts.length,
-            masteredCount: jMastered,
-            firstActivityId: firstActId,
-          };
-        });
-
-        // 8. Assemble recent attempt items
-        const assembledAttempts: AttemptItem[] = attempts.map((att) => {
-          const act = activities.find((a) => a.id === att.activity_id);
-          return {
-            id: att.id,
-            activityTitle: act?.title || 'Practice Drill',
-            isCorrect: att.is_correct,
-            score: att.score || 0,
-            timeSpentSeconds: att.time_spent_seconds || 0,
-            createdAt: att.created_at,
-          };
-        });
-
-        if (!isMounted) return;
-
-        setGoals(assembledGoals);
-        setRecentAttempts(assembledAttempts);
-        setCurrentPriorityActivity(nextPriority);
-        setMasteryStats({
-          totalConcepts,
-          mastered: totalMastered,
-          inProgress: totalInProgress,
-          needsReview: totalNeedsReview,
-          notStarted: totalNotStarted,
-          masteryRate,
-          accuracyRate,
-          totalAttemptsCount,
-          estimatedMinutesSaved,
-        });
-      } catch (err) {
-        console.error('Error fetching dashboard analytics:', err);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }
-
-    fetchDashboardAnalytics();
-    return () => {
-      isMounted = false;
-    };
-  }, [user]);
-
-  if (isLoading) {
+  if (isLoading && goals.length === 0) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
-        <Loader2 size={32} className="animate-spin text-indigo-600 dark:text-indigo-400" />
+      <div className="min-h-55 flex flex-col items-center justify-center space-y-3">
+        <Loader2 size={32} className="animate-spin text-saffron-500" />
         <p className="text-xs font-semibold text-slate-500">
           Loading your learning stats & analytics...
         </p>

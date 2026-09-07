@@ -9,6 +9,7 @@ import { runTwoLearnersSimulationTests } from './twoLearnersSimulation.test';
 import { runAuthAndRlsTests } from './authAndRls.test';
 import { runGoalAndActivityIntakeTests } from './goalAndActivityIntake.test';
 import { runPerformanceAndOptimizationTests } from './performanceAndOptimization.test';
+import { runCachingAndDsaTests } from './cachingAndDsa.test';
 import './terminologyLeakage.test';
 import './modelRouter.test';
 
@@ -29,6 +30,7 @@ try {
   runAuthAndRlsTests();
   runGoalAndActivityIntakeTests();
   runPerformanceAndOptimizationTests();
+  runCachingAndDsaTests();
 
   console.log('\n====================================================');
   console.log('  ALL SUITES PASSED SUCCESSFULLY! (100% Deterministic)');

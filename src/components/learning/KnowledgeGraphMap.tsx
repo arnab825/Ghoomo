@@ -98,46 +98,78 @@ export default function KnowledgeGraphMap({
       return { nodes: [], edges: [], canvasBounds: { width: 800, height: 600 } };
     }
 
-    // Assign in-degrees to create logical layers
+    // 1. Build forward adjacency list and in-degree map for O(V + E) Kahn's BFS
+    const forwardAdj = new Map<string, string[]>();
     const inDegree = new Map<string, number>();
-    concepts.forEach((c) => inDegree.set(c.id, 0));
+    const conceptMap = new Map<string, Concept>();
+
+    concepts.forEach((c) => {
+      inDegree.set(c.id, 0);
+      forwardAdj.set(c.id, []);
+      conceptMap.set(c.id, c);
+    });
+
     prerequisites.forEach((p) => {
+      const children = forwardAdj.get(p.prerequisiteConceptId);
+      if (children) children.push(p.conceptId);
       const curr = inDegree.get(p.conceptId) || 0;
       inDegree.set(p.conceptId, curr + 1);
     });
 
-    // Group into tiers based on prerequisite depth
+    // 2. Kahn's Algorithm BFS Layering in exact O(V + E) linear time
     const tiers: Concept[][] = [];
     const visited = new Set<string>();
+    let currentQueue: string[] = [];
 
-    let currentTier = concepts.filter((c) => (inDegree.get(c.id) || 0) === 0);
-    if (currentTier.length === 0) currentTier = [concepts[0]];
+    // Initial frontier: all concepts with in-degree 0 (foundational topics)
+    concepts.forEach((c) => {
+      if ((inDegree.get(c.id) || 0) === 0) {
+        currentQueue.push(c.id);
+        visited.add(c.id);
+      }
+    });
 
-    currentTier.forEach((c) => visited.add(c.id));
-    tiers.push(currentTier);
+    if (currentQueue.length === 0 && concepts.length > 0) {
+      currentQueue.push(concepts[0].id);
+      visited.add(concepts[0].id);
+    }
 
-    while (visited.size < concepts.length) {
-      const nextTier: Concept[] = [];
-      concepts.forEach((c) => {
-        if (!visited.has(c.id)) {
-          const prereqs = prereqMap.get(c.id) || [];
-          const allPrereqsPlaced = prereqs.every((pId) => visited.has(pId));
-          if (allPrereqsPlaced || tiers.length > 5) {
-            nextTier.push(c);
+    while (currentQueue.length > 0) {
+      const tierConcepts: Concept[] = [];
+      const nextQueue: string[] = [];
+
+      for (const nodeId of currentQueue) {
+        const c = conceptMap.get(nodeId);
+        if (c) tierConcepts.push(c);
+
+        const dependents = forwardAdj.get(nodeId) || [];
+        for (const depId of dependents) {
+          if (!visited.has(depId)) {
+            const newDeg = (inDegree.get(depId) || 1) - 1;
+            inDegree.set(depId, newDeg);
+            if (newDeg <= 0) {
+              visited.add(depId);
+              nextQueue.push(depId);
+            }
           }
         }
-      });
+      }
 
-      if (nextTier.length === 0) {
-        // Break cycle or disconnected node
+      if (tierConcepts.length > 0) {
+        tiers.push(tierConcepts);
+      }
+
+      // If disconnected components or cycles remain, flush into final tier
+      if (nextQueue.length === 0 && visited.size < concepts.length) {
         const remaining = concepts.filter((c) => !visited.has(c.id));
-        tiers.push(remaining);
-        remaining.forEach((c) => visited.add(c.id));
+        if (remaining.length > 0) {
+          tiers.push(remaining);
+          remaining.forEach((c) => visited.add(c.id));
+        }
         break;
       }
 
-      nextTier.forEach((c) => visited.add(c.id));
-      tiers.push(nextTier);
+      currentQueue = nextQueue;
     }
 
     // Position nodes along a readable, roadmap.sh style canvas

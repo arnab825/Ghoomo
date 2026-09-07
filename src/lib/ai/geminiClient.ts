@@ -23,10 +23,13 @@ import {
   CandidateResourceExtraction,
 } from './schemas';
 
-// In-memory deterministic caches to prevent duplicate AI API requests
-const blueprintCache = new Map<string, CandidateGoalBlueprint>();
-const misconceptionCache = new Map<string, CandidateMisconception>();
-const resourceExtractionCache = new Map<string, CandidateResourceExtraction>();
+import { LRUCache } from '@/lib/utils/lruCache';
+import { getCachedArtifact, setCachedArtifact, hashInput } from './artifactCache';
+
+// In-memory deterministic LRU caches (bounded capacity, zero Redis)
+const blueprintCache = new LRUCache<string, CandidateGoalBlueprint>(100);
+const misconceptionCache = new LRUCache<string, CandidateMisconception>(200);
+const resourceExtractionCache = new LRUCache<string, CandidateResourceExtraction>(200);
 
 const geminiApiKey = process.env.GEMINI_API_KEY || '';
 const geminiModelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
@@ -201,9 +204,27 @@ export async function generateGoalIntakeBlueprint(params: {
   targetDomain: string;
   preferredModality: string;
 }): Promise<{ success: true; data: CandidateGoalBlueprint } | { success: false; error: string }> {
-  const cacheKey = `${params.goalTitle.trim().toLowerCase()}:::${params.targetDomain.trim().toLowerCase()}:::${params.preferredModality.toLowerCase()}`;
-  if (blueprintCache.has(cacheKey)) {
-    return { success: true, data: blueprintCache.get(cacheKey)! };
+  const inputHash = hashInput({
+    goalTitle: params.goalTitle.trim().toLowerCase(),
+    targetDomain: params.targetDomain.trim().toLowerCase(),
+    preferredModality: params.preferredModality.toLowerCase(),
+  });
+
+  // 1. Check L1 in-memory LRU cache
+  const memoryHit = blueprintCache.get(inputHash);
+  if (memoryHit) {
+    return { success: true, data: memoryHit };
+  }
+
+  // 2. Check L2 persistent PostgreSQL cache (ai_artifacts in Supabase)
+  try {
+    const dbHit = await getCachedArtifact<CandidateGoalBlueprint>('roadmap', inputHash);
+    if (dbHit) {
+      blueprintCache.set(inputHash, dbHit);
+      return { success: true, data: dbHit };
+    }
+  } catch {
+    // Non-fatal cache lookup issue
   }
 
   const prompt = `Analyze this learning goal and generate a complete structured learning blueprint in a single JSON response:
@@ -273,7 +294,14 @@ Rules:
   });
 
   if (res.success) {
-    blueprintCache.set(cacheKey, res.data);
+    blueprintCache.set(inputHash, res.data);
+    setCachedArtifact({
+      artifactType: 'roadmap',
+      inputHash,
+      model: geminiModelName,
+      responseJson: res.data,
+      tokenEstimate: 1500,
+    }).catch(() => {});
     return res;
   }
 
@@ -353,10 +381,27 @@ export async function analyzeMisconceptionCandidate(params: {
   correctAnswer: string;
   explanation: string;
 }): Promise<{ success: true; data: CandidateMisconception } | { success: false; error: string }> {
-  // Deterministic content hash key
-  const cacheKey = `${params.conceptName.trim().toLowerCase()}:::${params.questionText.trim().toLowerCase()}:::${params.submittedAnswer.trim().toLowerCase()}`;
-  if (misconceptionCache.has(cacheKey)) {
-    return { success: true, data: misconceptionCache.get(cacheKey)! };
+  const inputHash = hashInput({
+    conceptName: params.conceptName.trim().toLowerCase(),
+    submittedAnswer: params.submittedAnswer.trim().toLowerCase(),
+    correctAnswer: params.correctAnswer.trim().toLowerCase(),
+  });
+
+  // 1. Check L1 in-memory LRU cache
+  const memoryHit = misconceptionCache.get(inputHash);
+  if (memoryHit) {
+    return { success: true, data: memoryHit };
+  }
+
+  // 2. Check L2 persistent PostgreSQL cache
+  try {
+    const dbHit = await getCachedArtifact<CandidateMisconception>('misconception', inputHash);
+    if (dbHit) {
+      misconceptionCache.set(inputHash, dbHit);
+      return { success: true, data: dbHit };
+    }
+  } catch {
+    // Non-fatal cache lookup issue
   }
 
   const prompt = `Analyze this student's incorrect answer for a specific cognitive misconception:
@@ -384,7 +429,14 @@ Determine:
   });
 
   if (res.success) {
-    misconceptionCache.set(cacheKey, res.data);
+    misconceptionCache.set(inputHash, res.data);
+    setCachedArtifact({
+      artifactType: 'misconception',
+      inputHash,
+      model: geminiModelName,
+      responseJson: res.data,
+      tokenEstimate: 400,
+    }).catch(() => {});
   }
 
   return res;
