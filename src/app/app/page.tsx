@@ -139,7 +139,7 @@ export default function AppDashboard() {
 
         // 5. Fetch user's recent question attempts
         const { data: attemptsData } = await supabase
-          .from('learner_attempts')
+          .from('attempts')
           .select('*')
           .eq('user_id', user!.id)
           .order('created_at', { ascending: false })

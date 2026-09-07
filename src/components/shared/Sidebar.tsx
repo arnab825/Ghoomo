@@ -3,19 +3,26 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Target, Archive, Settings, LogOut } from 'lucide-react';
+import { Home, Target, Map, Archive, Settings, LogOut, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '@/stores/useAuthStore';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
 
-  const navLinks = [
+  const mainNavLinks = [
     { href: '/app', label: 'Dashboard', icon: Home },
-    { href: '/app/goals', label: 'My Courses', icon: Target },
+    { href: '/app/knowledge', label: 'Knowledge Terrain', icon: Map },
+    { href: '/app/goals', label: 'Learning Journeys', icon: Target },
     { href: '/app/archive', label: 'Archive', icon: Archive },
     { href: '/app/settings', label: 'Settings', icon: Settings },
   ];
+
+  const adminNavLinks = user?.role === 'admin'
+    ? [{ href: '/app/admin', label: 'Admin Intelligence', icon: BarChart3 }]
+    : [];
+
+  const navLinks = [...mainNavLinks, ...adminNavLinks];
 
   // Derive initial from user's name
   const initials = user?.fullName
