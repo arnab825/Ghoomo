@@ -130,7 +130,7 @@ export interface SourceProvenance {
   aiModelUsed?: string;
 }
 
-export interface TeacherAnalytics {
+export interface JourneyAnalytics {
   totalLearners: number;
   completionRate: number;
   averageQuizMastery: number;
@@ -158,7 +158,7 @@ export interface LearningJourney {
   progress?: StudentProgress;
   studentProgress?: any;
   reflections: StudentReflection[];
-  analytics?: TeacherAnalytics;
+  analytics?: JourneyAnalytics;
   createdAt: string;
   updatedAt: string;
 }

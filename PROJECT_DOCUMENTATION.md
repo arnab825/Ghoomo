@@ -47,18 +47,18 @@ Furthermore, Ghoomo recognizes that travel and experiential education exist on a
   - A friendly, approachable **AI Learning Copilot** that explains concepts at an 8th-grade level without intimidating academic jargon.
   - A sense of shared exploration with classmates (squad progress, live polls).
 
-#### Persona 2: The School Teacher / Educator (e.g., Priya Sharma)
-- **Pain Points**: Burdened by administrative paperwork; struggles to assess individual student engagement during field excursions; needs alignment with curriculum standards.
+#### Persona 2: The Self-Directed / Adaptive Learner
 - **Needs in Ghoomo**:
-  - 1-click curriculum synthesis mapped to **Bloom's Taxonomy** (`Remember`, `Understand`, `Apply`, `Analyze`, `Evaluate`, `Create`).
-  - Dedicated **Teacher View** displaying class completion rate, average quiz mastery, and AI-diagnosed student misconceptions.
-  - 1-click export of verified, print-ready student portfolio reports (PDF) for school administrators and parents.
+  - Continuous diagnostic evaluation with zero guesswork.
+  - Epistemic knowledge graph with transparent prerequisites.
+  - Dynamic Next Best Action that updates deterministically on every attempt.
+  - Automated misconception remediation loops before advancing to higher-order mastery.
 
 #### Persona 3: The SIH / Academic Evaluator
 - **Evaluation Criteria**: Perceived maturity, clear adherence to AICTE PS 26207, zero-lag demo performance, pedagogical authenticity, and clean architectural separation.
 - **Needs in Ghoomo**:
   - Understand the product's value proposition within 10 seconds (**WHAT, WHO, HOW, WHY, THE PARADIGM**).
-  - Experience an instantaneous, zero-latency 3-minute live demonstration centered on the pre-seeded *Kolkata Heritage Learning Journey*.
+  - Experience an instantaneous, zero-latency live demonstration of the adaptive loop.
 
 ---
 
@@ -67,39 +67,19 @@ Furthermore, Ghoomo recognizes that travel and experiential education exist on a
 #### Feature 1: The 10-Second Executive Architecture (Landing Page)
 - **Requirement**: Any visitor (especially an SIH judge) must understand within 10 seconds what Ghoomo is and why it exists.
 - **Implementation**:
-  - **WHAT**: AI-powered smart learning journeys.
-  - **WHO**: Students, teachers, and educational groups.
-  - **HOW**: Converts digital topics into personalized inquiry journeys.
+  - **WHAT**: AI-powered adaptive learning navigation engine.
+  - **WHO**: Individual students and self-directed learners.
+  - **HOW**: Converts educational goals into personalized knowledge DAGs and adaptive learning routes.
   - **WHY**: Effective, efficient, flexible, and comfortable (AICTE PS 26207).
-  - **THE PARADIGM**: *"Places are not merely destinations. They are learning contexts."*
+  - **THE PARADIGM**: *"Navigation, not just consumption. Concepts are nodes; learning is an optimal path."*
 
-#### Feature 2: 4-Step Curriculum Synthesis Wizard (`/learn/new`)
-- **Step 1: Content/Topic Ingestion**: Accepts freeform academic topics (e.g., *"Indian Freedom Movement in Bengal"*) or external video/article URLs with quick-suggestion chips.
-- **Step 2: Pedagogical Profile**: Configures Grade Level (Class 6 to College), Subject (History, Science, Geography, Civics, Literature), Difficulty (`beginner`, `intermediate`, `advanced`), Language, and Learning Style.
-- **Step 3: Delivery Mode**: Selects between **Digital** (classroom/remote), **Location-Aware** (field excursion), or **Travel-Integrated**.
-- **Step 4: Review & Synthesis**: Displays editable Bloom's taxonomy objectives before triggering the generative AI synthesis pipeline with realistic staged progress indicators.
+#### Feature 2: Goal Intake & Diagnostic Assessment (`/app/goals`)
+- Ingests academic goals and automatically constructs a personalized concept DAG with explicit prerequisites.
+- Administers baseline diagnostics to determine starting epistemic knowledge state (`UNKNOWN`, `PROVISIONALLY_READY`, `DEVELOPING`, `MASTERED`).
 
-#### Feature 3: Dual-Pane Learning Workspace (`/learn/[id]`)
-- **Left Pane (Chronological Learning Arc)**:
-  - **Stage 1 (Prepare)**: Contextual orientations, historical background, and prior knowledge activation.
-  - **Stage 2 (Explore)**: GPS-anchored observation missions at physical monuments, museums, or nature reserves.
-  - **Stage 3 (Practice)**: Physical **Field Spotter Checklists** with interactive verification counters (e.g. *16-foot bronze Angel of Victory on dome*, *Makrana marble exterior blocks*).
-  - **Stage 4 (Assess)**: In-situ checkpoint quizzes with instant validation and conceptual rationale.
-  - **Stage 5 (Reflect)**: High-order synthesis prompt evaluated by an AI Mentor with 3-dimensional rubric scoring:
-    - *Conceptual Depth* (0–100%)
-    - *Field Evidence* (0–100%)
-    - *Critical Synthesis* (0–100%)
-- **Right Pane (Contextual Intelligence Tabs)**:
-  - **Field Map**: Interactive Mapbox/Leaflet map rendering numbered stop markers, GPS coordinates, and place metadata.
-  - **Learning Copilot**: Conversational AI tutor grounded in the journey's subject, grade level, and active stop context.
-  - **Class Squad & Polls**: Roster of classmates and educators with live interactive opinion polls.
-  - **Curriculum Objectives**: Live checklist of Bloom's Taxonomy competencies achieved.
-
-#### Feature 4: Educator Orchestration & Teacher Dashboard
-- Toggleable switch between **Learner View** and **Teacher View**.
-- Displays aggregate class analytics: Total Learners, Class Mastery %, Completion Rate, and Activity Submissions.
-- **Misconception Diagnostics**: AI highlights common traps observed across student submissions (e.g., *"Students confuse Lord Curzon with Lord Dalhousie"*).
-- **Printable Portfolio Report Modal**: Generates an official, print-formatted PDF report containing student identity, demonstrated competencies, verified evidence, quiz scores, and AI rubric evaluations.
+#### Feature 3: Adaptive Navigation Engine (`/app`)
+- Deterministic router that computes the optimal Next Best Action for the learner based on DAG readiness and prerequisite mastery.
+- Automatic misconception remediation detection and route diff adjustments.
 
 #### Feature 5: Consumer Travel Studio Preservation (`/trips`)
 - 100% backward-compatible workspace for non-academic travel planning.

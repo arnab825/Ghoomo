@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from './ToastContext';
+import AuthModal from '@/components/auth/AuthModal';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(
@@ -26,13 +27,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
       } else {
         document.documentElement.classList.remove('dark');
       }
-    } catch (_) {}
+    } catch (_) {
+      // Ignore localStorage availability errors in private browsing
+    }
   }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         {children}
+        <AuthModal />
       </ToastProvider>
     </QueryClientProvider>
   );

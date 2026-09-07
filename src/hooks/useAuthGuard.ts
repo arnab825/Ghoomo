@@ -33,14 +33,7 @@ export function useAuthGuard(options: GuardOptions = { requiredRole: 'any' }) {
     // 2. Role enforcement
     if (options.requiredRole && options.requiredRole !== 'any') {
       if (user.role !== options.requiredRole) {
-        // Redirect to unauthorized or appropriate dashboard
-        if (user.role === 'teacher') {
-          router.replace('/teacher/dashboard');
-        } else if (user.role === 'student') {
-          router.replace('/student/dashboard');
-        } else {
-          router.replace('/unauthorized');
-        }
+        router.replace('/app');
       }
     }
   }, [isAuthenticated, isLoading, user, options.requiredRole, options.redirectTo, router, pathname]);

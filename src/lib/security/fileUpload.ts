@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { securityConfig } from '../config/securityConfig';
 
 /**
  * Production-Grade File Upload Security Module
@@ -9,8 +10,8 @@ import crypto from 'crypto';
  *    - Verifies consistency between detected binary signature, client MIME type, and extension.
  *    - Actively detects and blocks executable formats (PE/EXE, ELF, Mach-O, scripts, HTML/SVG XSS).
  * 2. File Size Enforcement:
- *    - Rejects files exceeding max size limit (default 5 MB).
- *    - Rejects 0-byte or corrupted files.
+ *    - Rejects files exceeding max size limit (configurable in securityConfig).
+ *    - Rejects 0-byte or truncated stubs (< 100 bytes).
  * 3. Storage Outside Web Root:
  *    - Prevents storing in public/ or web-accessible root directories.
  *    - Renames files to cryptographically secure random UUIDs to avoid collision and path traversal.
@@ -20,7 +21,7 @@ import crypto from 'crypto';
  */
 
 export interface FileValidationOptions {
-  maxSizeBytes?: number; // Default 5 MB (5 * 1024 * 1024)
+  maxSizeBytes?: number;
   allowedCategories?: ('image' | 'document')[];
 }
 
@@ -36,10 +37,9 @@ export interface FileValidationResult {
   securityHeaders?: Record<string, string>;
 }
 
-// Maximum allowed size: 5 Megabytes
-export const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024;
-// Minimum file size: 100 bytes (prevents empty or truncated stubs)
-export const MIN_FILE_SIZE = 100;
+// Configurable file size boundaries
+export const DEFAULT_MAX_FILE_SIZE = securityConfig.upload.maxSizeBytes;
+export const MIN_FILE_SIZE = securityConfig.upload.minSizeBytes;
 
 // Magic number signatures for permitted types
 const MAGIC_SIGNATURES = [

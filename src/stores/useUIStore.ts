@@ -1,80 +1,38 @@
-/**
- * Ghoomo Local UI Store (Zustand)
- * STRICTLY for client-side local UI state:
- * - Active modal visibility (import, add place, share/collab)
- * - Active UI filters (active day filter, active tab)
- * - Selected interactive elements (selected place on map)
- * - Local drafts and optimistic UI flags
- *
- * (No server data or persistent entities are stored here;
- * all server data lives in TanStack Query).
- */
-
 'use client';
 
 import { create } from 'zustand';
 
-export type WorkspaceTab = 'itinerary' | 'places' | 'budget' | 'todo' | 'polls' | 'chat' | 'friends';
-export type ProductMode = 'learn' | 'explore' | 'travel';
-
 interface UIState {
-  // Global Product Mode (SIH 2026: Default is 'learn')
-  activeProductMode: ProductMode;
-  setActiveProductMode: (mode: ProductMode) => void;
+  // Navigation Modals
+  isGoalWizardOpen: boolean;
+  isCopilotOpen: boolean;
+  isResourceModalOpen: boolean;
 
-  // Modal visibility
-  isImportModalOpen: boolean;
-  isAddPlaceModalOpen: boolean;
-  isCollabModalOpen: boolean;
-
-  // Active filters and views
-  activeTab: WorkspaceTab;
-  selectedDayFilter: number | null;
-  selectedPlaceId: string | null;
+  // Auth Modal
+  isAuthModalOpen: boolean;
+  authModalMode: 'sign-in' | 'sign-up' | 'forgot-password';
 
   // Actions
-  setImportModalOpen: (open: boolean) => void;
-  setAddPlaceModalOpen: (open: boolean) => void;
-  setCollabModalOpen: (open: boolean) => void;
-  setActiveTab: (tab: WorkspaceTab) => void;
-  setSelectedDayFilter: (day: number | null) => void;
-  setSelectedPlaceId: (id: string | null) => void;
-
-  // Reset UI state (e.g. upon switching trips)
-  resetUIState: () => void;
+  setGoalWizardOpen: (open: boolean) => void;
+  setCopilotOpen: (open: boolean) => void;
+  setResourceModalOpen: (open: boolean) => void;
+  openAuthModal: (mode?: 'sign-in' | 'sign-up' | 'forgot-password') => void;
+  closeAuthModal: () => void;
+  setAuthModalMode: (mode: 'sign-in' | 'sign-up' | 'forgot-password') => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
-  activeProductMode: 'learn', // SIH 2026 default
-  setActiveProductMode: (mode) => {
-    try {
-      localStorage.setItem('ghoomo_product_mode', mode);
-    } catch (_) {}
-    set({ activeProductMode: mode });
-  },
+  isGoalWizardOpen: false,
+  isCopilotOpen: false,
+  isResourceModalOpen: false,
 
-  isImportModalOpen: false,
-  isAddPlaceModalOpen: false,
-  isCollabModalOpen: false,
+  isAuthModalOpen: false,
+  authModalMode: 'sign-in',
 
-  activeTab: 'itinerary',
-  selectedDayFilter: null,
-  selectedPlaceId: null,
-
-  setImportModalOpen: (open) => set({ isImportModalOpen: open }),
-  setAddPlaceModalOpen: (open) => set({ isAddPlaceModalOpen: open }),
-  setCollabModalOpen: (open) => set({ isCollabModalOpen: open }),
-  setActiveTab: (activeTab) => set({ activeTab }),
-  setSelectedDayFilter: (selectedDayFilter) => set({ selectedDayFilter }),
-  setSelectedPlaceId: (selectedPlaceId) => set({ selectedPlaceId }),
-
-  resetUIState: () =>
-    set({
-      isImportModalOpen: false,
-      isAddPlaceModalOpen: false,
-      isCollabModalOpen: false,
-      activeTab: 'itinerary',
-      selectedDayFilter: null,
-      selectedPlaceId: null,
-    }),
+  setGoalWizardOpen: (open) => set({ isGoalWizardOpen: open }),
+  setCopilotOpen: (open) => set({ isCopilotOpen: open }),
+  setResourceModalOpen: (open) => set({ isResourceModalOpen: open }),
+  openAuthModal: (mode = 'sign-in') => set({ isAuthModalOpen: true, authModalMode: mode }),
+  closeAuthModal: () => set({ isAuthModalOpen: false }),
+  setAuthModalMode: (mode) => set({ authModalMode: mode }),
 }));

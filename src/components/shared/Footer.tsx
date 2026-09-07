@@ -1,9 +1,18 @@
+'use client';
+
 import React from "react";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
+import { usePathname } from "next/navigation";
 import GhoomoLogo from "@/components/shared/GhoomoLogo";
 
 export default function Footer() {
+  const pathname = usePathname();
+
+  // Hide footer on authenticated user dashboard routes
+  if (pathname?.startsWith('/app') || pathname?.startsWith('/dashboard')) {
+    return null;
+  }
+
   return (
     <footer className="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950 text-slate-600 dark:text-slate-400 text-xs py-8 mt-auto relative z-20">
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -14,7 +23,7 @@ export default function Footer() {
           </Link>
           <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
           <span className="text-slate-600 dark:text-slate-400 font-medium">
-            Experiential Learning Journeys & Smart Travel
+            Smart Learning Guide • Personalized Study Paths
           </span>
         </div>
 
@@ -23,21 +32,14 @@ export default function Footer() {
           <Link href="/" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
             Home
           </Link>
-          <Link href="/learn" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
-            Journeys
+          <Link href="/about" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+            About
           </Link>
-          <Link href="/learn/new" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
-            Create Journey
+          <Link href="/pricing" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+            Pricing
           </Link>
-          <Link
-            href="/learn/kolkata-heritage-demo"
-            className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold transition-colors flex items-center gap-1"
-          >
-            <Sparkles size={12} />
-            <span>Explore Journey</span>
-          </Link>
-          <Link href="/trips" className="hover:text-orange-600 dark:hover:text-white transition-colors">
-            Plan Trips
+          <Link href="/contact" className="hover:text-indigo-600 dark:hover:text-white transition-colors">
+            Contact
           </Link>
         </div>
 
@@ -49,4 +51,3 @@ export default function Footer() {
     </footer>
   );
 }
-

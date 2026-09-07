@@ -33,6 +33,7 @@ export function sanitizePromptText(text: string, maxLength = 4000): string {
   let sanitized = text;
 
   // 1. Strip null bytes & control characters except standard whitespace
+  // eslint-disable-next-line no-control-regex
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   // 2. Strip HTML tags
@@ -52,16 +53,4 @@ export function sanitizePromptText(text: string, maxLength = 4000): string {
   }
 
   return sanitized;
-}
-
-/**
- * Sanitizes place names to prevent query injection and malformed tokens.
- */
-export function sanitizePlaceName(name: string): string {
-  if (!name || typeof name !== 'string') return '';
-  return name
-    .replace(/[<>'"`;(){}[\]\\]/g, '') // remove SQL/shell/code punctuation
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 120);
 }

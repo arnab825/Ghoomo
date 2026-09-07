@@ -26,10 +26,10 @@ async function runTest() {
   if (jErr) console.error('Journeys query failed:', jErr.message);
   else console.log('Learning Journeys table OK. Row count sample:', journeys.length);
 
-  // 3. Verify Teacher Assignments table
-  const { data: assignments, error: aErr } = await supabase.from('teacher_assignments').select('id').limit(5);
-  if (aErr) console.error('Assignments query failed:', aErr.message);
-  else console.log('Teacher Assignments table OK.');
+  // 3. Verify Learning Goals table
+  const { data: goals, error: gErr } = await supabase.from('learning_goals').select('id').limit(5);
+  if (gErr) console.error('Goals query failed:', gErr.message);
+  else console.log('Learning Goals table OK.');
 
   // 4. Verify Student Progress table
   const { data: progress, error: progErr } = await supabase.from('student_progress').select('id').limit(5);

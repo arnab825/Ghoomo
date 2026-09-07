@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 export default function UnauthorizedPage() {
   const { user } = useAuthStore();
 
-  const dashboardUrl = user?.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+  const dashboardUrl = '/app';
 
   return (
     <div className="min-h-[calc(100vh-140px)] flex items-center justify-center px-4 py-12">
@@ -23,7 +23,7 @@ export default function UnauthorizedPage() {
             Access Restricted
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            You do not have permission to view this page. This section requires a different role ({user?.role ? `you are currently signed in as a ${user.role}` : 'you are not signed in'}).
+            Please authenticate to access the adaptive learning navigation engine.
           </p>
         </div>
 
