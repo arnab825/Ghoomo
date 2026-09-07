@@ -255,13 +255,15 @@ Your response MUST match this exact JSON schema:
 }
 
 Rules:
-1. Provide 4 to 6 atomic concepts tailored specifically to "${params.goalTitle}", ordered from foundational (orderIndex 0) to advanced.
-2. Provide 3 to 5 diagnostic MCQs.
-3. Provide at least 1 practice drill for each concept.
-4. Concept difficulty must be lowercase: "beginner", "intermediate", or "advanced".
-5. activityType must be uppercase: "EXPLAIN", "PRACTICE", or "APPLY".`;
+1. Provide a comprehensive, deep learning roadmap with 15 to 30 atomic topics tailored specifically to "${params.goalTitle}". Never generate a shallow 4-step course.
+2. Structure topics across clear knowledge areas (e.g. Foundations, Core Mechanics, Intermediate Techniques, Advanced Problem Solving, Capstone Mastery) using the "moduleName" field.
+3. Establish clean prerequisite dependencies ("prerequisiteSlugs") forming a Directed Acyclic Graph without cycles. Foundational topics have empty prerequisites.
+4. Provide 3 to 6 diagnostic questions for initial self-assessment.
+5. Provide at least 1 practice drill for foundational and key milestone topics.
+6. Concept difficulty must be lowercase: "beginner", "intermediate", or "advanced".
+7. activityType must be uppercase: "EXPLAIN", "PRACTICE", or "APPLY".`;
 
-  const systemInstruction = `You are the master curriculum architect for Ghoomo Adaptive Learning Navigation Engine. Generate a comprehensive, academically sound learning blueprint with valid prerequisite relationships.`;
+  const systemInstruction = `You are the principal learning curriculum architect for Ghoomo Adaptive Learning Navigation Engine. You design deep, rigorous, hierarchical learning roadmaps (15-30+ topics) with genuine academic depth, avoiding shallow generic summaries.`;
 
   const res = await generateStructuredAI({
     prompt,
@@ -286,21 +288,21 @@ export async function extractConceptDAG(params: {
   targetDomain: string;
   preferredModality: string;
 }): Promise<{ success: true; data: CandidateConceptGraph } | { success: false; error: string }> {
-  const prompt = `Analyze this learning goal and generate an atomic prerequisite concept graph:
+  const prompt = `Analyze this learning goal and generate a comprehensive atomic prerequisite concept graph:
 Goal: "${params.goalTitle}"
 Target Domain: "${params.targetDomain}"
 Preferred Learning Modality: "${params.preferredModality}"
 
 Requirements:
-1. Generate between 4 and 8 atomic concepts required to reach this goal.
-2. For each concept, assign a unique slug (lowercase hyphenated, e.g. "python-basics", "feature-scaling").
-3. Specify prerequisiteSlugs: slugs of other concepts in this list that MUST be learned before this concept.
-4. Base foundational concepts should have empty prerequisiteSlugs.
-5. Provide baselineEstimatedActivities: realistic total baseline activity count if a beginner starts with zero knowledge (typically 8-16 activities).
-6. Rank orderIndex from foundational (0) to destination capstone.`;
+1. Generate between 15 and 30 atomic topics required to truly achieve mastery in this goal. Never generate a shallow 4-step course.
+2. Group topics into coherent knowledge modules (e.g., Foundations, Core Principles, Intermediate Patterns, Advanced Optimization, Capstone).
+3. For each concept, assign a unique slug (lowercase hyphenated, e.g. "python-fundamentals", "dynamic-programming-memoization").
+4. Specify prerequisiteSlugs: slugs of other concepts in this roadmap that MUST be learned first. Base foundational concepts should have empty prerequisiteSlugs.
+5. Ensure the graph is a strict DAG without circular dependencies.
+6. Rank orderIndex sequentially from foundational (0) to destination capstone.`;
 
   const systemInstruction = `You are the curriculum topology expert for Ghoomo Adaptive Learning Navigation Engine.
-Design clear, atomic knowledge concepts with prerequisite dependencies.`;
+Design rigorous, deep, atomic knowledge roadmaps with prerequisite dependencies.`;
 
   return generateStructuredAI({
     prompt,

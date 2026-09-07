@@ -15,13 +15,23 @@ export interface ConceptStudyGuide {
   keyInvariants: string[];
   commonMisconceptions: string[];
   resources: CuratedResource[];
+  primaryDoc: CuratedResource;
+  videoTutorial: CuratedResource;
 }
 
-export function getCuratedResourcesForConcept(
+interface RawConceptStudyGuide {
+  mentalModel: string;
+  workedExample: string;
+  keyInvariants: string[];
+  commonMisconceptions: string[];
+  resources: CuratedResource[];
+}
+
+function getRawCuratedResourcesForConcept(
   conceptName: string,
   domain: string = 'Computer Science',
   goalTitle: string = ''
-): ConceptStudyGuide {
+): RawConceptStudyGuide {
   const norm = conceptName.toLowerCase();
   const normGoal = goalTitle.toLowerCase();
 
@@ -284,3 +294,29 @@ def solve_problem(inputs):
     ],
   };
 }
+
+export function getCuratedResourcesForConcept(
+  conceptName: string,
+  domain: string = 'Computer Science',
+  goalTitle: string = ''
+): ConceptStudyGuide {
+  const guide = getRawCuratedResourcesForConcept(conceptName, domain, goalTitle);
+  const primaryDoc = guide.resources.find((r) => r.type === 'docs') || guide.resources[0] || {
+    title: 'Official Documentation',
+    url: 'https://docs.python.org/3/',
+    type: 'docs' as const,
+    platform: 'Official Docs',
+  };
+  const videoTutorial = guide.resources.find((r) => r.type === 'video') || guide.resources[1] || guide.resources[0] || {
+    title: 'Recommended Video Tutorial',
+    url: 'https://www.youtube.com/',
+    type: 'video' as const,
+    platform: 'YouTube',
+  };
+  return {
+    ...guide,
+    primaryDoc,
+    videoTutorial,
+  };
+}
+

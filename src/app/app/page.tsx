@@ -302,16 +302,16 @@ export default function AppDashboard() {
         <div className="flex items-center gap-2.5">
           <Link href="/app/goals">
             <Button variant="outline" size="sm" className="text-xs font-semibold h-9 px-3 rounded-xl">
-              <span>All Courses</span>
+              <span>My Roadmaps</span>
             </Button>
           </Link>
           <Button
             onClick={() => setGoalWizardOpen(true)}
             size="sm"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5"
+            className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold text-xs h-9 px-3.5 rounded-xl shadow-xs flex items-center gap-1.5"
           >
             <Plus size={14} />
-            <span>New Course</span>
+            <span>New Learning Goal</span>
           </Button>
         </div>
       </div>
@@ -321,16 +321,16 @@ export default function AppDashboard() {
         <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-400">
-              Active Courses
+              Active Roadmaps
             </span>
-            <div className="h-8 w-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-lg bg-saffron-500/10 text-saffron-600 dark:text-saffron-400 flex items-center justify-center">
               <BookOpen size={16} />
             </div>
           </div>
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white">
             {goals.length}
           </div>
-          <span className="text-2xs text-slate-500">In-progress learning roads</span>
+          <span className="text-2xs text-slate-500">Personalized learning paths</span>
         </div>
 
         <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5 shadow-xs">
@@ -352,7 +352,7 @@ export default function AppDashboard() {
         <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-2xs font-bold uppercase tracking-wider text-slate-400">
-              Question Accuracy
+              Practice Accuracy
             </span>
             <div className="h-8 w-8 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <TrendingUp size={16} />
@@ -361,7 +361,7 @@ export default function AppDashboard() {
           <div className="text-2xl font-extrabold text-slate-900 dark:text-white">
             {masteryStats.accuracyRate}%
           </div>
-          <span className="text-2xs text-slate-500">{masteryStats.totalAttemptsCount} total drill attempts</span>
+          <span className="text-2xs text-slate-500">{masteryStats.totalAttemptsCount} total attempts</span>
         </div>
 
         <div className="p-5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 space-y-1.5 shadow-xs">
@@ -376,29 +376,29 @@ export default function AppDashboard() {
           <div className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">
             ~{masteryStats.estimatedMinutesSaved}m
           </div>
-          <span className="text-2xs text-slate-500">From fast diagnostic skips</span>
+          <span className="text-2xs text-slate-500">From smart starting check</span>
         </div>
       </div>
 
       {/* Recommended Next Step Hero Banner */}
       {currentPriorityActivity && (
-        <div className="p-6 rounded-3xl bg-linear-to-r from-indigo-900 via-indigo-800 to-blue-900 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <div className="p-6 rounded-3xl bg-linear-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-5 border border-slate-800">
           <div className="space-y-1.5 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-2xs font-bold uppercase tracking-wider text-indigo-100 backdrop-blur-xs">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-saffron-500/20 text-2xs font-bold uppercase tracking-wider text-saffron-400 border border-saffron-500/30">
               <Sparkles size={11} />
-              <span>Recommended Next Step</span>
+              <span>Your Next Best Step</span>
             </div>
             <h2 className="text-xl font-bold font-heading">
               {currentPriorityActivity.title}
             </h2>
-            <p className="text-xs text-indigo-200">
-              Course: <strong className="text-white">{currentPriorityActivity.courseTitle}</strong> • Topic: <span className="text-indigo-100">{currentPriorityActivity.conceptName}</span>
+            <p className="text-xs text-slate-300">
+              Roadmap: <strong className="text-white">{currentPriorityActivity.courseTitle}</strong> • Topic: <span className="text-saffron-300">{currentPriorityActivity.conceptName}</span>
             </p>
           </div>
 
           <Link href={`/app/learn/${currentPriorityActivity.id}`}>
-            <Button className="bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs h-10 px-5 rounded-xl shadow-sm flex items-center gap-2 shrink-0">
-              <span>Continue Lesson</span>
+            <Button className="bg-saffron-500 hover:bg-saffron-600 text-white font-bold text-xs h-10 px-5 rounded-xl shadow-sm flex items-center gap-2 shrink-0">
+              <span>Continue Learning</span>
               <ArrowRight size={14} />
             </Button>
           </Link>

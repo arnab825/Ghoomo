@@ -24,7 +24,7 @@ export const candidateConceptGraphSchema = z.object({
   description: z.string().min(5).max(500).default('Adaptive learning curriculum'),
   subject: z.string().min(2).max(60).default('General'),
   baselineEstimatedActivities: z.number().int().min(3).max(100).default(20),
-  concepts: z.array(candidateConceptNodeSchema).min(3).max(35),
+  concepts: z.array(candidateConceptNodeSchema).min(3).max(60),
 });
 
 export type CandidateConceptNode = z.infer<typeof candidateConceptNodeSchema>;
@@ -43,7 +43,7 @@ export const candidateDiagnosticQuestionSchema = z.object({
 });
 
 export const candidateDiagnosticSetSchema = z.object({
-  questions: z.array(candidateDiagnosticQuestionSchema).min(3).max(15),
+  questions: z.array(candidateDiagnosticQuestionSchema).min(3).max(25),
 });
 
 export type CandidateDiagnosticQuestion = z.infer<typeof candidateDiagnosticQuestionSchema>;
@@ -68,6 +68,7 @@ export const blueprintQuestionSchema = z.object({
   options: z.array(z.string().min(1)).min(3).max(4),
   correctAnswer: z.string().min(1),
   explanation: z.string().min(5).max(400).default('Correct solution verification.'),
+  format: z.enum(['mcq', 'short_answer', 'code', 'trace', 'reasoning']).optional().default('mcq'),
 });
 
 export const blueprintPracticeDrillSchema = z.object({
@@ -94,9 +95,9 @@ export const candidateGoalBlueprintSchema = z.object({
   description: z.string().min(5).max(500).default('Adaptive competency-based learning path'),
   subject: z.string().min(2).max(60).default('General'),
   baselineEstimatedActivities: z.number().int().min(3).max(100).default(20),
-  concepts: z.array(candidateConceptNodeSchema).min(3).max(35),
-  diagnosticQuestions: z.array(candidateDiagnosticQuestionSchema).min(3).max(15),
-  practiceDrills: z.array(blueprintPracticeDrillSchema).min(3).max(35),
+  concepts: z.array(candidateConceptNodeSchema).min(3).max(60),
+  diagnosticQuestions: z.array(candidateDiagnosticQuestionSchema).min(3).max(25),
+  practiceDrills: z.array(blueprintPracticeDrillSchema).min(3).max(60),
 });
 
 export type CandidateGoalBlueprint = z.infer<typeof candidateGoalBlueprintSchema>;

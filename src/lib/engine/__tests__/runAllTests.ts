@@ -9,6 +9,8 @@ import { runTwoLearnersSimulationTests } from './twoLearnersSimulation.test';
 import { runAuthAndRlsTests } from './authAndRls.test';
 import { runGoalAndActivityIntakeTests } from './goalAndActivityIntake.test';
 import { runPerformanceAndOptimizationTests } from './performanceAndOptimization.test';
+import './terminologyLeakage.test';
+import './modelRouter.test';
 
 console.log('====================================================');
 console.log('  GHOOMO ADAPTIVE LEARNING NAVIGATION ENGINE TESTS');

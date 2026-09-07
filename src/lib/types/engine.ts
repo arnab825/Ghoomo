@@ -73,6 +73,8 @@ export interface LearnerConceptState {
   state: KnowledgeState;
   masteryScore: number; // 0 - 100
   confidenceScore: number; // 0.0 - 1.0
+  score?: number; // Alias for masteryScore
+  confidence?: number; // Alias for confidenceScore
   evidenceCount: number;
   masterySource: MasterySource;
   evidenceSummary?: string | null;

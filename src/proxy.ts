@@ -73,9 +73,10 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isAppPath = pathname.startsWith('/app');
+  const isAdminPath = pathname.startsWith('/admin');
 
-  // 2. Rate limiting for authenticated user actions on /app
-  if (user && isAppPath) {
+  // 2. Rate limiting for authenticated user actions on /app and /admin
+  if (user && (isAppPath || isAdminPath)) {
     const userLimit = checkAuthenticatedRateLimit(user.id);
     if (!userLimit.allowed) {
       return new NextResponse(
@@ -94,14 +95,27 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // 3. Unauthenticated users cannot access /app
-  if (!user && isAppPath) {
+  // 3. Unauthenticated users cannot access /app or /admin
+  if (!user && (isAppPath || isAdminPath)) {
     const redirectUrl = new URL('/login', request.url);
     redirectUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  // 4. Authenticated users going to /login or /signup can be sent straight to /app
+  // 4. Strict role protection for /admin routes
+  if (user && isAdminPath) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/app', request.url));
+    }
+  }
+
+  // 5. Authenticated users going to /login or /signup can be sent straight to /app
   if (user && (pathname === '/login' || pathname === '/signup')) {
     return NextResponse.redirect(new URL('/app', request.url));
   }
@@ -110,5 +124,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/app/:path*', '/login', '/signup', '/forgot-password', '/reset-password'],
+  matcher: ['/app/:path*', '/admin/:path*', '/login', '/signup', '/forgot-password', '/reset-password'],
 };

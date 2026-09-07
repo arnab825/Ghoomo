@@ -6,7 +6,7 @@ import { LoginInputSchema, SignupInputSchema } from '@/schemas/inputSchemas';
 import { recordAuthFailure, recordAuthSuccess } from '@/lib/security/rateLimiter';
 import { formatSafeUserError } from '@/lib/utils/errorHandler';
 
-export type UserRole = 'learner' | 'student';
+export type UserRole = 'learner' | 'admin' | 'student';
 
 export interface UserProfile {
   id: string;

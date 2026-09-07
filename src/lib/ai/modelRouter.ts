@@ -27,23 +27,27 @@ export interface ModelConfig {
   temperature: number;
 }
 
-// Specified model families
+// User-specified exact model lists
 const GEMINI_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-3.6-flash',
+  'gemini-flash-latest',
 ] as const;
 
 const GROQ_MODELS = [
   'llama-3.3-70b-versatile',
   'llama-3.1-8b-instant',
   'mixtral-8x7b-32768',
-  'qwen/qwen3-27b',
+  'qwen/qwen3.6-27b',
 ] as const;
 
 const HUGGINGFACE_MODELS = [
   'Qwen/Qwen2.5-72B-Instruct',
   'Qwen/Qwen2.5-Coder-32B-Instruct',
-  'deepseek-ai/DeepSeek-V3',
+  'Qwen/Qwen3.8-27B',
+  'Qwen/Qwen3.8-Flash-Next',
+  'deepseek-ai/DeepSeek-V4-Flash-0731',
 ] as const;
 
 // Task → weight classification
@@ -195,7 +199,7 @@ export function getModelChain(task: AITask): ModelConfig[] {
       if (hfKey && !isRateLimited('huggingface')) {
         chain.push({
           provider: 'huggingface',
-          model: HUGGINGFACE_MODELS[0],
+          model: task === 'code_evaluation' ? HUGGINGFACE_MODELS[1] : HUGGINGFACE_MODELS[0],
           maxTokens: 4000,
           timeoutMs: 8000,
           temperature: 0.25,
