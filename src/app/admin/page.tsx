@@ -263,7 +263,7 @@ export default function AdminDashboardPage() {
                 <span>Real-Time Learning Activity Feed</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Submissions, state transitions, and roadmap events happening across Ghoomo.
+                Submissions, state transitions, and roadmap events happening across EduSpark.
               </p>
             </div>
           </div>

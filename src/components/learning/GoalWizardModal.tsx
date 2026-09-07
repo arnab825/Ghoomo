@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -80,6 +81,7 @@ const LEVEL_OPTIONS: { id: DeclaredLevel; title: string; desc: string }[] = [
 
 export default function GoalWizardModal() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
   const { isGoalWizardOpen, setGoalWizardOpen } = useUIStore();
 
@@ -294,6 +296,11 @@ export default function GoalWizardModal() {
         }
       }
 
+      // Invalidate all related TanStack Query caches so UI updates immediately
+      await queryClient.invalidateQueries({ queryKey: ['learning-map'] });
+      await queryClient.invalidateQueries({ queryKey: ['goals'] });
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+
       // Realtime notification & navigation
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('ghoomo:roadmap-updated'));
@@ -303,6 +310,7 @@ export default function GoalWizardModal() {
       setGoalTitle('');
       setUserAnswers({});
       router.push('/app/knowledge');
+      router.refresh();
     } catch (err: any) {
       setErrorMessage(err.message || 'Error generating learning roadmap.');
     } finally {

@@ -39,19 +39,20 @@ export function buildDomainSearchQueries(topic: string, domain: string = 'Comput
  * Searches DuckDuckGo HTML Lite engine for clean, un-hallucinated web results.
  * Respects strict 6-second timeout to maintain Vercel free-tier SLA.
  */
-async function searchDuckDuckGo(query: string, timeoutMs: number = 6000): Promise<RawSearchResult[]> {
+export async function searchDuckDuckGo(query: string, timeoutMs: number = 6000): Promise<RawSearchResult[]> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    const encoded = encodeURIComponent(query);
-    const res = await fetch(`https://html.duckduckgo.com/html/?q=${encoded}`, {
-      method: 'GET',
+    const res = await fetch('https://lite.duckduckgo.com/lite/', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         Accept: 'text/html,application/xhtml+xml',
       },
+      body: new URLSearchParams({ q: query }).toString(),
       signal: controller.signal,
     });
 
@@ -63,29 +64,27 @@ async function searchDuckDuckGo(query: string, timeoutMs: number = 6000): Promis
 
     const html = await res.text();
     const results: RawSearchResult[] = [];
-
-    // Parse DuckDuckGo result links
-    // DuckDuckGo links look like: <a class="result__url" href="//duckduckgo.com/l/?uddg=https%3A%2F%2F...
-    const linkRegex = /<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-    const titleRegex = /<a[^>]+class="[^"]*result__url[^"]*"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-
-    // Alternative: match uddg redirected URLs
-    const uddgRegex = /uddg=([^&"]+)/g;
+    const linkRegex = /<a[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
     let match: RegExpExecArray | null;
 
-    while ((match = uddgRegex.exec(html)) !== null && results.length < 8) {
-      try {
-        const decodedUrl = decodeURIComponent(match[1]);
-        const validation = validateResourceUrl(decodedUrl);
-        if (validation.isValid && validation.isTrustedDomain) {
+    while ((match = linkRegex.exec(html)) !== null && results.length < 10) {
+      let rawHref = match[1];
+      const rawTitle = match[2].replace(/<[^>]+>/g, '').trim();
+
+      if (rawHref.includes('uddg=')) {
+        const decoded = decodeURIComponent(rawHref.split('uddg=')[1]?.split('&')[0] || '');
+        if (decoded) rawHref = decoded;
+      }
+
+      if (rawHref.startsWith('http') && !rawHref.includes('duckduckgo.com')) {
+        const validation = validateResourceUrl(rawHref);
+        if (validation.isValid) {
           results.push({
             url: validation.sanitizedUrl,
-            title: `${topicQueryToTitle(query)} - ${validation.domain}`,
-            snippet: `Curated learning resource for ${query} from ${validation.domain}.`,
+            title: rawTitle && rawTitle.length > 3 ? rawTitle : `${query} - ${validation.domain}`,
+            snippet: `Authoritative learning resource from ${validation.domain}.`,
           });
         }
-      } catch {
-        // Skip malformed url
       }
     }
 

@@ -109,6 +109,9 @@ export const SubmitAttemptInputSchema = z.object({
     .trim()
     .min(1, 'Submitted answer cannot be empty')
     .max(1000, 'Answer cannot exceed 1000 characters'),
+  expectedAnswer: z.string().trim().max(1000).optional().nullable(),
+  explanation: z.string().trim().max(2000).optional().nullable(),
+  isLastQuestion: z.boolean().optional(),
   timeSpentSeconds: z
     .number({ required_error: 'Time spent is required' })
     .int('Time spent must be an integer')
@@ -117,6 +120,14 @@ export const SubmitAttemptInputSchema = z.object({
 }).strict();
 
 export type SubmitAttemptInput = z.infer<typeof SubmitAttemptInputSchema>;
+
+export const CompleteActivityInputSchema = z.object({
+  activityId: z.string().uuid('Invalid activity identifier format'),
+  conceptId: z.string().uuid('Invalid concept identifier format'),
+  journeyId: z.string().uuid('Invalid journey identifier format'),
+}).strict();
+
+export type CompleteActivityInput = z.infer<typeof CompleteActivityInputSchema>;
 
 // ============================================================================
 // 3. AI Copilot & Blueprint Schemas

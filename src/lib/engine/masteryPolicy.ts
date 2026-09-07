@@ -42,14 +42,14 @@ export function isMasterySatisfied(params: {
   // 1. Double-evidence verified mastery
   const standardEvidenceRule =
     params.evidenceCount >= 2 &&
-    params.masteryScore >= 85 &&
-    params.confidenceScore >= 0.85;
+    params.masteryScore >= 80 &&
+    params.confidenceScore >= 0.80;
 
   // 2. High-confidence applied project verification
   const applicationRule =
     params.verifiedApplication === true &&
-    params.masteryScore >= 85 &&
-    params.confidenceScore >= 0.85;
+    params.masteryScore >= 80 &&
+    params.confidenceScore >= 0.80;
 
   return standardEvidenceRule || applicationRule;
 }

@@ -2,7 +2,7 @@ import React from 'react';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 
 export const metadata = {
-  title: 'Admin Operations Center | Ghoomo',
+  title: 'Admin Operations Center | EduSpark',
   description: 'Internal product management, telemetry, and operational controls.',
 };
 

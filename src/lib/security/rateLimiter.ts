@@ -1,5 +1,5 @@
 /**
- * Ghoomo Multi-Tier Sliding Window Rate Limiter
+ * EduSpark Multi-Tier Sliding Window Rate Limiter
  * 
  * Implements:
  * 1. Auth Tier: Strict per-IP and per-account limiting with exponential backoff delay (no hard lockout).

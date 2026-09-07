@@ -100,7 +100,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             email: profile.email,
             fullName: profile.full_name,
             role: (profile.role as UserRole) || 'student',
-            avatarUrl: profile.avatar_url,
+            avatarUrl:
+              profile.avatar_url ||
+              session.user.user_metadata?.avatar_url ||
+              session.user.user_metadata?.picture ||
+              null,
             preferredLanguage: profile.preferred_language || 'English',
             learningModality: profile.learning_modality || 'mixed',
             createdAt: profile.created_at,
@@ -108,9 +112,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         : {
             id: session.user.id,
             email: session.user.email || '',
-            fullName: session.user.user_metadata?.full_name || 'Learner',
+            fullName:
+              session.user.user_metadata?.full_name ||
+              session.user.user_metadata?.name ||
+              'Learner',
             role: (session.user.user_metadata?.role as UserRole) || 'student',
-            avatarUrl: null,
+            avatarUrl:
+              session.user.user_metadata?.avatar_url ||
+              session.user.user_metadata?.picture ||
+              null,
             preferredLanguage: 'English',
             learningModality: 'mixed',
           };
@@ -144,9 +154,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const candidateUser: UserProfile = {
           id: session.user.id,
           email: session.user.email || '',
-          fullName: profile?.full_name || session.user.user_metadata?.full_name || 'Learner',
+          fullName:
+            profile?.full_name ||
+            session.user.user_metadata?.full_name ||
+            session.user.user_metadata?.name ||
+            'Learner',
           role: (profile?.role as UserRole) || (session.user.user_metadata?.role as UserRole) || 'student',
-          avatarUrl: profile?.avatar_url || null,
+          avatarUrl:
+            profile?.avatar_url ||
+            session.user.user_metadata?.avatar_url ||
+            session.user.user_metadata?.picture ||
+            null,
           preferredLanguage: profile?.preferred_language || 'English',
           learningModality: profile?.learning_modality || 'mixed',
           createdAt: profile?.created_at,

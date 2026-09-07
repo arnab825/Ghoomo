@@ -5,7 +5,7 @@ import { Providers } from "@/components/shared/Providers";
 import "@/styles/index.css";
 
 export const metadata: Metadata = {
-  title: "Ghoomo | Smart Personalized Learning Guide",
+  title: "EduSpark | Smart Personalized Learning Guide",
   description:
     "Intelligent turn-by-turn guidance for learners. Automatically personalizes your roadmap, finds the fastest route to mastery, and adapts when you need review.",
 };

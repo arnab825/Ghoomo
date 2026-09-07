@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import { Compass } from 'lucide-react';
 
 interface GhoomoLogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -14,9 +13,13 @@ export function GhoomoCompassIcon({ size = 32, className = '' }: { size?: number
   return (
     <div
       style={{ width: size, height: size }}
-      className={`rounded-xl bg-linear-to-br from-indigo-600 via-indigo-700 to-indigo-800 flex items-center justify-center text-white shadow-xs ${className}`}
+      className={`rounded-xl overflow-hidden bg-white dark:bg-slate-800 p-0.5 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shadow-xs shrink-0 ${className}`}
     >
-      <Compass size={Math.round(size * 0.6)} className="text-white" />
+      <img
+        src="/image/EduSpark-icon.png"
+        alt="EduSpark Icon"
+        className="h-full w-full object-contain select-none"
+      />
     </div>
   );
 }
@@ -39,11 +42,11 @@ export function GhoomoWordmark({
   return (
     <div className="flex flex-col leading-none select-none">
       <div className={`flex items-baseline font-black tracking-tight ${textSizes[size]} font-heading`}>
-        <span className="text-slate-900 dark:text-white">GHOO</span>
-        <span className="text-indigo-600 dark:text-indigo-400">MO</span>
+        <span className="text-[#026cb5] dark:text-[#38bdf8]">edu</span>
+        <span className="text-[#f58220] dark:text-[#fb923c]">spark</span>
       </div>
       {showSubtitle && (
-        <span className="text-[9px] font-bold tracking-[0.16em] text-indigo-600 dark:text-indigo-400 uppercase mt-0.5">
+        <span className="text-[9px] font-bold tracking-[0.16em] text-slate-500 dark:text-slate-400 uppercase mt-0.5">
           {subtitle}
         </span>
       )}
@@ -70,3 +73,8 @@ export default function GhoomoLogo({
     </div>
   );
 }
+
+// Named aliases for clean branding
+export const EduSparkLogo = GhoomoLogo;
+export const EduSparkIcon = GhoomoCompassIcon;
+export const EduSparkWordmark = GhoomoWordmark;

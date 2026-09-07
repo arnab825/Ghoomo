@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { useLearningMapQuery } from '@/hooks/queries/useLearningMapQuery';
@@ -14,9 +15,20 @@ export default function LearningMapPage() {
   const { user } = useAuthStore();
   const { setGoalWizardOpen } = useUIStore();
   const [selectedGoalId, setSelectedGoalId] = useState<string>('ALL');
+  const queryClient = useQueryClient();
 
   // TanStack Query cached data with keepPreviousData — zero refresh or redraw on tab switch
-  const { data, isLoading } = useLearningMapQuery(user?.id, selectedGoalId);
+  const { data, isLoading, refetch } = useLearningMapQuery(user?.id, selectedGoalId);
+
+  // Auto-refresh when a roadmap is created, updated or restored
+  useEffect(() => {
+    const handleUpdate = () => {
+      queryClient.invalidateQueries({ queryKey: ['learning-map'] });
+      refetch();
+    };
+    window.addEventListener('ghoomo:roadmap-updated', handleUpdate);
+    return () => window.removeEventListener('ghoomo:roadmap-updated', handleUpdate);
+  }, [refetch, queryClient]);
 
   const activeGoals = data?.activeGoals || [];
   const archivedCount = data?.archivedCount || 0;
@@ -82,7 +94,7 @@ export default function LearningMapPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6">
+    <div className="space-y-6 max-w-7xl mx-auto p-4 sm:p-6 min-w-0 w-full overflow-x-hidden">
       {/* Header & Controls */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
@@ -156,6 +168,12 @@ export default function LearningMapPage() {
         prerequisites={prerequisites}
         learnerStates={states}
         activities={activities}
+        roadmapTitle={
+          (selectedGoalId === 'ALL' ? activeGoals[0]?.title : activeGoals.find((g) => g.id === selectedGoalId)?.title) || 'Interactive Learning Roadmap'
+        }
+        roadmapSubject={
+          (selectedGoalId === 'ALL' ? activeGoals[0]?.targetDomain : activeGoals.find((g) => g.id === selectedGoalId)?.targetDomain) || 'Computer Science'
+        }
       />
     </div>
   );

@@ -30,9 +30,9 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <div className="min-h-screen flex flex-col bg-[#fbfbfa] dark:bg-[#090d16] text-slate-900 dark:text-slate-100 transition-colors duration-200">
       <TopBar />
-      <div className="flex-1 flex w-full">
+      <div className="flex-1 flex w-full min-w-0 overflow-x-hidden">
         <Sidebar />
-        <main className="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full overflow-y-auto">
+        <main className="flex-1 min-w-0 p-4 sm:p-8 max-w-7xl mx-auto w-full overflow-y-auto overflow-x-hidden">
           {children}
         </main>
       </div>

@@ -34,7 +34,7 @@ export default function AboutPage() {
             We believe learning should feel like navigation, not an obstacle course.
           </h1>
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed font-sans">
-            Every learner starts from a unique background, learns at a different pace, and stumbles on different concepts. Ghoomo gives every student their own personalized GPS for learning.
+            Every learner starts from a unique background, learns at a different pace, and stumbles on different concepts. EduSpark gives every student their own personalized GPS for learning.
           </p>
         </div>
 
@@ -57,10 +57,10 @@ export default function AboutPage() {
               ✓
             </div>
             <h3 className="text-xl font-bold font-heading text-indigo-950 dark:text-indigo-200">
-              The Ghoomo Way: Smart Guidance
+              The EduSpark Way: Smart Guidance
             </h3>
             <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-              Ghoomo acts like turn-by-turn navigation. A quick diagnostic verifies what you already know so you skip ahead. If you miss a question, Ghoomo provides a quick review detour before continuing on your roadmap.
+              EduSpark acts like turn-by-turn navigation. A quick diagnostic verifies what you already know so you skip ahead. If you miss a question, EduSpark provides a quick review detour before continuing on your roadmap.
             </p>
           </div>
         </div>

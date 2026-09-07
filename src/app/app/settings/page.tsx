@@ -26,15 +26,24 @@ export default function SettingsPage() {
 
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-              <User size={18} />
-            </div>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName || 'User Avatar'}
+                className="h-11 w-11 rounded-full object-cover shadow-xs border border-slate-200 dark:border-slate-700"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <User size={18} />
+              </div>
+            )}
             <div>
               <span className="text-xs font-bold text-slate-900 dark:text-white block">
                 {user?.fullName || 'Active Learner'}
               </span>
               <span className="text-2xs text-slate-500 block">
-                {user?.email || 'learner@ghoomo.edu'}
+                {user?.email || 'learner@eduspark.edu'}
               </span>
             </div>
           </div>

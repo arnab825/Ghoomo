@@ -11,13 +11,14 @@ import {
   LearningQuestion,
   RouteDiff as RouteDiffType,
 } from '@/lib/types/engine';
-import { submitQuestionAttemptAction } from '@/app/actions/learningActions';
+import { submitQuestionAttemptAction, completeActivityAction } from '@/app/actions/learningActions';
 import { analyzeMisconceptionCandidateAction } from '@/app/actions/aiActions';
 import { recordMisconceptionRecord } from '@/lib/services/learnerStateDbService';
 import { logRouteEvent } from '@/lib/services/routeEventDbService';
 import { computeRouteDiff } from '@/lib/engine/routeDiffEngine';
 import RouteDiff from '@/components/learning/RouteDiff';
 import { getCuratedResourcesForConcept } from '@/lib/learning/resourceCatalog';
+import DuckDuckGoResourceFinder from '@/components/learning/DuckDuckGoResourceFinder';
 import { Button } from '@/components/ui/button';
 import ContextPanel from '@/components/shared/ContextPanel';
 import DifficultyLadder from '@/components/learning/DifficultyLadder';
@@ -41,6 +42,7 @@ import {
   Lightbulb,
   FileCode,
   Compass,
+  XCircle,
 } from 'lucide-react';
 
 export default function ActivityRunnerPage({
@@ -69,6 +71,7 @@ export default function ActivityRunnerPage({
     explanation: string;
     promotedToMastered: boolean;
   } | null>(null);
+  const [levelResults, setLevelResults] = useState<Record<number, boolean>>({});
 
   // Dynamic route recalculation state
   const [routeDiff, setRouteDiff] = useState<RouteDiffType | null>(null);
@@ -242,7 +245,7 @@ export default function ActivityRunnerPage({
         <p className="text-xs text-slate-500">
           This learning activity may have been updated or moved.
         </p>
-        <Link href="/app/journeys">
+        <Link href="/app/knowledge">
           <Button size="sm" variant="outline" className="rounded-xl">
             Return to Learning Map
           </Button>
@@ -268,11 +271,18 @@ export default function ActivityRunnerPage({
         conceptId: concept!.id,
         journeyId: activity!.journeyId,
         submittedAnswer: selectedOption,
+        expectedAnswer: currentQuestion.correctAnswer,
+        explanation: currentQuestion.explanation,
+        isLastQuestion,
         timeSpentSeconds: 30,
       });
 
       const isCorrect = res.isCorrect;
       setSubmitted(true);
+      setLevelResults((prev) => ({
+        ...prev,
+        [currentLevelNumber]: isCorrect,
+      }));
       setFeedback({
         isCorrect,
         explanation: currentQuestion.explanation || '',
@@ -335,14 +345,30 @@ export default function ActivityRunnerPage({
     }
   }
 
-  function handleNextQuestion() {
+  async function handleNextQuestion() {
     if (!isLastQuestion) {
       setCurrentQuestionIndex((prev) => prev + 1);
       setSelectedOption(null);
       setSubmitted(false);
       setFeedback(null);
     } else {
-      router.push(`/app/journeys/${activity!.journeyId}`);
+      if (activity?.journeyId && concept?.id) {
+        try {
+          const compRes = await completeActivityAction({
+            activityId: activity.id,
+            conceptId: concept.id,
+            journeyId: activity.journeyId,
+          });
+
+          if (compRes.success && compRes.nextActivityId) {
+            router.push(`/app/learn/${compRes.nextActivityId}`);
+            return;
+          }
+        } catch (e) {
+          console.error('Failed to complete activity:', e);
+        }
+      }
+      router.push('/app/knowledge');
     }
   }
 
@@ -392,6 +418,14 @@ export default function ActivityRunnerPage({
           ) : (
             <p className="text-xs text-slate-500 italic">Resources available in topic details.</p>
           )}
+
+          {/* DuckDuckGo Live Material Finder */}
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+            <DuckDuckGoResourceFinder
+              conceptName={concept.name}
+              domain={concept.domain}
+            />
+          </div>
         </div>
       ),
     },
@@ -453,7 +487,7 @@ export default function ActivityRunnerPage({
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Link
-            href={`/app/journeys/${activity.journeyId}`}
+            href="/app/knowledge"
             className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title="Return to Learning Map"
           >
@@ -513,7 +547,7 @@ export default function ActivityRunnerPage({
         {/* Main Content Area */}
         <main className="flex-1 p-4 sm:p-8 space-y-6 overflow-y-auto">
           {/* Difficulty Ladder Header */}
-          <DifficultyLadder currentLevel={currentLevelNumber} />
+          <DifficultyLadder currentLevel={currentLevelNumber} levelResults={levelResults} />
 
           {/* Active Tab View */}
           {activeTab === 'study' ? (
@@ -595,7 +629,7 @@ export default function ActivityRunnerPage({
                           {isCorrect ? (
                             <CheckCircle2 size={18} className="text-emerald-500 shrink-0" />
                           ) : isWrong ? (
-                            <AlertCircle size={18} className="text-rose-500 shrink-0" />
+                            <XCircle size={18} className="text-rose-500 shrink-0" />
                           ) : (
                             <div className="h-4 w-4 rounded-full border border-slate-300 dark:border-slate-600 shrink-0" />
                           )}
@@ -621,7 +655,7 @@ export default function ActivityRunnerPage({
                           </>
                         ) : (
                           <>
-                            <AlertCircle size={16} />
+                            <XCircle size={16} />
                             <span>Let&apos;s Review This Concept.</span>
                           </>
                         )}

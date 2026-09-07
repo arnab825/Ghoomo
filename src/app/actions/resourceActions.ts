@@ -7,7 +7,7 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getCuratedResourcesForConcept } from '@/lib/learning/resourceCatalog';
-import { discoverTopicResources } from '@/lib/learning/resourceDiscovery';
+import { discoverTopicResources, searchDuckDuckGo } from '@/lib/learning/resourceDiscovery';
 import { ResourceCategory } from '@/lib/learning/resourceRanker';
 
 import { GetTopicResourcesInputSchema, GetTopicResourcesInput } from '@/schemas/inputSchemas';
@@ -106,5 +106,51 @@ export async function getTopicResourcesAction(
       resources: [],
       error: formatSafeUserError(err, 'Failed to load topic resources. Please try again.'),
     };
+  }
+}
+
+export interface DuckDuckGoResourceResult {
+  title: string;
+  url: string;
+  domain: string;
+  type: 'docs' | 'article' | 'video' | 'practice';
+  snippet?: string;
+}
+
+/**
+ * Searches DuckDuckGo for live educational materials on demand.
+ */
+export async function searchDuckDuckGoResourcesAction(
+  query: string
+): Promise<{ success: boolean; results: DuckDuckGoResourceResult[]; error?: string }> {
+  if (!query || query.trim().length < 2) {
+    return { success: false, results: [], error: 'Query is too short' };
+  }
+
+  try {
+    const raw = await searchDuckDuckGo(query.trim(), 6000);
+    const results: DuckDuckGoResourceResult[] = raw.map((item) => {
+      let type: 'docs' | 'article' | 'video' | 'practice' = 'article';
+      const u = item.url.toLowerCase();
+      if (u.includes('youtube.com') || u.includes('youtu.be')) {
+        type = 'video';
+      } else if (u.includes('docs.') || u.includes('/doc') || u.includes('python.org/3/tutorial')) {
+        type = 'docs';
+      } else if (u.includes('leetcode') || u.includes('practice') || u.includes('hackerrank')) {
+        type = 'practice';
+      }
+      return {
+        title: item.title,
+        url: item.url,
+        domain: new URL(item.url).hostname.replace(/^www\./, ''),
+        type,
+        snippet: item.snippet,
+      };
+    });
+
+    return { success: true, results };
+  } catch (err) {
+    console.error('searchDuckDuckGoResourcesAction error:', err);
+    return { success: false, results: [], error: 'Failed to search DuckDuckGo' };
   }
 }

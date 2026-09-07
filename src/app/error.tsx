@@ -5,6 +5,8 @@ import { AlertCircle, RefreshCw, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
+import { formatSafeUserError } from '@/lib/utils/errorHandler';
+
 export default function RootError({
   error,
   reset,
@@ -15,6 +17,11 @@ export default function RootError({
   React.useEffect(() => {
     console.error('[RootError] Unhandled application error:', error);
   }, [error]);
+
+  const safeMessage = formatSafeUserError(
+    error,
+    'A temporary glitch prevented this screen from displaying. Please click retry below.'
+  );
 
   return (
     <div className="min-h-[calc(100vh-72px)] flex items-center justify-center p-6 bg-[#fafafa] dark:bg-slate-950">
@@ -28,8 +35,7 @@ export default function RootError({
             Application Glitch Detected
           </h2>
           <p className="text-xs text-slate-600 dark:text-slate-400 mt-1.5 leading-relaxed">
-            {error.message ||
-              'A temporary glitch prevented this screen from displaying. Please click retry below.'}
+            {safeMessage}
           </p>
         </div>
 

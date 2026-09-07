@@ -38,6 +38,14 @@ const TRUSTED_DOMAINS = [
   'dev.to',
   'refactoring.guru',
   'martinfowler.com',
+  'pythontutorial.org',
+  'tutorialspoint.com',
+  'pynative.com',
+  'programiz.com',
+  'pythonmastery.io',
+  'leetpython.com',
+  'w3schools.com',
+  'kaggle.com',
 ];
 
 // Blocked or low-signal domains

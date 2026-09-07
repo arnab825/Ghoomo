@@ -2,10 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Compass, Sparkles, Plus, Moon, Sun, MessageSquare, LogIn, User } from 'lucide-react';
+import { Sparkles, Plus, Moon, Sun, MessageSquare, LogIn, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { Button } from '@/components/ui/button';
+import GhoomoLogo from '@/components/shared/GhoomoLogo';
 
 export default function TopBar() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -27,17 +28,7 @@ export default function TopBar() {
       {/* Brand & Logo */}
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="h-9 w-9 rounded-xl bg-linear-to-br from-indigo-600 to-indigo-700 flex items-center justify-center text-white shadow-xs group-hover:scale-105 transition-transform">
-            <Compass size={20} />
-          </div>
-          <div>
-            <span className="text-lg font-black tracking-tight text-slate-950 dark:text-white font-heading block leading-none">
-              GHOOMO
-            </span>
-            <span className="text-2xs font-semibold text-indigo-600 dark:text-indigo-400 block tracking-wide">
-              Smart Learning Guide
-            </span>
-          </div>
+          <GhoomoLogo size="sm" showSubtitle={true} subtitle="Smart Learning Guide" />
         </Link>
       </div>
 
@@ -62,9 +53,20 @@ export default function TopBar() {
               <Sparkles size={14} className="text-indigo-600 dark:text-indigo-400" />
               <span className="hidden sm:inline">AI Tutor</span>
             </button>
+
+            {user?.avatarUrl && (
+              <Link href="/app/settings" title="Profile & Settings" className="shrink-0">
+                <img
+                  src={user.avatarUrl}
+                  alt={user.fullName || 'User Avatar'}
+                  className="h-8 w-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-2xs hover:ring-2 hover:ring-indigo-500 transition-all cursor-pointer"
+                  referrerPolicy="no-referrer"
+                />
+              </Link>
+            )}
           </>
         ) : (
-          <Link href="/auth/sign-in">
+          <Link href="/login">
             <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs h-9">
               <LogIn size={14} />
               <span>Sign In</span>

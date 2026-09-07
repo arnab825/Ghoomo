@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
             Set New Password
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Choose a secure password for your Ghoomo account.
+            Choose a secure password for your EduSpark account.
           </p>
         </div>
 

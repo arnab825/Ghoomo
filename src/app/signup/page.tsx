@@ -83,7 +83,7 @@ function SignupForm() {
           <GhoomoLogo size="md" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
-          Create Ghoomo Account
+          Create EduSpark Account
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Turn-by-turn adaptive learning navigation engine.

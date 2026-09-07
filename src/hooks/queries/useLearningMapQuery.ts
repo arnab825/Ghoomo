@@ -74,10 +74,12 @@ export function useLearningMapQuery(userId?: string, selectedGoalId: string = 'A
         };
       }
 
-      const targetGoalIds =
-        selectedGoalId === 'ALL' || !activeGoals.some((g) => g.id === selectedGoalId)
-          ? activeGoals.map((g) => g.id)
-          : [selectedGoalId];
+      const targetGoalId =
+        selectedGoalId !== 'ALL' && activeGoals.some((g) => g.id === selectedGoalId)
+          ? selectedGoalId
+          : activeGoals[0]?.id;
+
+      const targetGoalIds = targetGoalId ? [targetGoalId] : [];
 
       // 3. Fetch active journeys
       const { data: journeysData } = await supabase

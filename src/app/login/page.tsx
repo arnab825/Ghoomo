@@ -7,11 +7,14 @@ import { LogIn, Mail, Lock, AlertCircle, ArrowRight, Loader2, Eye, EyeOff } from
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Button } from '@/components/ui/button';
 import GhoomoLogo from '@/components/shared/GhoomoLogo';
+import GoogleIcon from '@/components/shared/GoogleIcon';
+import { supabase } from '@/lib/supabase/client';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || '';
+  const errorParam = searchParams.get('error') || '';
 
   const { signIn, initializeAuth, isAuthenticated, user, error } = useAuthStore();
   const [email, setEmail] = useState('');
@@ -19,6 +22,17 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (errorParam) {
+      if (errorParam.includes('auth_callback') || errorParam.includes('exchange') || errorParam.includes('verifier')) {
+        setFormError('Authentication could not be completed. Please try signing in again or use email.');
+      } else {
+        setFormError(decodeURIComponent(errorParam));
+      }
+    }
+  }, [errorParam]);
 
   React.useEffect(() => {
     const cleanup = initializeAuth();
@@ -65,6 +79,23 @@ function LoginForm() {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setFormError(null);
+    setIsGoogleLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setFormError(err.message || 'Failed to sign in with Google.');
+      setIsGoogleLoading(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-md space-y-6">
       <div className="text-center space-y-2">
@@ -72,7 +103,7 @@ function LoginForm() {
           <GhoomoLogo size="md" />
         </div>
         <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-heading">
-          Sign In to Ghoomo
+          Sign In to EduSpark
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Access your real-time adaptive learning navigation engine.
@@ -157,13 +188,41 @@ function LoginForm() {
           </Button>
         </form>
 
+        {/* OAuth Divider */}
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200 dark:border-slate-800" />
+          </div>
+          <div className="relative flex justify-center text-3xs uppercase">
+            <span className="bg-white dark:bg-slate-900 px-3 text-slate-400 font-semibold tracking-wider">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        {/* Google Sign In Button */}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleGoogleSignIn}
+          disabled={isGoogleLoading || isSubmitting}
+          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center gap-2 transition-all cursor-pointer"
+        >
+          {isGoogleLoading ? (
+            <Loader2 size={16} className="animate-spin text-saffron-500" />
+          ) : (
+            <GoogleIcon size={16} />
+          )}
+          <span>Continue with Google</span>
+        </Button>
+
         {/* Quick-fill Admin Credentials for Testing */}
         <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-2xs text-slate-500">
           <span>Admin Access:</span>
           <button
             type="button"
             onClick={() => {
-              setEmail('admin@ghoomo.com');
+              setEmail('admin@eduspark.com');
               setPassword('AdminPassword123!');
             }}
             className="text-saffron-600 dark:text-saffron-400 hover:underline font-semibold cursor-pointer"

@@ -7,6 +7,7 @@ import AppDrawer from '@/components/shared/AppDrawer';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { formatLockReason, formatResourceType } from '@/lib/utils/terminology';
 import { getCuratedResourcesForConcept } from '@/lib/learning/resourceCatalog';
+import DuckDuckGoResourceFinder from '@/components/learning/DuckDuckGoResourceFinder';
 import { Button } from '@/components/ui/button';
 import {
   ArrowRight,
@@ -236,6 +237,14 @@ export default function TopicDetailDrawer({
               Curated study materials will be recommended as you practice this topic.
             </p>
           )}
+
+          {/* DuckDuckGo Live Material Discovery */}
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-4 mt-4">
+            <DuckDuckGoResourceFinder
+              conceptName={concept.name}
+              domain={concept.domain}
+            />
+          </div>
         </div>
       </div>
     </AppDrawer>

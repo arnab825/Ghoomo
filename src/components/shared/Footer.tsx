@@ -45,7 +45,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="text-slate-400 dark:text-slate-500 text-[11px]">
-          © {new Date().getFullYear()} Ghoomo. All rights reserved.
+          © {new Date().getFullYear()} EduSpark. All rights reserved.
         </div>
       </div>
     </footer>

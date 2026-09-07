@@ -1,5 +1,5 @@
 /**
- * Ghoomo Security & Rate Limiting Configuration
+ * EduSpark Security & Rate Limiting Configuration
  * All thresholds are configurable via environment variables with safe defaults.
  */
 

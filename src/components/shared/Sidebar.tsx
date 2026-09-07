@@ -79,9 +79,18 @@ export default function Sidebar() {
       <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80">
         <div className="p-2.5 rounded-2xl bg-slate-50/80 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between gap-2.5 shadow-2xs">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="h-9 w-9 rounded-xl bg-linear-to-br from-indigo-500 to-indigo-700 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
-              {initials}
-            </div>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user.fullName || 'Learner avatar'}
+                className="h-9 w-9 rounded-xl object-cover shrink-0 shadow-xs border border-slate-200 dark:border-slate-700"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="h-9 w-9 rounded-xl bg-linear-to-br from-indigo-500 to-indigo-700 text-white font-bold flex items-center justify-center text-xs shrink-0 shadow-xs">
+                {initials}
+              </div>
+            )}
             <div className="min-w-0">
               <span className="text-xs font-bold text-slate-900 dark:text-white block truncate leading-tight">
                 {user?.fullName || 'Learner'}

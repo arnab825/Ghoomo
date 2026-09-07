@@ -51,7 +51,7 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="text-base sm:text-xl text-slate-600 dark:text-slate-300 leading-relaxed font-sans max-w-2xl mx-auto">
-            Not a boring playlist. Not a generic course. Ghoomo is Google Maps for Learning — turn-by-turn guidance that automatically finds the fastest path for you.
+            Not a boring playlist. Not a generic course. EduSpark is Google Maps for Learning — turn-by-turn guidance that automatically finds the fastest path for you.
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export default function HomePage() {
 
           <div className="p-5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-900/50">
             <div className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-2">
-              Ghoomo Smart Learning Guide
+              EduSpark Smart Learning Guide
             </div>
             <ul className="space-y-2 text-xs text-slate-700 dark:text-slate-300 font-medium">
               <li className="flex items-start gap-2">
@@ -134,7 +134,7 @@ export default function HomePage() {
                 ★
               </span>
               <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                How Ghoomo Helps You Learn
+                How EduSpark Helps You Learn
               </span>
             </div>
             <span className="text-2xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-2.5 py-0.5 rounded-full">
@@ -176,7 +176,7 @@ export default function HomePage() {
               Smart Adaptive Path
             </h3>
             <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Never get stuck on topics you already know or struggle without the basics. Ghoomo adjusts your roadmap dynamically as you learn.
+              Never get stuck on topics you already know or struggle without the basics. EduSpark adjusts your roadmap dynamically as you learn.
             </p>
           </div>
 

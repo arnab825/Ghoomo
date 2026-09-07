@@ -83,12 +83,16 @@ export default function AdminSidebar() {
       {/* Brand Header */}
       <div className="p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="h-8 w-8 rounded-xl bg-saffron-500 text-white flex items-center justify-center font-bold font-heading text-sm shadow-xs">
-            G
+          <div className="h-8 w-8 rounded-xl overflow-hidden bg-white dark:bg-slate-800 p-0.5 border border-slate-200 dark:border-slate-700 flex items-center justify-center shadow-xs shrink-0">
+            <img
+              src="/image/EduSpark-icon.png"
+              alt="EduSpark Icon"
+              className="h-full w-full object-contain"
+            />
           </div>
           <div>
             <div className="font-bold text-sm text-slate-900 dark:text-white font-heading">
-              Ghoomo Admin
+              EduSpark Admin
             </div>
             <div className="text-3xs font-semibold text-saffron-600 dark:text-saffron-400">
               Operations Center

@@ -92,7 +92,7 @@ export default function ContactPage() {
                       Email Support
                     </span>
                     <span className="text-slate-500 dark:text-slate-400">
-                      support@ghoomo.app
+                      support@eduspark.app
                     </span>
                   </div>
                 </div>
