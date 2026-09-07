@@ -27,20 +27,26 @@ import { z } from 'zod';
 const GoalBlueprintRequestSchema = z.object({
   goalTitle: z.string().trim().min(2, 'Goal title must be at least 2 characters').max(120),
   targetDomain: z.string().trim().min(2, 'Domain must be at least 2 characters').max(60),
-  preferredModality: z.string().trim().min(2).max(30).default('interactive'),
+  preferredModality: z.string().trim().min(2).max(30).default('interactive').optional(),
+  learningReason: z.string().trim().max(100).optional(),
+  targetCompetency: z.string().trim().max(150).optional(),
+  declaredLevel: z.enum(['beginner', 'intermediate', 'advanced', 'not_sure']).default('intermediate').optional(),
 }).strict();
 
 export async function generateGoalIntakeBlueprintAction(params: {
   goalTitle: string;
   targetDomain: string;
-  preferredModality: string;
+  preferredModality?: string;
+  learningReason?: string;
+  targetCompetency?: string;
+  declaredLevel?: 'beginner' | 'intermediate' | 'advanced' | 'not_sure';
 }): Promise<{ success: true; data: CandidateGoalBlueprint } | { success: false; error: string }> {
   // 1. Strict schema validation
   const validation = GoalBlueprintRequestSchema.safeParse(params);
   if (!validation.success) {
     return {
       success: false,
-      error: validation.error.issues[0]?.message || 'Invalid course creation parameters.',
+      error: validation.error.issues[0]?.message || 'Invalid learning goal parameters.',
     };
   }
 

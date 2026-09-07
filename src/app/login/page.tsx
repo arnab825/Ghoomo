@@ -141,7 +141,7 @@ function LoginForm() {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs py-3 rounded-xl shadow-md shadow-indigo-600/25 flex items-center justify-center gap-2 enabled:cursor-pointer disabled:cursor-not-allowed transition-all"
+            className="w-full bg-saffron-500 hover:bg-saffron-600 text-white font-semibold text-xs py-3 rounded-xl shadow-md shadow-saffron-500/25 flex items-center justify-center gap-2 enabled:cursor-pointer disabled:cursor-not-allowed transition-all"
           >
             {isSubmitting ? (
               <>
@@ -157,11 +157,26 @@ function LoginForm() {
           </Button>
         </form>
 
-        <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
+        {/* Quick-fill Admin Credentials for Testing */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-2xs text-slate-500">
+          <span>Admin Access:</span>
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('admin@ghoomo.com');
+              setPassword('AdminPassword123!');
+            }}
+            className="text-saffron-600 dark:text-saffron-400 hover:underline font-semibold cursor-pointer"
+          >
+            Fill Admin Credentials
+          </button>
+        </div>
+
+        <div className="text-center text-xs text-slate-500 dark:text-slate-400">
           Don&apos;t have an account?{' '}
           <Link
             href={`/signup${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
-            className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1"
+            className="font-semibold text-saffron-600 dark:text-saffron-400 hover:underline inline-flex items-center gap-1"
           >
             <span>Create Account</span>
             <ArrowRight size={12} />

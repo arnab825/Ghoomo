@@ -1,54 +1,31 @@
-# Ghoomo - API Contracts
+# Ghoomo - API Contracts & Server Actions
 
-## 1. Social URL Extraction (`POST /api/social-import`)
+## 1. Authentication & Security Endpoints
 
-### Request
-```json
-{
-  "url": "https://www.instagram.com/reel/C3abc123xyz/",
-  "tripId": "uuid-optional"
-}
-```
-
-### Response
-```json
-{
-  "success": true,
-  "source": {
-    "url": "https://www.instagram.com/reel/C3abc123xyz/",
-    "platform": "instagram",
-    "title": "7 Hidden Sunrise Spots in Varanasi You Must Visit",
-    "author": "@explorer_aarav",
-    "thumbnailUrl": "https://images.unsplash.com/photo-1561361513-2d000a50f0dc"
-  },
-  "extractedPlaces": [
-    {
-      "name": "Assi Ghat Subah-e-Banaras",
-      "city": "Varanasi",
-      "state": "Uttar Pradesh",
-      "lat": 25.2917,
-      "lng": 83.0076,
-      "category": "spiritual",
-      "confidence": 0.95,
-      "notes": "Spiritual classical music & aarti at 5:30 AM"
-    }
-  ]
-}
-```
+### Login / Signup (`src/app/actions/authActions.ts`)
+- Strict Zod validation on email, password, full name, language, and modality.
+- Rate-limited sliding window with exponential backoff on failure.
 
 ---
 
-## 2. Trip CRUD Operations
+## 2. Learning Curriculum Server Actions
 
-- `GET /api/trips`: List all trips created by or shared with current user.
-- `POST /api/trips`: Create new trip record.
-- `GET /api/trips/:id`: Retrieve complete trip bundle (trip, sources, places, days, items, budget, checklist).
-- `PUT /api/trips/:id`: Update trip metadata.
-- `DELETE /api/trips/:id`: Archive or delete trip.
+### Goal & Journey Creation (`src/app/actions/goalActions.ts`)
+- **`createLearningGoalAction`**: Validates title, target domain, and daily minutes; invokes AI blueprint generation; persists DAG to `concepts` and `concept_prerequisites`.
+- **`archiveGoalAction`**: Sets goal status to `archived` with immediate query cache invalidation.
 
 ---
 
-## 3. Collaboration Invites
+## 3. Assessment & Navigation Server Actions
 
-- `POST /api/trips/:id/collaborate`: Generate shareable token or send email invite.
-- `GET /api/trips/share/:token`: Public read-only trip payload for shared links.
+### Attempt Evaluation (`src/app/actions/attemptActions.ts`)
+- Evaluates MCQ and short answer submissions.
+- Executes deterministic state transitions in `learner_concept_state`.
+- Emits audit records to `route_events`.
+
+### Evidence Evaluation (`src/app/actions/evidenceActions.ts`)
+- Accepts text, code, or project link evidence.
+- AI evaluates content depth, while deterministic mastery policies promote concept state.
+
+### Resource Intelligence (`src/app/actions/resourceActions.ts`)
+- Retrieves curated and live-discovered learning materials for any concept node.

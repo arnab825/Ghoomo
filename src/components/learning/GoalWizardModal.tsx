@@ -12,19 +12,82 @@ import { initializeDiagnosticStates } from '@/lib/services/learnerStateDbService
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { CandidateDiagnosticQuestion, CandidateConceptNode } from '@/lib/ai/schemas';
-import { Compass, Sparkles, CheckCircle2, ArrowRight, Loader2, Target, Brain } from 'lucide-react';
+import {
+  Compass,
+  Sparkles,
+  CheckCircle2,
+  ArrowRight,
+  Loader2,
+  Target,
+  Brain,
+  Code2,
+  Check,
+  HelpCircle,
+  Briefcase,
+  Terminal,
+} from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+
+const CS_GOAL_PRESETS = [
+  'Python Data Structures & Algorithms',
+  'Full Stack Development with Next.js & TypeScript',
+  'AI Engineering: LLMs, RAG & Agents',
+  'Operating Systems, Concurrency & Low-Level C',
+  'System Design & Distributed Backends',
+  'Relational Databases & SQL Query Optimization',
+];
+
+const REASON_OPTIONS = [
+  { id: 'interview', label: 'Software Engineering Interviews' },
+  { id: 'college', label: 'College / Academic Coursework' },
+  { id: 'competitive', label: 'Competitive Programming' },
+  { id: 'projects', label: 'Building Production Projects' },
+  { id: 'transition', label: 'Career Transition into Tech' },
+  { id: 'fundamentals', label: 'Deepening Core Fundamentals' },
+];
+
+const TARGET_PRESETS = [
+  'Solve medium & hard problems confidently',
+  'Build and deploy production-ready applications',
+  'Master system architecture and performance tradeoffs',
+  'Become comfortable writing and debugging clean code',
+];
+
+type DeclaredLevel = 'beginner' | 'intermediate' | 'advanced' | 'not_sure';
+
+const LEVEL_OPTIONS: { id: DeclaredLevel; title: string; desc: string }[] = [
+  {
+    id: 'beginner',
+    title: 'Beginner',
+    desc: 'New to the subject. Need guided explanations, code tracing, and core concepts.',
+  },
+  {
+    id: 'intermediate',
+    title: 'Intermediate',
+    desc: 'Write code regularly. Ready for implementation, complexity analysis, and debugging.',
+  },
+  {
+    id: 'advanced',
+    title: 'Advanced',
+    desc: 'Experienced engineer. Focus on subtle edge cases, architectural tradeoffs, and scale.',
+  },
+  {
+    id: 'not_sure',
+    title: 'Not sure',
+    desc: 'Calibrate my baseline with a mixed diagnostic spanning easy to advanced questions.',
+  },
+];
 
 export default function GoalWizardModal() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { isGoalWizardOpen, setGoalWizardOpen } = useUIStore();
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [goalTitle, setGoalTitle] = useState('');
-  const [targetDomain, setTargetDomain] = useState('Computer Science');
-  const [dailyMinutes, setDailyMinutes] = useState(30);
-  const [learningModality, setLearningModality] = useState('practice');
+  const [learningReason, setLearningReason] = useState('Software Engineering Interviews');
+  const [targetCompetency, setTargetCompetency] = useState('Solve medium & hard problems confidently');
+  const [declaredLevel, setDeclaredLevel] = useState<DeclaredLevel>('intermediate');
 
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
@@ -45,15 +108,16 @@ export default function GoalWizardModal() {
     setLoadingMessage('Designing your personalized learning roadmap...');
 
     try {
-      // 1. Single-call batch blueprint generation via secure Server Action
       const blueprintRes = await generateGoalIntakeBlueprintAction({
         goalTitle: goalTitle.trim(),
-        targetDomain,
-        preferredModality: learningModality,
+        targetDomain: 'Computer Science',
+        learningReason,
+        targetCompetency,
+        declaredLevel,
       });
 
       if (!blueprintRes.success) {
-        setErrorMessage(blueprintRes.error || 'Failed to extract concepts for this goal.');
+        setErrorMessage(blueprintRes.error || 'Failed to design roadmap for this goal.');
         setIsLoading(false);
         return;
       }
@@ -61,7 +125,7 @@ export default function GoalWizardModal() {
       setCandidateNodes(blueprintRes.data.concepts);
       setDiagnosticQuestions(blueprintRes.data.diagnosticQuestions);
       setPracticeDrills(blueprintRes.data.practiceDrills);
-      setStep(3); // Go to diagnostic step
+      setStep(3); // Move to starting diagnostic check
     } catch (err: any) {
       setErrorMessage(err.message || 'Error initializing diagnostic.');
     } finally {
@@ -71,7 +135,7 @@ export default function GoalWizardModal() {
 
   const handleCompleteDiagnosticAndBuild = async () => {
     if (!user) {
-      setErrorMessage('You must be signed in to create a journey.');
+      setErrorMessage('You must be signed in to create a roadmap.');
       return;
     }
 
@@ -94,8 +158,8 @@ export default function GoalWizardModal() {
       const goalRes = await createGoal({
         userId: user.id,
         title: goalTitle.trim(),
-        targetDomain,
-        dailyMinutes,
+        targetDomain: 'Computer Science',
+        dailyMinutes: 30,
       });
 
       if (!goalRes.data) {
@@ -110,7 +174,7 @@ export default function GoalWizardModal() {
         goalId: goalRes.data.id,
         title: goalTitle.trim(),
         description: `Personalized adaptive learning route for ${goalTitle.trim()}`,
-        subject: targetDomain,
+        subject: 'Computer Science',
         baselineActivityCount: validatedDAG.nodes.length * 2,
       });
 
@@ -154,7 +218,7 @@ export default function GoalWizardModal() {
         }
       }
 
-      setLoadingMessage('Preparing your interactive practice questions...');
+      setLoadingMessage('Preparing your interactive practice challenges...');
       await initializeDiagnosticStates({
         userId: user.id,
         conceptIdToIsCorrect,
@@ -171,7 +235,7 @@ export default function GoalWizardModal() {
           type: matchingDrill?.activityType || (index === 0 ? 'EXPLAIN' : 'PRACTICE'),
           title: matchingDrill?.activityTitle || `Practice: ${node.name}`,
           description: matchingDrill?.activityDescription || node.description,
-          instructions: matchingDrill?.instructions || `Complete the targeted practice drills to demonstrate proficiency in ${node.name}.`,
+          instructions: matchingDrill?.instructions || `Solve the challenge to demonstrate mastery in ${node.name}.`,
           hints: matchingDrill?.resources || [],
           duration_minutes: matchingDrill?.durationMinutes || 10,
           is_remediation: false,
@@ -188,12 +252,11 @@ export default function GoalWizardModal() {
         console.warn('Activity insertion issue:', actErr.message);
       }
 
-      // 7. Persist interactive progressive question records attached to inserted activities
+      // 7. Persist interactive question records attached to inserted activities
       if (insertedActivities && insertedActivities.length > 0) {
         const questionsToInsert: any[] = [];
 
         insertedActivities.forEach((act) => {
-          // Find matching concept slug
           const node = validatedDAG.nodes.find((n) => saveRes.conceptMap.get(n.slug) === act.concept_id);
           const drill = practiceDrills.find((d) => d.conceptSlug === node?.slug);
 
@@ -231,7 +294,7 @@ export default function GoalWizardModal() {
         }
       }
 
-      // Close modal and navigate directly to navigation app
+      // Realtime notification & navigation
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('ghoomo:roadmap-updated'));
       }
@@ -239,9 +302,9 @@ export default function GoalWizardModal() {
       setStep(1);
       setGoalTitle('');
       setUserAnswers({});
-      router.push('/app');
+      router.push('/app/knowledge');
     } catch (err: any) {
-      setErrorMessage(err.message || 'Error generating learning route.');
+      setErrorMessage(err.message || 'Error generating learning roadmap.');
     } finally {
       setIsLoading(false);
     }
@@ -249,36 +312,36 @@ export default function GoalWizardModal() {
 
   return (
     <Dialog open={isGoalWizardOpen} onOpenChange={setGoalWizardOpen}>
-      <DialogContent className="max-w-2xl p-6 sm:p-8">
+      <DialogContent className="max-w-2xl p-6 sm:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
         <DialogHeader className="mb-4">
-          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-saffron-500 text-xs font-bold uppercase tracking-wider mb-1">
             <Compass size={16} />
-            <span>Create Your Learning Path</span>
+            <span>Learning Roadmap Setup</span>
           </div>
-          <DialogTitle className="text-2xl font-bold font-heading">
+          <DialogTitle className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
             {step === 1 && 'What do you want to learn?'}
-            {step === 2 && 'How & When You Learn'}
-            {step === 3 && 'Quick Skill Check (5 Questions)'}
+            {step === 2 && 'Your Goals & Starting Level'}
+            {step === 3 && 'Starting Check (5 Questions)'}
           </DialogTitle>
           <DialogDescription className="text-xs text-slate-500 dark:text-slate-400">
-            {step === 1 && 'Tell us your learning goal. We will map out the steps and helpful foundations.'}
-            {step === 2 && 'Choose how you like to learn and how much time you have each day.'}
-            {step === 3 && 'Answer 5 quick questions so we can skip what you already know and get you straight to new topics.'}
+            {step === 1 && 'Choose or enter your Computer Science destination. We will map out all topics and dependencies.'}
+            {step === 2 && 'Tell us your focus and self-reported level so we can calibrate your diagnostic.'}
+            {step === 3 && 'A quick level-aware check to identify what you already know and highlight what you need next.'}
           </DialogDescription>
         </DialogHeader>
 
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900 text-xs text-red-700 dark:text-red-300">
+          <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300">
             {errorMessage}
           </div>
         )}
 
         {isLoading ? (
           <div className="py-12 text-center space-y-4">
-            <Loader2 className="mx-auto h-10 w-10 animate-spin text-indigo-600 dark:text-indigo-400" />
+            <Loader2 className="mx-auto h-10 w-10 animate-spin text-saffron-500" />
             <div className="space-y-1">
               <h4 className="text-sm font-semibold text-slate-900 dark:text-white">
-                Building Your Personalized Roadmap
+                Building Your Engineering Roadmap
               </h4>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {loadingMessage}
@@ -287,135 +350,198 @@ export default function GoalWizardModal() {
           </div>
         ) : (
           <>
-            {/* STEP 1: Goal Input */}
+            {/* STEP 1: What do you want to learn? */}
             {step === 1 && (
-              <form onSubmit={(e) => { e.preventDefault(); setStep(2); }} className="space-y-5">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (goalTitle.trim()) setStep(2);
+                }}
+                className="space-y-5"
+              >
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    What is your learning goal?
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    Learning Goal (Computer Science &amp; Software Engineering)
                   </label>
                   <Input
                     value={goalTitle}
                     onChange={(e) => setGoalTitle(e.target.value)}
-                    placeholder="e.g. Build my first machine learning classifier"
+                    placeholder="e.g. Python Data Structures & Algorithms"
                     required
-                    className="h-11 text-sm"
+                    className="h-11 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-1 focus:ring-saffron-500"
                   />
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {['Build my first ML classifier', 'Learn Python Data Structures', 'Understand Quantum Computing Basics'].map((ex) => (
-                      <button
-                        type="button"
-                        key={ex}
-                        onClick={() => setGoalTitle(ex)}
-                        className="text-2xs px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
-                      >
-                        {ex}
-                      </button>
-                    ))}
+
+                  <div className="mt-3">
+                    <span className="text-3xs uppercase font-bold text-slate-400 block mb-2">
+                      Popular Roadmaps
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {CS_GOAL_PRESETS.map((preset) => (
+                        <button
+                          type="button"
+                          key={preset}
+                          onClick={() => setGoalTitle(preset)}
+                          className={`text-2xs px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
+                            goalTitle === preset
+                              ? 'bg-saffron-500/15 border-saffron-500 text-saffron-600 dark:text-saffron-400 font-semibold'
+                              : 'bg-slate-100 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Subject Domain
-                  </label>
-                  <select
-                    value={targetDomain}
-                    onChange={(e) => setTargetDomain(e.target.value)}
-                    className="w-full h-11 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  >
-                    <option value="Computer Science">Computer Science & AI</option>
-                    <option value="Mathematics">Mathematics & Statistics</option>
-                    <option value="Physics">Physics & Engineering</option>
-                    <option value="Data Science">Data Science</option>
-                  </select>
-                </div>
-
                 <div className="pt-2 flex justify-end">
-                  <Button type="submit" disabled={!goalTitle.trim()} className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
-                    <span>Next: Learning Style</span>
+                  <Button
+                    type="submit"
+                    disabled={!goalTitle.trim()}
+                    className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold rounded-xl flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Next: Target &amp; Level</span>
                     <ArrowRight size={16} />
                   </Button>
                 </div>
               </form>
             )}
 
-            {/* STEP 2: Modality & Daily Minutes */}
+            {/* STEP 2: Why are you learning it? + Target + Current Level */}
             {step === 2 && (
               <form onSubmit={handleStartDiagnostic} className="space-y-5">
+                {/* Motivation */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    How do you like to learn?
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <Briefcase size={14} className="text-saffron-500" />
+                    <span>Why are you learning this?</span>
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    {[
-                      { id: 'practice', label: 'Practice & Quizzes' },
-                      { id: 'visual', label: 'Visual & Diagrams' },
-                      { id: 'explain', label: 'Step-by-Step' },
-                      { id: 'project', label: 'Hands-on Projects' },
-                    ].map((mod) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {REASON_OPTIONS.map((opt) => (
                       <button
                         type="button"
-                        key={mod.id}
-                        onClick={() => setLearningModality(mod.id)}
-                        className={`p-3 text-xs rounded-xl border text-center transition-all cursor-pointer ${
-                          learningModality === mod.id
-                            ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-semibold shadow-2xs'
+                        key={opt.id}
+                        onClick={() => setLearningReason(opt.label)}
+                        className={`p-2.5 text-xs rounded-xl border text-left transition-all cursor-pointer ${
+                          learningReason === opt.label
+                            ? 'border-saffron-500 bg-saffron-500/10 text-saffron-600 dark:text-saffron-400 font-semibold shadow-xs'
                             : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                         }`}
                       >
-                        {mod.label}
+                        {opt.label}
                       </button>
                     ))}
                   </div>
                 </div>
 
+                {/* Target Competency */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Daily Time Commitment
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <Target size={14} className="text-saffron-500" />
+                    <span>What is your target?</span>
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {[15, 30, 60].map((mins) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {TARGET_PRESETS.map((tgt, i) => (
                       <button
                         type="button"
-                        key={mins}
-                        onClick={() => setDailyMinutes(mins)}
-                        className={`p-3 text-xs rounded-xl border text-center transition-all cursor-pointer ${
-                          dailyMinutes === mins
-                            ? 'border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-semibold shadow-2xs'
+                        key={i}
+                        onClick={() => setTargetCompetency(tgt)}
+                        className={`p-2.5 text-xs rounded-xl border text-left transition-all cursor-pointer ${
+                          targetCompetency === tgt
+                            ? 'border-saffron-500 bg-saffron-500/10 text-saffron-600 dark:text-saffron-400 font-semibold shadow-xs'
                             : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
                         }`}
                       >
-                        {mins} minutes / day
+                        {tgt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Declared Level */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                    <Brain size={14} className="text-saffron-500" />
+                    <span>How would you describe your current level?</span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {LEVEL_OPTIONS.map((lvl) => (
+                      <button
+                        type="button"
+                        key={lvl.id}
+                        onClick={() => setDeclaredLevel(lvl.id)}
+                        className={`p-3 text-xs rounded-xl border text-left transition-all cursor-pointer ${
+                          declaredLevel === lvl.id
+                            ? 'border-saffron-500 bg-saffron-500/10 text-slate-900 dark:text-white font-semibold ring-1 ring-saffron-500/30'
+                            : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                          <span>{lvl.title}</span>
+                          {declaredLevel === lvl.id && (
+                            <Check size={14} className="text-saffron-500" />
+                          )}
+                        </div>
+                        <div className="text-3xs text-slate-500 dark:text-slate-400 mt-1 leading-normal">
+                          {lvl.desc}
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div className="pt-2 flex items-center justify-between">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="rounded-xl">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setStep(1)}
+                    className="rounded-xl cursor-pointer"
+                  >
                     Back
                   </Button>
-                  <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">
-                    <span>Start Quick Skill Check</span>
+                  <Button
+                    type="submit"
+                    className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold rounded-xl flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>Start Level-Aware Diagnostic</span>
                     <Sparkles size={16} />
                   </Button>
                 </div>
               </form>
             )}
 
-            {/* STEP 3: 5-Item Diagnostic */}
+            {/* STEP 3: Level-Aware Diagnostic */}
             {step === 3 && (
-              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1">
-                <div className="text-xs text-slate-600 dark:text-slate-400 bg-indigo-50/60 dark:bg-indigo-950/30 p-3.5 rounded-xl border border-indigo-100 dark:border-indigo-900 leading-relaxed">
-                  Answer what you know. Correct answers will be marked <strong>Ready</strong> so we can skip introductory lessons and save you time.
+              <div className="space-y-5 max-h-[60vh] overflow-y-auto pr-1">
+                <div className="text-xs text-slate-600 dark:text-slate-300 bg-saffron-500/10 p-3.5 rounded-xl border border-saffron-500/20 leading-relaxed">
+                  <strong>Level-calibrated check for {declaredLevel.toUpperCase()}:</strong> Answer to the best of your knowledge. This creates your baseline so you skip known concepts and get straight to your optimal next step.
                 </div>
 
                 {diagnosticQuestions.map((q, qIndex) => (
-                  <div key={qIndex} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
-                    <div className="text-xs font-semibold text-slate-900 dark:text-white">
-                      {qIndex + 1}. {q.question}
+                  <div
+                    key={qIndex}
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-3xs uppercase font-bold text-slate-400">
+                        Question {qIndex + 1} of {diagnosticQuestions.length}
+                      </span>
+                      {q.questionType && (
+                        <span className="text-3xs font-mono px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 uppercase">
+                          {q.questionType.replace('_', ' ')}
+                        </span>
+                      )}
                     </div>
+
+                    <div className="text-xs font-semibold text-slate-900 dark:text-white leading-relaxed">
+                      {q.question}
+                    </div>
+
+                    {q.codeSnippet && (
+                      <pre className="p-3 rounded-lg bg-slate-950 text-slate-200 font-mono text-xs overflow-x-auto border border-slate-800">
+                        <code>{q.codeSnippet}</code>
+                      </pre>
+                    )}
 
                     <div className="space-y-2">
                       {q.options.map((opt, optIdx) => (
@@ -423,7 +549,7 @@ export default function GoalWizardModal() {
                           key={optIdx}
                           className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition-all ${
                             userAnswers[qIndex] === opt
-                              ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/50 font-medium text-indigo-950 dark:text-indigo-200'
+                              ? 'border-saffron-500 bg-saffron-500/10 font-medium text-slate-900 dark:text-white'
                               : 'border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
                           }`}
                         >
@@ -433,7 +559,7 @@ export default function GoalWizardModal() {
                             value={opt}
                             checked={userAnswers[qIndex] === opt}
                             onChange={() => setUserAnswers({ ...userAnswers, [qIndex]: opt })}
-                            className="text-indigo-600 focus:ring-indigo-500"
+                            className="text-saffron-500 focus:ring-saffron-500"
                           />
                           <span>{opt}</span>
                         </label>
@@ -442,15 +568,15 @@ export default function GoalWizardModal() {
                   </div>
                 ))}
 
-                <div className="pt-3 flex items-center justify-between">
+                <div className="pt-3 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
                   <span className="text-xs text-slate-500">
                     {Object.keys(userAnswers).length} of {diagnosticQuestions.length} answered
                   </span>
                   <Button
                     onClick={handleCompleteDiagnosticAndBuild}
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl"
+                    className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold rounded-xl flex items-center gap-2 cursor-pointer"
                   >
-                    <span>Create My Learning Roadmap</span>
+                    <span>Generate My Interactive Roadmap</span>
                     <ArrowRight size={16} />
                   </Button>
                 </div>

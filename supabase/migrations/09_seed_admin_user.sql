@@ -1,6 +1,7 @@
 -- =========================================================================
--- Ghoomo Adaptive Learning Navigation Engine
--- Seed Data: Admin User & Initial System Operators
+-- Migration 09: Seed Admin User in Supabase
+-- Creates and confirms admin@ghoomo.com and grants admin role
+-- Also promotes rarnab225@gmail.com to admin
 -- =========================================================================
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -11,9 +12,11 @@ DECLARE
   v_admin_pass text := 'AdminPassword123!';
   v_user_id uuid;
 BEGIN
+  -- 1. Check if admin user already exists in auth.users
   SELECT id INTO v_user_id FROM auth.users WHERE email = v_admin_email;
 
   IF v_user_id IS NOT NULL THEN
+    -- Update existing user: confirm email, set password and admin metadata
     UPDATE auth.users
     SET 
       encrypted_password = crypt(v_admin_pass, gen_salt('bf')),
@@ -23,6 +26,7 @@ BEGIN
       updated_at = now()
     WHERE id = v_user_id;
   ELSE
+    -- Generate new user id and insert into auth.users with confirmed email
     v_user_id := gen_random_uuid();
     INSERT INTO auth.users (
       id,
@@ -51,6 +55,7 @@ BEGIN
     );
   END IF;
 
+  -- 2. Upsert admin profile in public.profiles
   INSERT INTO public.profiles (id, email, full_name, role)
   VALUES (
     v_user_id,
@@ -62,7 +67,9 @@ BEGIN
     role = 'admin',
     full_name = 'Ghoomo Administrator';
 
+  -- 3. Also promote developer/owner account if exists
   UPDATE public.profiles
   SET role = 'admin'
   WHERE email IN ('rarnab225@gmail.com');
+
 END $$;

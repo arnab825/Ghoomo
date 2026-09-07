@@ -1,102 +1,48 @@
 # Ghoomo - Product Requirements Document (PRD)
 
 ## Product Name
-**Ghoomo**
+**Ghoomo: Adaptive Learning Navigation Engine**
 
-### Tagline
-*Turn Social Travel Inspiration into Reality-Ready Indian Itineraries*
+### Problem Statement
+**Smart India Hackathon (SIH) 2026 — Problem Statement 26207: Smart Education**
 
 ---
 
 ## 1. Executive Summary
 
-Ghoomo is a web platform that transforms viral social media travel inspiration (TikTok, Instagram Reels, YouTube Shorts, travel blogs, and Pinterest) into practical, collaborative, map-based itineraries across India.
+Ghoomo is an AI-powered, real-time **Adaptive Learning Navigation Engine** designed for Computer Science and Software Engineering learners. Rather than acting as a static content repository or generic quiz generator, Ghoomo functions like **Google Maps for learning**.
 
-Instead of losing saved reels in bookmark folders or struggling with chaotic WhatsApp group chats, travelers paste social URLs into Ghoomo. The platform automatically extracts location candidates with source traceability, pins them to an interactive map, clusters them into logical day-wise routes, and lets friends collaborate on budget and packing checklists in real time.
-
----
-
-## 2. Problem Statement
-
-Modern travelers discover their best travel ideas on social media:
-1. **Scattered Links**: Hundreds of saved Instagram Reels, TikToks, and YouTube Shorts with no unified way to view or organize them.
-2. **Geographic Ignorance**: Not knowing where a viral café, secret waterfall, or hidden sunrise spot is relative to other attractions, leading to zigzagging and wasted travel time.
-3. **Planning Inertia**: The friction of converting a 30-second aesthetic reel into an actionable day-by-day itinerary with timings, routes, and costs.
-4. **Group Planning Friction**: Disconnected WhatsApp chats and messy Google Sheets where travel companions argue over itineraries without a visual map.
+It evaluates what a learner knows, constructs a verified **Directed Acyclic Graph (DAG)** of competencies, administers deterministic diagnostic evaluations, dynamically routes learners around prerequisites and misconceptions, surfaces authoritative technical resources, and maintains an auditable decision trail.
 
 ---
 
-## 3. Product Vision & Positioning
+## 2. Core Product Philosophy & Tenets
 
-**Vision**: The fastest, most visual bridge from internet travel inspiration to boots-on-the-ground travel execution in India.
-
-**Positioning**: Ghoomo is neither a generic corporate SaaS planner nor an outdated travel agency portal. It is a **map-first, social-native travel studio** built specifically for domestic and international travelers exploring India.
-
----
-
-## 4. Target Personas
-
-### Primary Users
-- **The Reel Explorer (Solo/Couple)**: Discovers aesthetic spots on Instagram/TikTok; wants an instant map and route without manually searching every spot.
-- **The Group Trip Planner (Lead Organizer)**: Coordinates a 4-7 day trip with friends/family; needs visual consensus, a shared link, and a collaborative itinerary.
-- **The Weekend Backpacker**: Seeks quick 2-3 day escapes around Himachal, Uttarakhand, Rajasthan, Goa, or Karnataka.
+1. **Learner-First Companion**: Direct one-to-one learning experience. No teacher administrative hierarchy needed for the core learner experience.
+2. **Deterministic Code Decides Mastery**: AI evaluates open-ended explanations and code submissions, but strict, auditable TypeScript code rules decide state transitions, prerequisites, and promotions.
+3. **Zero Mock Fallbacks**: Real AI generation powered by Google Gemini and Groq with persistent PostgreSQL caching (`ai_artifacts`) and in-memory LRU buffering.
+4. **Transparent Navigation**: Every reroute, prerequisite insertion, and diagnostic waiver is permanently logged in `route_events`.
+5. **Authoritative Resource Intelligence**: Connects learners to official documentation, primary RFCs, and curated engineering articles.
 
 ---
 
-## 5. MVP Feature Set (Hackathon Scope)
+## 3. Target Personas
 
-### P0 (Must-Have for Demo)
-- **Authentication**: Simple, clean Supabase auth with 1-click evaluator demo personas (Trip Lead, Collaborator).
-- **Trip Creation**: Trip name, Indian destination region, dates, duration, budget target, and travel style.
-- **Social URL Import**: Ingest TikTok, Instagram Reels, YouTube Shorts, or Blog URLs.
-- **Location Extraction & Traceability**: Extract places with platform badges, thumbnails, original creator credits, and confidence scores (High, Medium, Low).
-- **Manual Place Addition**: Fallback to search or manually add any Indian landmark with custom notes.
-- **Interactive Map**: Leaflet-powered dark mode map with day-colored markers, route polyline connections, and click-to-highlight sync.
-- **Day-Wise Itinerary Generator**: Proximity clustering algorithm that groups nearby places into logical days to minimize travel time.
-- **Editable Itinerary Builder**: Move places between days, change time slots (Morning, Afternoon, Evening), and adjust timings.
-- **Collaboration**: Shareable trip links with permission controls (Editor vs Viewer) and live collaborator badges.
-- **Budget & Checklist**: Expense breakdown by category (Stays, Transport, Food, Experiences) and trip prep checklist.
-- **Trip Dashboard & Library**: Central overview of all active and past trips.
+### 1. The Autonomous Learner
+- Aspiring software engineers, college CS students, and self-taught developers.
+- Wants structured, goal-driven mastery roadmaps that adapt dynamically when concepts are difficult.
 
-### P1 (Later in Hackathon / Fast Follows)
-- Itinerary pacing customization (Relaxed vs Balanced vs Fast-Paced).
-- Real-time collaborator activity notifications.
-- Filter map places by category (Food, Nature, Heritage, Adventure).
-
-### P2 (Post-Hackathon Roadmap)
-- Weather-aware indoor/outdoor activity recommendations.
-- Local verified transport and homestay partner integration.
-- Offline PWA support for low-connectivity Indian regions.
+### 2. The Platform Administrator
+- Platform operations and pedagogical leads.
+- Monitors learner throughput, misconception hotspots, AI token usage, system latency, and system health via the Admin Operations Center (`/admin`).
 
 ---
 
-## 6. Core User Flow
+## 4. Key Functional Features
 
-```
-[1. User Signs In / Picks Demo Persona]
-           ↓
-[2. Create Trip (Destination, Days, Style)]
-           ↓
-[3. Paste Instagram / TikTok / YouTube / Blog URL]
-           ↓
-[4. Ghoomo Extracts Places with Source Traceability & Confidence]
-           ↓
-[5. Interactive Map Displays Locations & Route Visuals]
-           ↓
-[6. System Clusters Places into Day-Wise Itinerary]
-           ↓
-[7. User Invites Friends via Share Link (Editor / Viewer)]
-           ↓
-[8. Team Customizes Budget & Pre-Trip Checklist]
-           ↓
-[9. Ready-to-Travel Dashboard & Map]
-```
-
----
-
-## 7. Success Criteria
-
-1. A user can paste a social URL and see verified map pins in under 3 seconds.
-2. Auto-generated itinerary groups places geographically without backtracking.
-3. Full collaboration link allows secondary users to join and edit.
-4. Clean, responsive, dark-mode UI with vibrant Indian saffron and emerald accents.
+- **Goal Intake & Curriculum Engine**: Single-prompt comprehensive syllabus generation that creates verified DAGs with 0 circular dependencies.
+- **Diagnostic Screening**: Rapid diagnostic challenges to test declared proficiency, promoting mastered skills and sequencing unmastered prerequisites.
+- **Mastery Engine & Epistemic States**: 6 distinct states (`UNKNOWN`, `EXPOSED`, `PROVISIONALLY_READY`, `DEVELOPING`, `NEEDS_REVIEW`, `MASTERED`).
+- **Realtime Resource Discovery**: Multi-source resource discovery and ranking for any technical concept.
+- **Spaced Repetition Review (SM-2)**: Automated decay and review scheduling to reinforce mastered knowledge.
+- **Security Hardening**: Sliding window rate limits, strict Zod schema validation, leak-free error handling, and binary-validated file uploads.

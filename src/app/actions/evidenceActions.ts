@@ -12,6 +12,8 @@ import { LearnerConceptState, RouteEventType } from '@/lib/types/engine';
 import { profiler } from '@/lib/utils/profiler';
 import { formatSafeUserError } from '@/lib/utils/errorHandler';
 
+import { SubmitEvidenceInputSchema, SubmitEvidenceInput } from '@/schemas/inputSchemas';
+
 export interface SubmitEvidenceResponse {
   success: boolean;
   evidenceId?: string;
@@ -27,16 +29,26 @@ export interface SubmitEvidenceResponse {
  * Submit text/code/link evidence for a concept.
  * The evidence is stored, then evaluated by AI, but mastery is decided deterministically.
  */
-export async function submitEvidenceAction(params: {
-  journeyId: string;
-  conceptId: string;
-  activityId: string;
-  evidenceType: 'text' | 'code' | 'link';
-  content: string;
-}): Promise<SubmitEvidenceResponse> {
+export async function submitEvidenceAction(
+  rawParams: SubmitEvidenceInput
+): Promise<SubmitEvidenceResponse> {
+  // 1. Strict schema validation
+  const parseResult = SubmitEvidenceInputSchema.safeParse(rawParams);
+  if (!parseResult.success) {
+    return {
+      success: false,
+      score: 0,
+      meetsThreshold: false,
+      evaluationNotes: '',
+      promotedToMastered: false,
+      error: parseResult.error.errors[0]?.message || 'Invalid evidence submission input.',
+    };
+  }
+  const params = parseResult.data;
+
   const supabase = await createServerSupabaseClient();
 
-  // 1. Authoritative session verification
+  // 2. Authoritative session verification
   const {
     data: { user },
     error: authError,
@@ -50,18 +62,6 @@ export async function submitEvidenceAction(params: {
       evaluationNotes: '',
       promotedToMastered: false,
       error: 'Unauthenticated. Please log in.',
-    };
-  }
-
-  // 2. Validate input
-  if (!params.content.trim() || params.content.trim().length < 10) {
-    return {
-      success: false,
-      score: 0,
-      meetsThreshold: false,
-      evaluationNotes: '',
-      promotedToMastered: false,
-      error: 'Evidence must be at least 10 characters.',
     };
   }
 

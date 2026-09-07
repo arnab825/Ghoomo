@@ -2,23 +2,29 @@
 
 ## 1. Relational Entity Overview
 
-The Ghoomo database revolves around 8 core relational entities:
+The Ghoomo database schema is built on Supabase PostgreSQL with strict Row Level Security (RLS) and real-time publication subscriptions:
 
-- **`profiles`**: Extends Supabase `auth.users` with display name, avatar, and travel style preferences.
-- **`trips`**: Core trip entity (title, destination region, start date, duration in days, budget target, cover image).
-- **`trip_sources`**: Ingested social media links (URL, platform, author handle, post title, thumbnail, timestamp).
-- **`places`**: Discovered or manually added locations (lat, lng, city, state, confidence score, source traceability link, category, notes).
-- **`itinerary_days`**: Scheduled calendar days within a trip (day number, date, theme/summary).
-- **`itinerary_items`**: Scheduled stops within a day (assigned place ID, order index, time slot: Morning/Afternoon/Evening, notes).
-- **`collaboration_invites`**: Access control records (trip ID, user email, role: Editor/Viewer, invite token).
-- **`budget_items`**: Estimated & logged travel expenses (category, description, amount, payment status).
-- **`checklist_items`**: Trip preparation tasks and packing checklist (title, category, completion status).
+- **`profiles`**: User accounts extending Supabase `auth.users` with roles (`learner`, `student`, `admin`), language preference, and learning modality.
+- **`learning_goals`**: Learner-defined outcomes, daily study targets, and status (`active`, `completed`, `abandoned`, `archived`).
+- **`learning_journeys`**: Personalized adaptive curricula linking goals to knowledge terrain graphs.
+- **`concepts`**: Verified competency nodes in the domain knowledge graph with module groupings and mastery thresholds.
+- **`concept_prerequisites`**: Validated DAG edges enforcing strict prerequisite sequencing with cycle prevention.
+- **`learner_concept_state`**: The epistemic mastery ledger recording state (`UNKNOWN` through `MASTERED`), confidence, and mastery scores.
+- **`learning_activities`**: Pedagogical tasks categorized by type (`DIAGNOSE`, `EXPLAIN`, `PRACTICE`, `APPLY`, `REMEDIATE`, `PROVE`, `REFLECT`).
+- **`questions`**: Formative checkpoints with automated distractors and misconception tagging.
+- **`attempts`**: Historical submission telemetry tracking time spent, rationale, and score.
+- **`misconceptions`**: Diagnostic error tracking with mapped remediation activities.
+- **`evidence`**: Open-ended code and explanation submissions evaluated by AI with deterministic mastery thresholds.
+- **`route_events`**: Immutable audit log of every dynamic reroute, skip, or remediation insertion.
+- **`ai_artifacts`**: Two-tiered L2 persistent cache for AI responses with SHA-256 content hashing and TTL expiration.
+- **`review_schedule`**: Spaced repetition SM-2 review queue.
+- **`mastery_policies`**: Domain and concept-specific threshold configurations.
+- **`resource_items`**: Live-discovered and curated learning resources with quality scores and type tags.
 
 ---
 
 ## 2. Row Level Security (RLS) Principles
 
-1. **Trips & Sources**: Accessible to the trip creator and users with valid collaborator privileges.
-2. **Places & Itinerary**: Viewable by all collaborators; editable only by the owner or users with the `editor` role.
-3. **Budget & Checklist**: Accessible to all collaborators for transparent group trip coordination.
-4. **Public Shared Trips**: Publicly accessible via unique share token in read-only mode for easy itinerary sharing.
+1. **Strict Learner Isolation**: Learners can only query, insert, and update their own state, attempts, misconceptions, and evidence (`auth.uid() = user_id`).
+2. **Admin Oversight**: Verified platform administrators (`profiles.role = 'admin'`) have read permissions across system telemetry, attempts, and learning states.
+3. **Public Read-Only Catalog**: Concepts, activities, and questions are queryable by authenticated users for shared learning pathways.

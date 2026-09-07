@@ -36,6 +36,8 @@ export type CandidateConceptGraph = z.infer<typeof candidateConceptGraphSchema>;
 export const candidateDiagnosticQuestionSchema = z.object({
   conceptSlug: z.string().min(2).max(80),
   question: z.string().min(5).max(300),
+  questionType: z.enum(['mcq', 'code_output', 'code_debug', 'reasoning', 'complexity']).optional().default('mcq'),
+  codeSnippet: z.string().max(1000).optional(),
   options: z.array(z.string().min(1)).min(3).max(4),
   correctAnswer: z.string().min(1),
   explanation: z.string().min(5).max(400).default('Correct answer based on conceptual understanding.'),

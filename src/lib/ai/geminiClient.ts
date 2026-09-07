@@ -25,6 +25,7 @@ import {
 
 import { LRUCache } from '@/lib/utils/lruCache';
 import { getCachedArtifact, setCachedArtifact, hashInput } from './artifactCache';
+import { sanitizePromptText } from '@/lib/validation/sanitize';
 
 // In-memory deterministic LRU caches (bounded capacity, zero Redis)
 const blueprintCache = new LRUCache<string, CandidateGoalBlueprint>(100);
@@ -37,6 +38,38 @@ const groqApiKey = process.env.GROK_API_KEY || process.env.GROQ_API_KEY || '';
 
 // Initialize official Google Gemini SDK
 const ai = new GoogleGenAI({ apiKey: geminiApiKey });
+
+/**
+ * Safely extracts text from a Gemini response, avoiding the "model output must
+ * contain either output text or tool calls" error that occurs when gemini-2.5-flash
+ * thinking mode produces an empty text part. Falls back to reading from
+ * candidates[0].content.parts directly.
+ */
+function safeExtractText(response: { text?: string; candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> }): string | null {
+  // Primary path: SDK-provided text accessor
+  try {
+    const t = response.text;
+    if (typeof t === 'string' && t.length > 0) return t;
+  } catch {
+    // response.text threw — fall through to manual extraction
+  }
+
+  // Fallback: read directly from the raw candidate parts
+  try {
+    const parts = response.candidates?.[0]?.content?.parts;
+    if (Array.isArray(parts)) {
+      const combined = parts
+        .map((p) => p?.text ?? '')
+        .join('')
+        .trim();
+      if (combined.length > 0) return combined;
+    }
+  } catch {
+    // All extraction paths failed
+  }
+
+  return null;
+}
 
 /**
  * Safely parses JSON from AI responses that might contain markdown fences.
@@ -168,13 +201,16 @@ export async function generateStructuredAI<T>(params: {
           systemInstruction: fullSystemInstruction,
           responseMimeType: 'application/json',
           temperature: 0.3,
+          // Disable thinking mode: gemini-2.5-flash thinking can produce an empty
+          // text part when combined with responseMimeType JSON, causing an SDK throw.
+          thinkingConfig: { thinkingBudget: 0 },
         },
       });
 
       clearTimeout(timer);
       profiler.recordAiCall(performance.now() - startTime);
 
-      const text = response.text;
+      const text = safeExtractText(response);
       if (text) {
         const cleanedJson = cleanJsonOutput(text);
         const parsedJson = JSON.parse(cleanedJson);
@@ -202,12 +238,27 @@ export async function generateStructuredAI<T>(params: {
 export async function generateGoalIntakeBlueprint(params: {
   goalTitle: string;
   targetDomain: string;
-  preferredModality: string;
+  preferredModality?: string;
+  learningReason?: string;
+  targetCompetency?: string;
+  declaredLevel?: 'beginner' | 'intermediate' | 'advanced' | 'not_sure';
 }): Promise<{ success: true; data: CandidateGoalBlueprint } | { success: false; error: string }> {
+  const declaredLevel = params.declaredLevel || 'intermediate';
+  const rawLearningReason = params.learningReason || 'general competency';
+  const rawTargetCompetency = params.targetCompetency || 'comprehensive mastery';
+
+  const cleanGoalTitle = sanitizePromptText(params.goalTitle, 150);
+  const cleanTargetDomain = sanitizePromptText(params.targetDomain, 100);
+  const cleanLearningReason = sanitizePromptText(rawLearningReason, 200);
+  const cleanTargetCompetency = sanitizePromptText(rawTargetCompetency, 200);
+
   const inputHash = hashInput({
-    goalTitle: params.goalTitle.trim().toLowerCase(),
-    targetDomain: params.targetDomain.trim().toLowerCase(),
-    preferredModality: params.preferredModality.toLowerCase(),
+    goalTitle: cleanGoalTitle.toLowerCase(),
+    targetDomain: cleanTargetDomain.toLowerCase(),
+    preferredModality: (params.preferredModality || 'interactive').toLowerCase(),
+    declaredLevel,
+    learningReason: cleanLearningReason.toLowerCase(),
+    targetCompetency: cleanTargetCompetency.toLowerCase(),
   });
 
   // 1. Check L1 in-memory LRU cache
@@ -227,23 +278,26 @@ export async function generateGoalIntakeBlueprint(params: {
     // Non-fatal cache lookup issue
   }
 
-  const prompt = `Analyze this learning goal and generate a complete structured learning blueprint in a single JSON response:
-Goal: "${params.goalTitle}"
-Target Domain: "${params.targetDomain}"
-Preferred Learning Modality: "${params.preferredModality}"
+  const prompt = `Analyze this Computer Science learning goal and generate a comprehensive adaptive learning blueprint in a single JSON response:
+Goal: "${cleanGoalTitle}"
+Target Domain: "${cleanTargetDomain}"
+Learner Motivation: "${cleanLearningReason}"
+Target Competency: "${cleanTargetCompetency}"
+Self-Reported Starting Level: "${declaredLevel.toUpperCase()}"
 
 Your response MUST match this exact JSON schema:
 {
-  "title": "${params.goalTitle}",
+  "title": "${cleanGoalTitle}",
   "description": "Comprehensive adaptive curriculum for ${params.goalTitle}",
   "subject": "${params.targetDomain}",
-  "baselineEstimatedActivities": 12,
+  "baselineEstimatedActivities": 24,
   "concepts": [
     {
       "name": "Concept Name",
       "slug": "concept-name-slug",
       "description": "Concept description and core principles",
       "domain": "${params.targetDomain}",
+      "moduleName": "Foundations",
       "difficulty": "beginner",
       "masteryThreshold": 80,
       "orderIndex": 0,
@@ -253,7 +307,9 @@ Your response MUST match this exact JSON schema:
   "diagnosticQuestions": [
     {
       "conceptSlug": "concept-name-slug",
-      "question": "Diagnostic MCQ assessing this concept?",
+      "question": "Diagnostic question assessing understanding?",
+      "questionType": "code_output",
+      "codeSnippet": "def example(): pass",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": "Option A",
       "explanation": "Why this answer is correct."
@@ -266,7 +322,7 @@ Your response MUST match this exact JSON schema:
       "activityTitle": "Practice: Concept Name",
       "activityDescription": "Interactive drill description",
       "instructions": "Step-by-step practice instructions",
-      "durationMinutes": 8,
+      "durationMinutes": 10,
       "questionText": "Practice drill question?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": "Option A",
@@ -275,12 +331,16 @@ Your response MUST match this exact JSON schema:
   ]
 }
 
-Rules:
-1. Provide a comprehensive, deep learning roadmap with 15 to 30 atomic topics tailored specifically to "${params.goalTitle}". Never generate a shallow 4-step course.
-2. Structure topics across clear knowledge areas (e.g. Foundations, Core Mechanics, Intermediate Techniques, Advanced Problem Solving, Capstone Mastery) using the "moduleName" field.
-3. Establish clean prerequisite dependencies ("prerequisiteSlugs") forming a Directed Acyclic Graph without cycles. Foundational topics have empty prerequisites.
-4. Provide 3 to 6 diagnostic questions for initial self-assessment.
-5. Provide at least 1 practice drill for foundational and key milestone topics.
+CRITICAL RULES:
+1. STRICT COMPUTER SCIENCE DOMAIN: The curriculum must be deeply focused on Computer Science, Software Engineering, Algorithms, or Systems. Never output generic school topics.
+2. DEEP ROADMAP (15-30+ TOPICS): NEVER generate a shallow 4-step course. Provide between 15 and 30 atomic concepts organized across coherent modules (e.g. Foundations, Core Mechanics, Intermediate Patterns, Advanced Optimization, Capstone Projects).
+3. STRICT PREREQUISITE DAG: Foundational concepts must have empty prerequisiteSlugs. Higher concepts must reference valid prerequisite slugs from earlier in the roadmap without cycles.
+4. LEVEL-AWARE INITIAL DIAGNOSTIC (Exactly 5 Questions):
+   - If declared level is "BEGINNER": Start with foundational code-tracing questions ("What happens when this snippet runs?"), core semantics, and loop boundaries. Avoid insulting the learner with trivial definitions ("What is a variable?").
+   - If declared level is "INTERMEDIATE": Test practical implementation, debugging code snippets, algorithmic complexity analysis, and moderate code tracing.
+   - If declared level is "ADVANCED": Focus on subtle edge cases, architectural tradeoffs, memory/concurrency behavior, and optimization pitfalls.
+   - If declared level is "NOT_SURE": Generate a calibrated diagnostic mix (1 foundational, 2 intermediate, 2 advanced/edge-case) to empirically discover their actual competency level.
+5. Provide at least 1 rich practice drill for key foundational and milestone concepts.
 6. Concept difficulty must be lowercase: "beginner", "intermediate", or "advanced".
 7. activityType must be uppercase: "EXPLAIN", "PRACTICE", or "APPLY".`;
 
@@ -488,17 +548,23 @@ export async function askCopilotGuidedInquiry(params: {
   userQuery: string;
   preferredLanguage?: string;
 }): Promise<{ success: true; reply: string } | { success: false; error: string }> {
-  // Token minimization: clamp userQuery to 300 characters
-  const clampedQuery = params.userQuery.trim().slice(0, 300);
+  // Token minimization & prompt injection neutralization
+  const cleanQuery = sanitizePromptText(params.userQuery, 300);
+  const cleanGoal = sanitizePromptText(params.goalTitle, 120);
+  const cleanConcept = sanitizePromptText(params.conceptName, 120);
+  const cleanActivity = sanitizePromptText(params.activityTitle, 120);
+  const cleanMisconception = params.detectedMisconception
+    ? sanitizePromptText(params.detectedMisconception, 200)
+    : null;
 
-  const prompt = `The student is asking: "${clampedQuery}"
+  const prompt = `The student is asking: "${cleanQuery}"
 
 Current Learning Context:
-- Goal: "${params.goalTitle}"
-- Current Concept: "${params.conceptName}"
+- Goal: "${cleanGoal}"
+- Current Concept: "${cleanConcept}"
 - Learner State: "${params.learnerState}"
-- Current Activity: "${params.activityTitle}"
-${params.detectedMisconception ? `- Known Misconception: "${params.detectedMisconception}"` : ''}
+- Current Activity: "${cleanActivity}"
+${cleanMisconception ? `- Known Misconception: "${cleanMisconception}"` : ''}
 - Preferred Language: "${params.preferredLanguage || 'English'}"
 
 GUIDED INQUIRY PEDAGOGY RULES:
@@ -552,11 +618,13 @@ GUIDED INQUIRY PEDAGOGY RULES:
         config: {
           systemInstruction,
           temperature: 0.4,
+          // Disable thinking for chat responses — keep latency low
+          thinkingConfig: { thinkingBudget: 0 },
         },
       });
 
       profiler.recordAiCall(performance.now() - startTime);
-      const reply = response.text?.trim() || 'I am here to guide you. Try breaking the problem into smaller parts!';
+      const reply = safeExtractText(response)?.trim() || 'I am here to guide you. Try breaking the problem into smaller parts!';
       return { success: true, reply };
     } catch (err: any) {
       return { success: false, error: err.message || 'Copilot service unavailable.' };

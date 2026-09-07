@@ -179,3 +179,34 @@ export const RazorpayCheckoutInputSchema = z.object({
 }).strict();
 
 export type RazorpayCheckoutInput = z.infer<typeof RazorpayCheckoutInputSchema>;
+
+// ============================================================================
+// 5. Evidence & Resource Intelligence Schemas
+// ============================================================================
+export const SubmitEvidenceInputSchema = z.object({
+  journeyId: z.string().uuid('Invalid journey identifier format'),
+  conceptId: z.string().uuid('Invalid concept identifier format'),
+  activityId: z.string().uuid('Invalid activity identifier format'),
+  evidenceType: z.enum(['text', 'code', 'link'], {
+    errorMap: () => ({ message: 'Evidence type must be text, code, or link' }),
+  }),
+  content: z
+    .string({ required_error: 'Evidence content is required' })
+    .trim()
+    .min(10, 'Evidence must be at least 10 characters')
+    .max(10000, 'Evidence cannot exceed 10,000 characters'),
+}).strict();
+
+export type SubmitEvidenceInput = z.infer<typeof SubmitEvidenceInputSchema>;
+
+export const GetTopicResourcesInputSchema = z.object({
+  conceptId: z.string().uuid('Invalid concept identifier format'),
+  conceptName: z
+    .string({ required_error: 'Concept name is required' })
+    .trim()
+    .min(1, 'Concept name cannot be empty')
+    .max(120, 'Concept name cannot exceed 120 characters'),
+  domain: z.string().trim().max(80).optional(),
+}).strict();
+
+export type GetTopicResourcesInput = z.infer<typeof GetTopicResourcesInputSchema>;

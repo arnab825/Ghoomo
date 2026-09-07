@@ -18,6 +18,9 @@ import {
   PlayCircle,
   HelpCircle,
   Compass,
+  Code2,
+  AlertTriangle,
+  Lightbulb,
 } from 'lucide-react';
 
 interface TopicDetailDrawerProps {
@@ -42,52 +45,50 @@ export default function TopicDetailDrawer({
   if (!concept) return null;
 
   const status = isLocked ? 'LOCKED' : state?.state || 'UNKNOWN';
-  const resources = getCuratedResourcesForConcept(concept.name, concept.domain);
+  const studyGuide = getCuratedResourcesForConcept(concept.name, concept.domain);
 
   return (
     <AppDrawer
       isOpen={isOpen}
       onClose={onClose}
       title={concept.name}
-      description={concept.domain ? `Domain: ${concept.domain}` : 'Topic details'}
-      width="lg"
+      description={concept.domain || 'Computer Science Topic'}
+      width="md"
       footer={
-        <div className="w-full flex items-center justify-between gap-4">
-          <Button variant="outline" onClick={onClose} className="rounded-xl">
-            Close
-          </Button>
-          {isLocked ? (
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <Lock size={14} className="shrink-0" />
-              <span>Complete prerequisites first</span>
-            </div>
-          ) : activity ? (
-            <Link href={`/app/learn/${activity.id}`}>
-              <Button className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold rounded-xl flex items-center gap-2">
-                <span>Start Practice</span>
-                <ArrowRight size={16} />
-              </Button>
+        <div className="flex items-center justify-between w-full">
+          <div className="text-2xs text-slate-400">
+            {isLocked ? 'Prerequisites required' : 'Ready to study'}
+          </div>
+          {activity && !isLocked ? (
+            <Link
+              href={`/app/learn/${activity.id}`}
+              onClick={onClose}
+              className="bg-saffron-500 hover:bg-saffron-600 text-white font-semibold rounded-xl flex items-center gap-2 px-4 py-2 text-xs transition-colors"
+            >
+              <span>Start Practice</span>
+              <ArrowRight size={16} />
             </Link>
           ) : (
-            <Button disabled className="rounded-xl">
-              Activity preparing...
+            <Button disabled variant="outline" className="rounded-xl">
+              {isLocked ? 'Locked' : 'Select an unblocked topic'}
             </Button>
           )}
         </div>
       }
     >
       <div className="space-y-6">
-        {/* Status banner */}
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60">
+        {/* Status card */}
+        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <div>
-            <div className="text-2xs uppercase tracking-wider font-bold text-slate-400 mb-1">
-              Current Progress
+            <div className="text-3xs uppercase tracking-wider font-bold text-slate-400 mb-1">
+              Your Current Status
             </div>
             <StatusBadge status={status} size="md" />
           </div>
-          {((state?.score ?? state?.masteryScore ?? 0) > 0) && (
+
+          {(state?.score !== undefined || state?.masteryScore !== undefined) && (
             <div className="text-right">
-              <div className="text-2xs uppercase tracking-wider font-bold text-slate-400 mb-1">
+              <div className="text-3xs uppercase tracking-wider font-bold text-slate-400 mb-1">
                 Score
               </div>
               <div className="text-lg font-bold font-heading text-slate-900 dark:text-white">
@@ -112,11 +113,11 @@ export default function TopicDetailDrawer({
           </div>
         )}
 
-        {/* Topic Description / What you'll learn */}
+        {/* Topic Description */}
         <div>
           <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 flex items-center gap-2">
             <Sparkles size={14} className="text-saffron-500" />
-            <span>What You&apos;ll Learn</span>
+            <span>What You&apos;ll Master</span>
           </h4>
           <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800">
             {concept.description ||
@@ -124,11 +125,58 @@ export default function TopicDetailDrawer({
           </p>
         </div>
 
+        {/* Mental Model & Core Intuition */}
+        {studyGuide?.mentalModel && (
+          <div>
+            <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 flex items-center gap-2">
+              <Lightbulb size={14} className="text-amber-500" />
+              <span>Mental Model &amp; Core Intuition</span>
+            </h4>
+            <div className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed bg-amber-50/40 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-200/50 dark:border-amber-900/40">
+              {studyGuide.mentalModel}
+            </div>
+          </div>
+        )}
+
+        {/* Worked Example */}
+        {studyGuide?.workedExample && (
+          <div>
+            <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 flex items-center gap-2">
+              <Code2 size={14} className="text-saffron-500" />
+              <span>Implementation Blueprint</span>
+            </h4>
+            <pre className="p-3.5 rounded-2xl bg-slate-950 text-slate-200 font-mono text-xs overflow-x-auto border border-slate-800 leading-relaxed">
+              <code>{studyGuide.workedExample}</code>
+            </pre>
+          </div>
+        )}
+
+        {/* Key Invariants */}
+        {studyGuide?.keyInvariants && studyGuide.keyInvariants.length > 0 && (
+          <div>
+            <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 flex items-center gap-2">
+              <CheckCircle2 size={14} className="text-emerald-500" />
+              <span>Key Invariants (Remember Always)</span>
+            </h4>
+            <ul className="space-y-2">
+              {studyGuide.keyInvariants.map((inv, idx) => (
+                <li
+                  key={idx}
+                  className="text-xs text-slate-700 dark:text-slate-300 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex items-start gap-2"
+                >
+                  <span className="text-saffron-500 font-bold shrink-0">•</span>
+                  <span>{inv}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {/* Prerequisites */}
         <div>
           <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-2 flex items-center gap-2">
             <Compass size={14} className="text-saffron-500" />
-            <span>Learn This First</span>
+            <span>Recommended First</span>
           </h4>
           {prerequisiteNames.length > 0 ? (
             <div className="space-y-2">
@@ -138,71 +186,50 @@ export default function TopicDetailDrawer({
                   className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200"
                 >
                   <span>{name}</span>
-                  <span className="text-2xs text-slate-400">Prerequisite</span>
+                  <span className="text-3xs text-slate-400">Prerequisite</span>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-xs text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">
-              No prerequisites required. You can begin this topic right away!
+              Foundational concept. No prerequisites needed.
             </p>
           )}
         </div>
 
-        {/* Learning Resources */}
+        {/* Authoritative Learning Sources */}
         <div>
           <h4 className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3 flex items-center gap-2">
             <BookOpen size={14} className="text-saffron-500" />
-            <span>Learning Resources</span>
+            <span>Authoritative Learning Sources</span>
           </h4>
 
-          {resources ? (
+          {studyGuide?.resources && studyGuide.resources.length > 0 ? (
             <div className="space-y-2.5">
-              {/* Primary documentation */}
-              <a
-                href={resources.primaryDoc.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-saffron-500 hover:shadow-xs transition-all"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 shrink-0">
-                    <BookOpen size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900 dark:text-white truncate group-hover:text-saffron-600 transition-colors">
-                      {resources.primaryDoc.title}
+              {studyGuide.resources.map((res, i) => (
+                <a
+                  key={i}
+                  href={res.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-saffron-500 hover:shadow-xs transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-saffron-500 shrink-0">
+                      {res.type === 'video' ? <PlayCircle size={16} /> : <BookOpen size={16} />}
                     </div>
-                    <div className="text-3xs text-slate-400">
-                      {formatResourceType('docs')} • {resources.primaryDoc.platform}
-                    </div>
-                  </div>
-                </div>
-                <ExternalLink size={14} className="text-slate-400 group-hover:text-saffron-500 shrink-0 ml-2" />
-              </a>
-
-              {/* Video tutorial */}
-              <a
-                href={resources.videoTutorial.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-saffron-500 hover:shadow-xs transition-all"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 shrink-0">
-                    <PlayCircle size={16} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-semibold text-slate-900 dark:text-white truncate group-hover:text-saffron-600 transition-colors">
-                      {resources.videoTutorial.title}
-                    </div>
-                    <div className="text-3xs text-slate-400">
-                      {formatResourceType('video')} • {resources.videoTutorial.platform}
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-slate-900 dark:text-white truncate group-hover:text-saffron-600 transition-colors">
+                        {res.title}
+                      </div>
+                      <div className="text-3xs text-slate-400">
+                        {formatResourceType(res.type)} • {res.platform}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <ExternalLink size={14} className="text-slate-400 group-hover:text-saffron-500 shrink-0 ml-2" />
-              </a>
+                  <ExternalLink size={14} className="text-slate-400 group-hover:text-saffron-500 shrink-0 ml-2" />
+                </a>
+              ))}
             </div>
           ) : (
             <p className="text-xs text-slate-500 italic p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl">

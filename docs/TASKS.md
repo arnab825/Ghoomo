@@ -1,34 +1,21 @@
 # Ghoomo - Development Task List
 
-## P0: Hackathon MVP Core Flow (Completed)
-- [x] Project architecture & prompt queue alignment
-- [x] Update project documentation in `/docs`
-- [x] Implement database schema (`supabase/schema.sql`)
-- [x] Ingest India canonical places reference table (58 landmarks across 4 regions)
-- [x] Define TypeScript types (`src/lib/types/ghoomo.ts`) and Zod schemas (`src/lib/schemas/trip.ts`)
-- [x] Build global Ghoomo Zustand store (`src/stores/useGhoomoStore.ts`)
-- [x] Build social URL extraction engine with seed reel parsers (`src/features/social-import/extractors.ts`)
-- [x] Implement 3-Tier AI Fallback Engine (Gemini 1.5 Flash → Groq Llama 3.1 70B → Haversine Clustering)
-- [x] Enforce exact timeouts (Tier 1: 5s, Tier 2: 3s, Tier 3: 0ms) & retries
-- [x] Post-processing validation (Max 6-8 places, <2h transit, route review flagging)
-- [x] Progressive loading user feedback (0-2s, 2-4s, 4-7s, 7-10s)
-- [x] Implement interactive Leaflet map component with CartoDB Light tiles (`src/components/map/InteractiveMap.tsx`)
-- [x] Build Proximity Clustering Engine for automatic day-wise itinerary scheduling (`src/features/itinerary/clustering.ts`)
-- [x] Build high-converting Landing Page with live Reel URL tester (`src/app/page.tsx`)
-- [x] Build clean Auth page with 1-click evaluator persona switcher (`src/app/auth/page.tsx`)
-- [x] Build Trip Creation Wizard (`src/app/trips/new/page.tsx`)
-- [x] Build Flagship Map-First Trip Workspace (`src/app/trips/[id]/page.tsx`)
-- [x] Build Trip Library Dashboard (`src/app/trips/page.tsx`)
-- [x] Build Collaboration modal & invite link generator (`src/components/collaboration/CollaborationModal.tsx`)
-- [x] Build Budget tracker & Travel checklist (`src/components/budget-checklist/`)
-- [x] Retire and delete legacy scam/meter/marketplace/translator code
+## Active SIH 2026 Milestone: Smart Education (Problem Statement 26207)
 
-## P1: Enhancements
-- [ ] Drag-and-drop itinerary reordering
-- [ ] Category-based map filtering (Food, Sightseeing, Nature)
-- [ ] Public read-only trip viewer (`src/app/trips/[id]/share/page.tsx`)
+### Completed Tasks
+- [x] Implement adaptive navigation engine core (DAG validation, cycle detection, topological sort).
+- [x] Deterministic epistemic state model (`UNKNOWN` -> `MASTERED`).
+- [x] Multi-tiered LLM orchestration (Gemini 2.5 Flash + Groq Qwen failover with L1/L2 caching).
+- [x] Zero-mock generation for CS blueprints and diagnostic challenges.
+- [x] Realtime Supabase pub/sub sync for concept states and progress.
+- [x] Admin Operations Center (`/admin`) for telemetry, misconception analysis, and user management.
+- [x] Comprehensive rate limiting with sliding window and exponential backoff.
+- [x] Production-grade cleanup: dead code, obsolete travel styles, unused dependencies uninstalled.
+- [x] Strict Zod input schemas (`.strict()`) across all authentication and server action interfaces.
+- [x] Leak-free error handler (`formatSafeUserError`) across all public server actions and endpoints.
+- [x] Dependency audit: zero security vulnerabilities in `npm audit`.
 
-## P2: Post-Hackathon
-- [ ] Live weather rerouting suggestions
-- [ ] Real-time Supabase presence channels for collaborative cursor sync
-- [ ] Offline PWA caching for remote India travel
+### Upcoming Enhancements
+- [ ] Visual interactive graph renderer for large-scale (100+ node) domain maps.
+- [ ] Offline local-first sync with IndexedDB for intermittent connectivity environments.
+- [ ] Exportable competency certificates with cryptographic signature verification.

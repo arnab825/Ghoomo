@@ -7,6 +7,11 @@
 
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getCuratedResourcesForConcept } from '@/lib/learning/resourceCatalog';
+import { discoverTopicResources } from '@/lib/learning/resourceDiscovery';
+import { ResourceCategory } from '@/lib/learning/resourceRanker';
+
+import { GetTopicResourcesInputSchema, GetTopicResourcesInput } from '@/schemas/inputSchemas';
+import { formatSafeUserError } from '@/lib/utils/errorHandler';
 
 export interface ResourceItem {
   id: string;
@@ -14,6 +19,7 @@ export interface ResourceItem {
   url: string;
   title: string;
   resourceType: 'docs' | 'article' | 'video' | 'book' | 'practice' | 'interactive';
+  category?: ResourceCategory;
   platform: string;
   qualityScore: number;
   durationMinutes?: number;
@@ -22,13 +28,23 @@ export interface ResourceItem {
 
 /**
  * Fetch authoritative learning resources for a topic.
- * Checks resource_items table first; falls back to curated catalog if empty.
+ * Checks resource_items table first, triggers live discovery if needed,
+ * and falls back to curated catalog if offline.
  */
-export async function getTopicResourcesAction(params: {
-  conceptId: string;
-  conceptName: string;
-  domain?: string;
-}): Promise<{ success: boolean; resources: ResourceItem[]; error?: string }> {
+export async function getTopicResourcesAction(
+  rawParams: GetTopicResourcesInput
+): Promise<{ success: boolean; resources: ResourceItem[]; error?: string }> {
+  // 1. Strict schema validation
+  const parseResult = GetTopicResourcesInputSchema.safeParse(rawParams);
+  if (!parseResult.success) {
+    return {
+      success: false,
+      resources: [],
+      error: parseResult.error.errors[0]?.message || 'Invalid resource request parameters.',
+    };
+  }
+  const params = parseResult.data;
+
   const supabase = await createServerSupabaseClient();
 
   try {
@@ -56,29 +72,39 @@ export async function getTopicResourcesAction(params: {
       };
     }
 
-    // 2. Fallback to catalog
+    // 2. Discover live resources via DuckDuckGo and verified catalog
     const catalog = getCuratedResourcesForConcept(params.conceptName, params.domain || 'Computer Science');
-    const fallbackResources: ResourceItem[] = (catalog?.resources || []).map((r, i) => ({
-      id: `curated-${params.conceptId}-${i}`,
+    const staticFallbacks = catalog?.resources || [];
+
+    const discovered = await discoverTopicResources({
+      topicName: params.conceptName,
+      domain: params.domain || 'Computer Science',
+      staticCatalogFallbacks: staticFallbacks,
+    });
+
+    const finalResources: ResourceItem[] = discovered.map((r, i) => ({
+      id: `res-${params.conceptId}-${i}`,
       conceptId: params.conceptId,
       url: r.url,
       title: r.title,
       resourceType: (r.type === 'video' ? 'video' : r.type === 'docs' ? 'docs' : 'article') as any,
+      category: r.category,
       platform: r.platform,
-      qualityScore: 0.9,
+      qualityScore: r.overallScore || 0.85,
       durationMinutes: r.durationMinutes,
       validated: true,
     }));
 
     return {
       success: true,
-      resources: fallbackResources,
+      resources: finalResources,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    console.error('getTopicResourcesAction error:', err);
     return {
       success: false,
       resources: [],
-      error: err.message || 'Failed to load topic resources',
+      error: formatSafeUserError(err, 'Failed to load topic resources. Please try again.'),
     };
   }
 }

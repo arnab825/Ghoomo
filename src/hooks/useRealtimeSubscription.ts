@@ -148,6 +148,7 @@ export function useRealtimeSubscription<T extends Record<string, unknown>>(
       });
 
     channelRef.current = channel;
+    const seenIds = seenIdsRef.current;
 
     return () => {
       if (debounceTimerRef.current) {
@@ -157,7 +158,7 @@ export function useRealtimeSubscription<T extends Record<string, unknown>>(
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
-      seenIdsRef.current.clear();
+      seenIds.clear();
       pendingEventsRef.current = [];
     };
   }, [table, schema, filter, event, enabled, scheduleFlush]);
